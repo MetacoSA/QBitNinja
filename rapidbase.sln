@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase", "RapidBase\RapidBase.csproj", "{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Tests", "RapidBase.Tests\RapidBase.Tests.csproj", "{5CB38069-834E-4586-B101-036BDBCA7B92}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CB38069-834E-4586-B101-036BDBCA7B92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CB38069-834E-4586-B101-036BDBCA7B92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CB38069-834E-4586-B101-036BDBCA7B92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CB38069-834E-4586-B101-036BDBCA7B92}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
