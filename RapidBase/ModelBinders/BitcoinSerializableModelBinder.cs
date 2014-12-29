@@ -39,7 +39,7 @@ namespace RapidBase.ModelBinders
             if (bindingContext.Model is uint256 || bindingContext.Model is uint160)
             {
                 if (bindingContext.Model.ToString().StartsWith(new uint160("0").ToString()))
-                    throw new FormatException("Invalid Hex String");
+                    throw new FormatException("Invalid hash format");
             }
             return true;
         }
