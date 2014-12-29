@@ -15,6 +15,7 @@ namespace RapidBase
         {
             if (rapidbase == null)
                 rapidbase = RapidBaseConfiguration.FromConfiguration();
+            rapidbase.EnsureSetup();
             config.MapHttpAttributeRoutes();
             config.DependencyResolver = new RapidBaseDependencyResolver(rapidbase, config.DependencyResolver);
             Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings);

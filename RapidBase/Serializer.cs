@@ -13,6 +13,9 @@ namespace RapidBase
         public static void RegisterFrontConverters(JsonSerializerSettings settings)
         {
             settings.Converters.Add(new BitcoinSerializableJsonConverter());
+            settings.Converters.Add(new MoneyJsonConverter());
+            settings.Converters.Add(new CoinJsonConverter());
+            settings.Converters.Add(new ScriptJsonConverter());
         }
     }
 }

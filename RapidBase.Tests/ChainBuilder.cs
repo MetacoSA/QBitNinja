@@ -43,7 +43,7 @@ namespace RapidBase.Tests
                 Outputs =
                 {
                     new TxOut(money, destination),
-                    CreateRandom()
+                    //CreateRandom()
                 }
             };
             Broadcast(funding);

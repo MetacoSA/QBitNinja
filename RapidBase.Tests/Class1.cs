@@ -18,6 +18,7 @@ namespace RapidBase.Tests
             using (var tester = ServerTester.Create())
             {
                 var bob = new Key();
+                var alice = new Key();
 
                 //Not found should return 404
                 var txId = new uint256(Encoders.Hex.EncodeData(RandomUtils.GetBytes(32)));
@@ -31,6 +32,28 @@ namespace RapidBase.Tests
                 Assert.NotNull(response);
                 Assert.Equal(txId.ToString(), response.TransactionId.ToString());
                 Assert.Equal(tx.ToString(), response.Transaction.ToString());
+                ////
+
+                //Previously spent coins should be in the response
+                var prevTx = tx;
+                TransactionBuilder txBuilder = new TransactionBuilder();
+                tx = 
+                    txBuilder
+                    .AddKeys(bob)
+                    .AddCoins(new Coin(tx, 0))
+                    .Send(alice, "0.99")
+                    .SendFees("0.01")
+                    .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+                txId = tx.GetHash();
+                response = tester.SendGet<GetTransactionResponse>("transactions/" + txId);
+                Assert.Equal(txId.ToString(), response.TransactionId.ToString());
+                Assert.Equal(tx.ToString(), response.Transaction.ToString());
+                Assert.Equal(Money.Parse("0.01"), response.Fees);
+                Assert.Equal(prevTx.GetHash(), response.SpentCoins[0].Outpoint.Hash);
+                Assert.Equal(0U, response.SpentCoins[0].Outpoint.N);
+                Assert.Equal(Money.Parse("1.00"), response.SpentCoins[0].TxOut.Value);
+                Assert.Equal(bob.ScriptPubKey, response.SpentCoins[0].TxOut.ScriptPubKey);
                 ////
             }
         }

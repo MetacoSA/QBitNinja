@@ -48,7 +48,6 @@ namespace RapidBase.Tests
             Address = "http://localhost:" + (ushort)RandomUtils.GetUInt32() + "/";
             Configuration = RapidBaseConfiguration.FromConfiguration();
             Configuration.Indexer.StorageNamespace = ns;
-            Configuration.EnsureSetup();
             var server = WebApp.Start(Address, appBuilder =>
             {
                 var config = new HttpConfiguration();

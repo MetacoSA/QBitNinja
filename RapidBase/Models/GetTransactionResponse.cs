@@ -20,5 +20,17 @@ namespace RapidBase.Models
             get;
             set;
         }
+
+        public List<Coin> SpentCoins
+        {
+            get;
+            set;
+        }
+
+        public Money Fees
+        {
+            get;
+            set;
+        }
     }
 }

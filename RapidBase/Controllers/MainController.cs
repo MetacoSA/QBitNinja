@@ -41,6 +41,8 @@ namespace RapidBase.Controllers
             {
                 TransactionId = tx.TransactionId,
                 Transaction = tx.Transaction,
+                Fees = tx.Fees,
+                SpentCoins = tx.SpentCoins.Select(c=> new Coin(c)).ToList()
             };
         }
     }
