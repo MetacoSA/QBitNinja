@@ -15,6 +15,7 @@ namespace RapidBase.Tests
         public ChainBuilder(ServerTester serverTester)
         {
             this._Parent = serverTester;
+            Chain = new ConcurrentChain(Network.TestNet);
         }
 
         public void Broadcast(Transaction funding)
@@ -55,7 +56,7 @@ namespace RapidBase.Tests
             return new TxOut(Money.Parse("1.2345"), new Key().PubKey);
         }
 
-        internal void EmitBlock()
+        internal Block EmitBlock()
         {
             var block = new Block();
             block.Transactions.AddRange(_OngoingTransactions.ToList());
@@ -71,13 +72,24 @@ namespace RapidBase.Tests
                     indexer.Index(new[] { entity });
                 }
             }
-
+            if (UploadBlock)
+            {
+                indexer.Index(block);
+            }
             var prev = Chain.GetBlock(block.Header.HashPrevBlock);
             Chain.SetTip(new ChainedBlock(block.Header, block.GetHash(), prev));
+            indexer.IndexChain(Chain);
             _OngoingTransactions.Clear();
+            return block;
         }
 
         public ChainBase Chain
+        {
+            get;
+            set;
+        }
+
+        public bool UploadBlock
         {
             get;
             set;

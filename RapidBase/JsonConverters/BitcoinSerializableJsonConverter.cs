@@ -20,16 +20,24 @@ namespace RapidBase.JsonConverters
             if (reader.TokenType == JsonToken.Null)
                 return null;
 
+            var obj = (IBitcoinSerializable)Activator.CreateInstance(objectType);
+            var bytes = Encoders.Hex.DecodeData((string)reader.Value);
+            InverseIfNeeded(objectType, bytes);
+            obj.ReadWrite(bytes);
+            return obj;
+        }
 
-            return Activator.CreateInstance(objectType, new[] { reader.Value });
+        private void InverseIfNeeded(Type type, byte[] bytes)
+        {
+            var inverse = type == typeof(uint256) || type == typeof(uint160);
+            if (inverse)
+                Array.Reverse(bytes);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var inverse = value is uint256 || value is uint160;
             var bytes = ((IBitcoinSerializable)value).ToBytes();
-            if (inverse)
-                Array.Reverse(bytes);
+            InverseIfNeeded(value.GetType(), bytes);
             writer.WriteValue(Encoders.Hex.EncodeData(bytes));
         }
     }

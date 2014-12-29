@@ -135,6 +135,7 @@
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
     <Compile Include="JsonConverters\ScriptJsonConverter.cs" />
     <Compile Include="ModelBinders\BitcoinSerializableModelBinder.cs" />
+    <Compile Include="Models\GetBlockResponse.cs" />
     <Compile Include="Models\GetTransactionResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RapidBaseConfiguration.cs" />

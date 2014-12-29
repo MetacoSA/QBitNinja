@@ -53,16 +53,21 @@ namespace RapidBase.Tests
                 var config = new HttpConfiguration();
                 config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
                 WebApiConfig.Register(config, Configuration);
+                _Resolver = (RapidBaseDependencyResolver)config.DependencyResolver;
                 appBuilder.UseWebApi(config);
             });
             _Disposables.Add(server);
             ChainBuilder = new ChainBuilder(this);
         }
 
+        RapidBaseDependencyResolver _Resolver;
+
         #region IDisposable Members
 
         public void Dispose()
         {
+            Clean(Configuration.Indexer.GetBlocksContainer());
+            Clean(Configuration.Indexer.CreateTableClient());
             foreach (var dispo in _Disposables)
                 dispo.Dispose();
         }
@@ -83,7 +88,59 @@ namespace RapidBase.Tests
             response.EnsureSuccessStatusCode();
             var mediaFormat = new JsonMediaTypeFormatter();
             Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
-            return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
+            if (typeof(TResponse) == typeof(byte[]))
+                return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
+            else
+                return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
+        }
+
+        private void Clean(Microsoft.WindowsAzure.Storage.Blob.CloudBlobContainer cloudBlobContainer)
+        {
+            if (!cloudBlobContainer.Exists())
+                return;
+            foreach (var blob in cloudBlobContainer.ListBlobs(useFlatBlobListing: true).OfType<ICloudBlob>())
+            {
+                try
+                {
+                    blob.Delete();
+                }
+                catch (StorageException ex)
+                {
+                    if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 412)
+                    {
+                        try
+                        {
+
+                            blob.BreakLease(TimeSpan.Zero);
+                            blob.Delete();
+                        }
+                        catch
+                        {
+                            Debugger.Break();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void Clean(CloudTableClient client)
+        {
+            foreach (var table in client.ListTables())
+            {
+                if (table.Name.StartsWith(this.Configuration.Indexer.StorageNamespace, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    foreach (var entity in table.ExecuteQuery(new TableQuery()))
+                    {
+                        table.Execute(TableOperation.Delete(entity));
+                    }
+                }
+            }
+        }
+
+
+        public void UpdateServerChain()
+        {
+            _Resolver.UpdateChain();
         }
     }
 }

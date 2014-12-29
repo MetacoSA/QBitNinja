@@ -7,6 +7,30 @@ using System.Threading.Tasks;
 
 namespace RapidBase.Models
 {
+    public class BlockInformation
+    {
+        public uint256 BlockId
+        {
+            get;
+            set;
+        }
+
+        public BlockHeader BlockHeader
+        {
+            get;
+            set;
+        }
+        public int Height
+        {
+            get;
+            set;
+        }
+        public int Confirmations
+        {
+            get;
+            set;
+        }
+    }
     public class GetTransactionResponse
     {
         public Transaction Transaction
@@ -16,6 +40,12 @@ namespace RapidBase.Models
         }
 
         public uint256 TransactionId
+        {
+            get;
+            set;
+        }
+
+        public BlockInformation Block
         {
             get;
             set;

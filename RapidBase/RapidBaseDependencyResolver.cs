@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http.Dependencies;
 using Autofac.Integration.WebApi;
+using NBitcoin;
+using NBitcoin.Indexer;
 
 namespace RapidBase
 {
@@ -63,6 +65,15 @@ namespace RapidBase
             this._DefaultResolver = defaultResolver;
             ContainerBuilder builder = new ContainerBuilder();
             builder.Register<RapidBaseConfiguration>(ctx => configuration).SingleInstance();
+            builder.Register<IndexerClient>(ctx => configuration.Indexer.CreateIndexerClient());
+            builder.Register<ConcurrentChain>(ctx =>
+            {
+                var client = ctx.Resolve<IndexerClient>();
+                ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
+                var changes = client.GetChainChangesUntilFork(chain.Tip, false);
+                changes.UpdateChain(chain);
+                return chain;
+            }).SingleInstance();
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
             _Container = builder.Build();
         }
@@ -78,6 +89,11 @@ namespace RapidBase
         #endregion
 
         #region IDependencyScope Members
+
+        public T Get<T>()
+        {
+            return (T)GetService(typeof(T));
+        }
 
         public object GetService(Type serviceType)
         {
@@ -107,5 +123,13 @@ namespace RapidBase
         }
 
         #endregion
+
+        public void UpdateChain()
+        {
+            var client = Get<IndexerClient>();
+            var chain = Get<ConcurrentChain>();
+            var changes = client.GetChainChangesUntilFork(chain.Tip, false);
+            changes.UpdateChain(chain);
+        }
     }
 }
