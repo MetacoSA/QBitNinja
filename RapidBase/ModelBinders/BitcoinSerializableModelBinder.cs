@@ -35,17 +35,13 @@ namespace RapidBase.ModelBinders
                 return true;
             }
 
-            try
+            bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, key);
+            if (bindingContext.Model is uint256 || bindingContext.Model is uint160)
             {
-                bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, key);
-                return true;
+                if (bindingContext.Model.ToString().StartsWith(new uint160("0").ToString()))
+                    throw new FormatException("Invalid Hex String");
             }
-            catch (Exception)
-            {
-                bindingContext.ModelState.AddModelError(
-                   bindingContext.ModelName, new FormatException("Invalid " + bindingContext.ModelType.Name));
-                return false;
-            }
+            return true;
         }
 
         #endregion

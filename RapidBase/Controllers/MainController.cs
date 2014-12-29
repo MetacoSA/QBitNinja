@@ -11,7 +11,6 @@ using System.Web.Http.ModelBinding;
 
 namespace RapidBase.Controllers
 {
-
     public class MainController : ApiController
     {
         public MainController(RapidBaseConfiguration config)
@@ -26,8 +25,8 @@ namespace RapidBase.Controllers
         }
 
 
-        [Route("transactions/{txId}")]
         [HttpGet]
+        [Route("transactions/{txId}")]
         public GetTransactionResponse Transaction(
             [ModelBinder(typeof(BitcoinSerializableModelBinder))]
             uint256 txId
@@ -36,7 +35,11 @@ namespace RapidBase.Controllers
             var client = Configuration.Indexer.CreateIndexerClient();
             var tx = client.GetTransaction(txId);
             if (tx == null)
-                throw new HttpResponseException(HttpStatusCode.NotFound);
+                throw new HttpResponseException(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    ReasonPhrase = "Transaction not found"
+                });
             return new GetTransactionResponse()
             {
                 TransactionId = tx.TransactionId,

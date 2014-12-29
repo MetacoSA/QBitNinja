@@ -20,9 +20,13 @@ namespace RapidBase.Tests
                 var bob = new Key();
                 var alice = new Key();
 
-                //Not found should return 404
+                //Not found should return 404 (Not found)
                 var txId = new uint256(Encoders.Hex.EncodeData(RandomUtils.GetBytes(32)));
                 AssetEx.HttpError(404, () => tester.SendGet<GetTransactionResponse>("transactions/" + txId));
+                ////
+
+                //Not correctly formatted should return 400 (Bad request)
+                AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("transactions/000lol"));
                 ////
 
                 //Found should return the correct transaction

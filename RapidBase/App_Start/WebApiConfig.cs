@@ -18,6 +18,7 @@ namespace RapidBase
             rapidbase.EnsureSetup();
             config.MapHttpAttributeRoutes();
             config.DependencyResolver = new RapidBaseDependencyResolver(rapidbase, config.DependencyResolver);
+            config.Filters.Add(new GlobalExceptionFilter());
             Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings);
         }
     }

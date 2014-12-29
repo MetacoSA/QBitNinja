@@ -62,14 +62,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\WindowsAzure.Storage.4.1.0\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Nat">
-      <HintPath>..\packages\NBitcoin.1.0.7.10\lib\net45\Mono.Nat.dll</HintPath>
+    <Reference Include="Mono.Nat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NBitcoin.1.0.7.11\lib\net45\Mono.Nat.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin">
-      <HintPath>..\packages\NBitcoin.1.0.7.10\lib\net45\NBitcoin.dll</HintPath>
+    <Reference Include="NBitcoin, Version=1.0.7.11, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NBitcoin.1.0.7.11\lib\net45\NBitcoin.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.BouncyCastle">
-      <HintPath>..\packages\NBitcoin.1.0.7.10\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
+    <Reference Include="NBitcoin.BouncyCastle, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NBitcoin.1.0.7.11\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
     <Reference Include="NBitcoin.Indexer">
       <HintPath>..\packages\NBitcoin.Indexer.2.0.3.0\lib\net45\NBitcoin.Indexer.dll</HintPath>
@@ -126,6 +129,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="GlobalExceptionFilter.cs" />
     <Compile Include="JsonConverters\BitcoinSerializableJsonConverter.cs" />
     <Compile Include="JsonConverters\CoinJsonConverter.cs" />
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
