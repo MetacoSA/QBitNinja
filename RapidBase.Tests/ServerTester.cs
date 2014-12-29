@@ -75,6 +75,7 @@ namespace RapidBase.Tests
             set;
         }
 
+        [DebuggerHidden]
         public TResponse SendGet<TResponse>(string relativeAddress)
         {
             HttpClient client = new HttpClient();

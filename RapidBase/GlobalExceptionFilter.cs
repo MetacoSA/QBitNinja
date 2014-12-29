@@ -19,7 +19,7 @@ namespace RapidBase
             {
                 actionExecutedContext.Exception =  new HttpResponseException(new HttpResponseMessage()
                 {
-                    StatusCode = HttpStatusCode.NotFound,
+                    StatusCode = HttpStatusCode.BadRequest,
                     ReasonPhrase = actionExecutedContext.Exception.Message
                 });
             }
