@@ -17,5 +17,13 @@ namespace RapidBase
             settings.Converters.Add(new CoinJsonConverter());
             settings.Converters.Add(new ScriptJsonConverter());
         }
+
+        public static string ToString<T>(T response)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.Formatting = Formatting.Indented;
+            RegisterFrontConverters(settings);
+            return JsonConvert.SerializeObject(response, settings);
+        }
     }
 }

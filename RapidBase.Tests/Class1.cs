@@ -58,6 +58,8 @@ namespace RapidBase.Tests
                 Assert.Equal(0U, response.SpentCoins[0].Outpoint.N);
                 Assert.Equal(Money.Parse("1.00"), response.SpentCoins[0].TxOut.Value);
                 Assert.Equal(bob.ScriptPubKey, response.SpentCoins[0].TxOut.ScriptPubKey);
+
+                var json = Serializer.ToString(response); //Can serialize without blowing up
                 ////
             }
         }
