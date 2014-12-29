@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using RapidBase.ModelBinders;
 using RapidBase.Models;
 using System;
 using System.Collections.Generic;
@@ -6,16 +7,41 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Web.Http.ModelBinding;
 
 namespace RapidBase.Controllers
 {
 
     public class MainController : ApiController
     {
-        [Route("transactions/{txId}")]
-        public GetTransactionResponse Transaction(uint256 txId)
+        public MainController(RapidBaseConfiguration config)
         {
-            return null;
+            Configuration = config;
+        }
+
+        public RapidBaseConfiguration Configuration
+        {
+            get;
+            set;
+        }
+
+
+        [Route("transactions/{txId}")]
+        [HttpGet]
+        public GetTransactionResponse Transaction(
+            [ModelBinder(typeof(BitcoinSerializableModelBinder))]
+            uint256 txId
+            )
+        {
+            var client = Configuration.Indexer.CreateIndexerClient();
+            var tx = client.GetTransaction(txId);
+            if (tx == null)
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+            return new GetTransactionResponse()
+            {
+                TransactionId = tx.TransactionId,
+                Transaction = tx.Transaction,
+            };
         }
     }
 }

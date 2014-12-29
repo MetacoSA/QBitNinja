@@ -9,16 +9,15 @@ namespace RapidBase
     {
         public static void Register(HttpConfiguration config)
         {
-            // Web API configuration and services
-
-            // Web API routes
+            Register(config, null);
+        }
+        public static void Register(HttpConfiguration config, RapidBaseConfiguration rapidbase)
+        {
+            if (rapidbase == null)
+                rapidbase = RapidBaseConfiguration.FromConfiguration();
             config.MapHttpAttributeRoutes();
-
-            config.Routes.MapHttpRoute(
-                name: "DefaultApi",
-                routeTemplate: "api/{controller}/{id}",
-                defaults: new { id = RouteParameter.Optional }
-            );
+            config.DependencyResolver = new RapidBaseDependencyResolver(rapidbase, config.DependencyResolver);
+            Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings);
         }
     }
 }

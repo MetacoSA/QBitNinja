@@ -37,8 +37,7 @@ namespace RapidBase.ModelBinders
 
             try
             {
-                var bytes = Encoders.Hex.DecodeData(key);
-                bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, bytes);
+                bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, key);
                 return true;
             }
             catch (Exception)
