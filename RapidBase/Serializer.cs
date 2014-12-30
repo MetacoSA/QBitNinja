@@ -16,6 +16,7 @@ namespace RapidBase
             settings.Converters.Add(new MoneyJsonConverter());
             settings.Converters.Add(new CoinJsonConverter());
             settings.Converters.Add(new ScriptJsonConverter());
+            settings.Converters.Add(new NetworkJsonConverter());
         }
 
         public static string ToString<T>(T response)

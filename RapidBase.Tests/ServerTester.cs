@@ -90,6 +90,8 @@ namespace RapidBase.Tests
             Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
             if (typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
+            else if (typeof(string) == typeof(TResponse))
+                return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
             else
                 return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
         }

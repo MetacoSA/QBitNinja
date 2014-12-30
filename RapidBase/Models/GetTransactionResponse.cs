@@ -9,6 +9,17 @@ namespace RapidBase.Models
 {
     public class BlockInformation
     {
+        public BlockInformation()
+        {
+
+        }
+        public BlockInformation(BlockHeader header)
+        {
+            BlockId = header.GetHash();
+            BlockHeader = header;
+            Height = -1;
+            Confirmations = -1;
+        }
         public uint256 BlockId
         {
             get;
@@ -40,6 +51,12 @@ namespace RapidBase.Models
         }
 
         public uint256 TransactionId
+        {
+            get;
+            set;
+        }
+
+        public bool IsCoinbase
         {
             get;
             set;

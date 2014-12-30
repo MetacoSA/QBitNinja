@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.Indexer;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
 using System;
@@ -62,6 +63,7 @@ namespace RapidBase.Controllers
             {
                 TransactionId = tx.TransactionId,
                 Transaction = tx.Transaction,
+                IsCoinbase = tx.Transaction.IsCoinBase,
                 Fees = tx.Fees,
                 Block = FetchBlockInformation(tx.BlockIds),
                 SpentCoins = tx.SpentCoins.Select(c => new Coin(c)).ToList()
@@ -72,7 +74,9 @@ namespace RapidBase.Controllers
         {
             var confirmed = blockIds.Select(b => Chain.GetBlock(b)).FirstOrDefault();
             if (confirmed == null)
+            {
                 return null;
+            }
             return new BlockInformation()
             {
                 BlockId = confirmed.HashBlock,
@@ -125,6 +129,118 @@ namespace RapidBase.Controllers
                 return RawBlock(blockFeature, headerOnly);
         }
 
+        [HttpGet]
+        [Route("whatisit/{data}")]
+        public object WhatIsIt(string data)
+        {
+            var b58 = NoException(() => WhatIsBase58.GetFromBase58Data(data));
+            if (b58 != null)
+            {
+                if (b58 is WhatIsAddress)
+                {
+                    var address = (WhatIsAddress)b58;
+                    TryFetchRedeemOrPubKey(address);
+                }
+                return b58;
+            }
+
+            if (data.Length == 0x40)
+            {
+                var tx = NoException(() => JsonTransaction(new uint256(data)));
+                if (tx != null)
+                    return tx;
+            }
+            var b = NoException(() => JsonBlock(BlockFeature.Parse(data), true));
+            if (b != null)
+                return b;
+
+            if (data.Length == 0x28) //Hash of pubkey or script
+            {
+                TxDestination dest = new KeyId(data);
+                var address = new WhatIsAddress(dest.GetAddress(Configuration.Indexer.Network));
+                if (TryFetchRedeemOrPubKey(address))
+                    return address;
+
+                dest = new ScriptId(data);
+                address = new WhatIsAddress(dest.GetAddress(Configuration.Indexer.Network));
+                if (TryFetchRedeemOrPubKey(address))
+                    return address;
+            }
+
+            if ((data.StartsWith("02") || data.StartsWith("03")) && PubKey.IsValidSize(data.Length / 2))
+            {
+                var pubKey = NoException(() => new PubKey(data));
+                if (pubKey != null)
+                    return new WhatIsPublicKey(pubKey, Configuration.Indexer.Network);
+            }
+            return "Good question Holmes !";
+        }
+
+        private bool TryFetchRedeemOrPubKey(WhatIsAddress address)
+        {
+            if (address.IsP2SH)
+            {
+                address.RedeemScript = TryFetchRedeem(address);
+                return address.RedeemScript != null;
+            }
+            else
+            {
+                address.PublicKey = TryFetchPublicKey(address);
+                return address.PublicKey != null;
+            }
+        }
+
+        private WhatIsScript TryFetchRedeem(WhatIsAddress address)
+        {
+            var scriptSig = FindScriptSig(address);
+            if (scriptSig == null)
+                return null;
+            var result = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
+            if (result == null)
+                return null;
+            return new WhatIsScript(result.RedeemScript);
+        }
+
+        private WhatIsPublicKey TryFetchPublicKey(WhatIsAddress address)
+        {
+            var scriptSig = FindScriptSig(address);
+            if (scriptSig == null)
+                return null;
+            var result = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
+            if (result == null)
+                return null;
+            return new WhatIsPublicKey(result.PublicKey, Configuration.Indexer.Network);
+        }
+
+        private Script FindScriptSig(WhatIsAddress address)
+        {
+            var indexer = Configuration.Indexer.CreateIndexerClient();
+            var scriptSig = indexer
+                            .GetOrderedBalance(address.ScriptPubKey.Raw)
+                            .Where(b => b.SpentCoins.Count != 0)
+                            .Select(b => new
+                            {
+                                SpentN = b.SpentIndices[0],
+                                Tx = indexer.GetTransaction(b.TransactionId)
+                            })
+                            .Where(o => o.Tx != null)
+                            .Select(o => o.Tx.Transaction.Inputs[o.SpentN].ScriptSig)
+                            .FirstOrDefault();
+            return scriptSig;
+        }
+
+        public T NoException<T>(Func<T> act) where T : class
+        {
+            try
+            {
+                return act();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private GetBlockResponse JsonBlock(BlockFeature blockFeature, bool headerOnly)
         {
             var block = GetBlock(blockFeature, headerOnly);
@@ -138,7 +254,7 @@ namespace RapidBase.Controllers
             }
             return new GetBlockResponse()
             {
-                AdditionalInformation = FetchBlockInformation(new[] { block.Header.GetHash() }),
+                AdditionalInformation = FetchBlockInformation(new[] { block.Header.GetHash() }) ?? new BlockInformation(block.Header),
                 Block = headerOnly ? null : block
             };
         }
@@ -162,14 +278,19 @@ namespace RapidBase.Controllers
             {
                 hash = blockFeature.BlockId;
             }
-            return headerOnly ? GetHeader(hash) : client.GetBlock(hash);
+            return headerOnly ? GetHeader(hash, client) : client.GetBlock(hash);
         }
 
-        private Block GetHeader(uint256 hash)
+        private Block GetHeader(uint256 hash, IndexerClient client)
         {
             var header = Chain.GetBlock(hash);
             if (header == null)
-                return null;
+            {
+                var b = client.GetBlock(hash);
+                if (b == null)
+                    return null;
+                return new Block(b.Header);
+            }
             return new Block(header.Header);
         }
 

@@ -81,9 +81,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NBitcoin.1.0.7.12\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.Indexer, Version=2.0.3.2, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin.Indexer, Version=2.0.3.3, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.Indexer.2.0.3.2\lib\net45\NBitcoin.Indexer.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.Indexer.2.0.3.3\lib\net45\NBitcoin.Indexer.dll</HintPath>
     </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\packages\protobuf-net.2.0.0.668\lib\net40\protobuf-net.dll</HintPath>
@@ -173,6 +173,7 @@
     <Compile Include="JsonConverters\BitcoinSerializableJsonConverter.cs" />
     <Compile Include="JsonConverters\CoinJsonConverter.cs" />
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
+    <Compile Include="JsonConverters\NetworkJsonConverter.cs" />
     <Compile Include="JsonConverters\ScriptJsonConverter.cs" />
     <Compile Include="ModelBinders\BitcoinSerializableModelBinder.cs" />
     <Compile Include="ModelBinders\BlockFeatureModelBinder.cs" />
@@ -181,6 +182,7 @@
     <Compile Include="Models\GetBlockResponse.cs" />
     <Compile Include="Models\GetTransactionResponse.cs" />
     <Compile Include="Models\HelpModel.cs" />
+    <Compile Include="Models\WhatIsItModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RapidBaseConfiguration.cs" />
     <Compile Include="RapidBaseDependencyResolver.cs" />

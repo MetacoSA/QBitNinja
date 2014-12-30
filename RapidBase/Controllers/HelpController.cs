@@ -42,6 +42,18 @@ namespace RapidBase.Controllers
                             "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=raw",
                             "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=raw&headeronly=true",
                         }
+                    },
+                    new RouteModel()
+                    {
+                        Template = "whatisit/[address|txId|blockId|blockheader|base58|transaction|script|scriptbytes]",
+                        Samples = new[]
+                        {
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=json",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=json&headeronly=true",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=raw",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=raw&headeronly=true",
+                        }
                     }
                 }
             });

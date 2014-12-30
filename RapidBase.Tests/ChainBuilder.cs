@@ -37,7 +37,7 @@ namespace RapidBase.Tests
 
         List<Transaction> _OngoingTransactions = new List<Transaction>();
 
-        public Transaction EmitMoney(Money money, IDestination destination)
+        public Transaction EmitMoney(Money money, IDestination destination, bool broadcast = true)
         {
             var funding = new Transaction()
             {
@@ -47,7 +47,8 @@ namespace RapidBase.Tests
                     //CreateRandom()
                 }
             };
-            Broadcast(funding);
+            if (broadcast)
+                Broadcast(funding);
             return funding;
         }
 
@@ -56,12 +57,12 @@ namespace RapidBase.Tests
             return new TxOut(Money.Parse("1.2345"), new Key().PubKey);
         }
 
-        internal Block EmitBlock()
+        internal Block EmitBlock(uint? nonce = null)
         {
             var block = new Block();
             block.Transactions.AddRange(_OngoingTransactions.ToList());
             block.Header.HashPrevBlock = Chain.Tip.HashBlock;
-            block.Header.Nonce = RandomUtils.GetUInt32();
+            block.Header.Nonce = nonce == null ? RandomUtils.GetUInt32() : nonce.Value;
             var indexer = CreateIndexer();
             var blockHash = block.GetHash();
             foreach (var tx in block.Transactions)

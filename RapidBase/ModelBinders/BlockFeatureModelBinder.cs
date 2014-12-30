@@ -36,28 +36,8 @@ namespace RapidBase.ModelBinders
                 return true;
             }
 
-            BlockFeature feature = new BlockFeature();
-            uint height;
-            if (key.Equals("last", StringComparison.OrdinalIgnoreCase) || key.Equals("tip", StringComparison.OrdinalIgnoreCase))
-            {
-                feature.Special = SpecialFeature.Last;
-                bindingContext.Model = feature;
-            }
-            else if (uint.TryParse(key, out height))
-            {
-                feature.Height = (int)height;
-                bindingContext.Model = feature;
-            }
-            else
-            {
-                if (key.Length == 0x40 && key.All(c => HexEncoder.IsDigit(c) != -1))
-                {
-                    feature.BlockId = new uint256(key);
-                    bindingContext.Model = feature;
-                }
-                else
-                    throw new FormatException("Invalid block feature, expecting block height or hash");
-            }
+            BlockFeature feature = BlockFeature.Parse(key);
+            bindingContext.Model = feature;
             return true;
         }
 
