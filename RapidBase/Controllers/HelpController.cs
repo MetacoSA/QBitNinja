@@ -60,6 +60,8 @@ namespace RapidBase.Controllers
 
                             "whatisit/0000000000000000080feeba134552a002aeb08e815aad1c41108f680d7b5f58", //Block
                             "whatisit/335598", //Height
+
+                            "whatisit/3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001" //Signature
                         }
                     }
                 }

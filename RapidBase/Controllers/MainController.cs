@@ -168,6 +168,8 @@ namespace RapidBase.Controllers
                 if (TryFetchRedeemOrPubKey(address))
                     return address;
             }
+
+
             var script = NoException(() => GetScriptFromBytes(data));
             if (script != null)
                 return new WhatIsScript(script, Network);
@@ -175,14 +177,20 @@ namespace RapidBase.Controllers
             if (script != null)
                 return new WhatIsScript(script, Network);
 
-            if ((data.StartsWith("02") || data.StartsWith("03")) && PubKey.IsValidSize(data.Length / 2))
+            var sig = NoException(() => new TransactionSignature(Encoders.Hex.DecodeData(data)));
+            if (sig != null)
+                return new WhatIsTransactionSignature(sig);
+
+            if ((data.StartsWith("02") && data.Length / 2 == 33) || (data.StartsWith("03") && data.Length / 2 == 65))
             {
                 var pubKey = NoException(() => new PubKey(data));
                 if (pubKey != null)
                     return new WhatIsPublicKey(pubKey, Network);
             }
+
             return "Good question Holmes !";
         }
+
 
         private Script GetScriptFromText(string data)
         {
@@ -196,7 +204,8 @@ namespace RapidBase.Controllers
             var bytes = Encoders.Hex.DecodeData(data);
             var script = Script.FromBytesUnsafe(bytes);
             bool hasOps = false;
-            foreach (var op in script.ToOps())
+            var reader = script.CreateReader(false);
+            foreach (var op in reader.ToEnumerable())
             {
                 hasOps = true;
                 if (op.IncompleteData || (op.Name == "OP_UNKNOWN" && op.PushData == null))

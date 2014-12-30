@@ -269,6 +269,14 @@ namespace RapidBase.Tests
                   "{  \"Hash\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"Address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",  \"Raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",  \"Asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"}"
                   );
                 ////
+
+                //Can decode signature
+                AssertWhatIsIt(
+                    tester,
+                    "3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001",
+                    "{  \"Raw\": \"3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001\",  \"R\": \"a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f\",  \"S\": \"7917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf0\",  \"AnyoneCanPay\": false,  \"SigHash\": \"All\"}"
+                    );
+                /////
             }
         }
 

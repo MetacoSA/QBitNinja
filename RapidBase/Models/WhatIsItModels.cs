@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.DataEncoders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -106,6 +107,62 @@ namespace RapidBase.Models
         }
 
         public WhatIsPublicKey PublicKey
+        {
+            get;
+            set;
+        }
+    }
+
+    public class WhatIsTransactionSignature
+    {
+        public WhatIsTransactionSignature()
+        {
+
+        }
+        public WhatIsTransactionSignature(TransactionSignature signature)
+        {
+            Raw = Encoders.Hex.EncodeData(signature.ToBytes());
+            AnyoneCanPay = ((int)signature.SigHash & (int)NBitcoin.SigHash.AnyoneCanPay) != 0;
+            if ((((int)signature.SigHash & 31) == (int)NBitcoin.SigHash.Single))
+            {
+                SigHash = "Single";
+            }
+            else if ((((int)signature.SigHash & 31) == (int)NBitcoin.SigHash.None))
+            {
+                SigHash = "None";
+            }
+            else
+            {
+                SigHash = "All";
+            }
+
+            R = signature.Signature.R.ToString(16);
+            S = signature.Signature.S.ToString(16);
+        }
+
+        public string Raw
+        {
+            get;
+            set;
+        }
+        public string R
+        {
+            get;
+            set;
+        }
+
+        public string S
+        {
+            get;
+            set;
+        }
+
+        public bool AnyoneCanPay
+        {
+            get;
+            set;
+        }
+        public string SigHash
         {
             get;
             set;
