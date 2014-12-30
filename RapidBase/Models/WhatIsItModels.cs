@@ -108,9 +108,16 @@ namespace RapidBase.Models
         {
             IsP2SH = address is BitcoinScriptAddress;
             ScriptPubKey = new WhatIsScript(address.ScriptPubKey);
+            Hash = new uint160(address.Hash.ToBytes(true), false);
         }
 
         public bool IsP2SH
+        {
+            get;
+            set;
+        }
+
+        public uint160 Hash
         {
             get;
             set;
