@@ -134,7 +134,11 @@ namespace RapidBase.Controllers
         private Block GetBlock(BlockFeature blockFeature)
         {
             var client = Configuration.Indexer.CreateIndexerClient();
-            if (blockFeature.Height != -1)
+            if (blockFeature.Special != null && blockFeature.Special.Value == SpecialFeature.Last)
+            {
+                return client.GetBlock(Chain.Tip.HashBlock);
+            }
+            else if (blockFeature.Height != -1)
             {
                 var h = Chain.GetBlock(blockFeature.Height);
                 if (h == null)

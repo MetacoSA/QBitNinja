@@ -34,6 +34,8 @@ namespace RapidBase.Controllers
                 .Replace("{blockFeature}", "0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4");
                 yield return str
                 .Replace("{blockFeature}", "326551");
+                yield return str
+                .Replace("{blockFeature}", "last");
             }
             else
             {

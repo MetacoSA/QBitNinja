@@ -38,7 +38,12 @@ namespace RapidBase.ModelBinders
 
             BlockFeature feature = new BlockFeature();
             uint height;
-            if (uint.TryParse(key, out height))
+            if (key.Equals("last", StringComparison.OrdinalIgnoreCase))
+            {
+                feature.Special = SpecialFeature.Last;
+                bindingContext.Model = feature;
+            }
+            else if (uint.TryParse(key, out height))
             {
                 feature.Height = (int)height;
                 bindingContext.Model = feature;
@@ -47,7 +52,7 @@ namespace RapidBase.ModelBinders
             {
                 if (key.Length == 0x40 && key.All(c => HexEncoder.IsDigit(c) != -1))
                 {
-                    feature.BlockId =new uint256(key);
+                    feature.BlockId = new uint256(key);
                     bindingContext.Model = feature;
                 }
                 else

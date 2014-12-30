@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace RapidBase.Models
 {
+    public enum SpecialFeature
+    {
+        Last
+    }
     public class BlockFeature
     {
         public BlockFeature()
@@ -19,6 +23,11 @@ namespace RapidBase.Models
             set;
         }
         public uint256 BlockId
+        {
+            get;
+            set;
+        }
+        public SpecialFeature? Special
         {
             get;
             set;
