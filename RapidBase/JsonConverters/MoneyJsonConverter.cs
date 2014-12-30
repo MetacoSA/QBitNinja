@@ -25,7 +25,7 @@ namespace RapidBase.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            writer.WriteValue((int)((Money)value).Satoshi);
+            writer.WriteValue((long)((Money)value).Satoshi);
         }
     }
 }

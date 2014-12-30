@@ -1,0 +1,21 @@
+﻿@model RapidBase.Models.HelpModel
+@{
+    ViewBag.Title = "Help";
+}
+
+
+<h2>Methods</h2>
+<ul>
+    @foreach (var route in this.Model.Routes)
+    {
+        <li>
+            @route.Template
+            <ul>
+                @foreach (var sample in route.Samples)
+                {
+                    <li><a href="@sample">@sample</a></li>
+                }
+            </ul>
+        </li>
+    }
+</ul>

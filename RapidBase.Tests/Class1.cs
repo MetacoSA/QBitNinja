@@ -117,6 +117,11 @@ namespace RapidBase.Tests
                 Assert.True(response2.AdditionalInformation.Confirmations == 1);
                 Assert.True(response2.AdditionalInformation.Height == 1);
                 /////
+
+                //Can get Block by height
+                var response3 = tester.SendGet<GetBlockResponse>("blocks/1");
+                Assert.Equal(Serializer.ToString(response2), Serializer.ToString(response3));
+                ////
             }
         }
     }

@@ -27,7 +27,7 @@ namespace RapidBase.Controllers
             set;
         }
 
-        public RapidBaseConfiguration Configuration
+        public new RapidBaseConfiguration Configuration
         {
             get;
             set;
@@ -92,13 +92,12 @@ namespace RapidBase.Controllers
         }
 
         [HttpGet]
-        [Route("rawblocks/{blockId}")]
+        [Route("rawblocks/{blockFeature}")]
         public HttpResponseMessage RawBlock(
-            [ModelBinder(typeof(BitcoinSerializableModelBinder))]
-            uint256 blockId)
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature blockFeature)
         {
-            var client = Configuration.Indexer.CreateIndexerClient();
-            var block = client.GetBlock(blockId);
+            var block = GetBlock(blockFeature);
             if (block == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage()
@@ -111,13 +110,12 @@ namespace RapidBase.Controllers
         }
 
         [HttpGet]
-        [Route("blocks/{blockId}")]
+        [Route("blocks/{blockFeature}")]
         public GetBlockResponse Block(
-            [ModelBinder(typeof(BitcoinSerializableModelBinder))]
-            uint256 blockId)
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature blockFeature)
         {
-            var client = Configuration.Indexer.CreateIndexerClient();
-            var block = client.GetBlock(blockId);
+            var block = GetBlock(blockFeature);
             if (block == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage()
@@ -131,6 +129,22 @@ namespace RapidBase.Controllers
                 AdditionalInformation = FetchBlockInformation(new[] { block.Header.GetHash() }),
                 Block = block
             };
+        }
+
+        private Block GetBlock(BlockFeature blockFeature)
+        {
+            var client = Configuration.Indexer.CreateIndexerClient();
+            if (blockFeature.Height != -1)
+            {
+                var h = Chain.GetBlock(blockFeature.Height);
+                if (h == null)
+                    return null;
+                return client.GetBlock(h.HashBlock);
+            }
+            else
+            {
+                return client.GetBlock(blockFeature.BlockId);
+            }
         }
 
         private HttpResponseMessage Response(IBitcoinSerializable obj)
