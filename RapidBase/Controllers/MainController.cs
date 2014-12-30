@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
@@ -133,6 +134,7 @@ namespace RapidBase.Controllers
         [Route("whatisit/{data}")]
         public object WhatIsIt(string data)
         {
+            data = data.Trim();
             var b58 = NoException(() => WhatIsBase58.GetFromBase58Data(data));
             if (b58 != null)
             {
@@ -157,23 +159,52 @@ namespace RapidBase.Controllers
             if (data.Length == 0x28) //Hash of pubkey or script
             {
                 TxDestination dest = new KeyId(data);
-                var address = new WhatIsAddress(dest.GetAddress(Configuration.Indexer.Network));
+                var address = new WhatIsAddress(dest.GetAddress(Network));
                 if (TryFetchRedeemOrPubKey(address))
                     return address;
 
                 dest = new ScriptId(data);
-                address = new WhatIsAddress(dest.GetAddress(Configuration.Indexer.Network));
+                address = new WhatIsAddress(dest.GetAddress(Network));
                 if (TryFetchRedeemOrPubKey(address))
                     return address;
             }
+            var script = NoException(() => GetScriptFromBytes(data));
+            if (script != null)
+                return new WhatIsScript(script, Network);
+            script = NoException(() => GetScriptFromText(data));
+            if (script != null)
+                return new WhatIsScript(script, Network);
 
             if ((data.StartsWith("02") || data.StartsWith("03")) && PubKey.IsValidSize(data.Length / 2))
             {
                 var pubKey = NoException(() => new PubKey(data));
                 if (pubKey != null)
-                    return new WhatIsPublicKey(pubKey, Configuration.Indexer.Network);
+                    return new WhatIsPublicKey(pubKey, Network);
             }
             return "Good question Holmes !";
+        }
+
+        private Script GetScriptFromText(string data)
+        {
+            if (!data.Contains(' '))
+                return null;
+            return GetScriptFromBytes(Encoders.Hex.EncodeData(new Script(data).ToBytes(true)));
+        }
+
+        private Script GetScriptFromBytes(string data)
+        {
+            var bytes = Encoders.Hex.DecodeData(data);
+            var script = Script.FromBytesUnsafe(bytes);
+            bool hasOps = false;
+            foreach (var op in script.ToOps())
+            {
+                hasOps = true;
+                if (op.IncompleteData || (op.Name == "OP_UNKNOWN" && op.PushData == null))
+                    return null;
+            }
+            if (!hasOps)
+                return null;
+            return script;
         }
 
         private bool TryFetchRedeemOrPubKey(WhatIsAddress address)
@@ -198,7 +229,15 @@ namespace RapidBase.Controllers
             var result = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
             if (result == null)
                 return null;
-            return new WhatIsScript(result.RedeemScript);
+            return new WhatIsScript(result.RedeemScript, Network);
+        }
+
+        public Network Network
+        {
+            get
+            {
+                return Configuration.Indexer.Network;
+            }
         }
 
         private WhatIsPublicKey TryFetchPublicKey(WhatIsAddress address)
@@ -209,7 +248,7 @@ namespace RapidBase.Controllers
             var result = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
             if (result == null)
                 return null;
-            return new WhatIsPublicKey(result.PublicKey, Configuration.Indexer.Network);
+            return new WhatIsPublicKey(result.PublicKey, Network);
         }
 
         private Script FindScriptSig(WhatIsAddress address)

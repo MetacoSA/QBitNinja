@@ -13,10 +13,24 @@ namespace RapidBase.Models
         {
 
         }
-        public WhatIsScript(Script script)
+        public WhatIsScript(Script script, Network network)
         {
             Raw = script;
             Asm = script.ToString();
+            Hash = new uint160(script.Hash.ToBytes(false), false);
+            Address = script.GetScriptAddress(network).ToString();
+        }
+
+        public uint160 Hash
+        {
+            get;
+            set;
+        }
+
+        public string Address
+        {
+            get;
+            set;
         }
 
         public Script Raw
@@ -43,8 +57,8 @@ namespace RapidBase.Models
             Hex = pubkey.ToHex();
             Address = new WhatIsAddress(pubkey.GetAddress(network));
             P2SHAddress = new WhatIsAddress(pubkey.ScriptPubKey.GetScriptAddress(network));
-            P2SHAddress.RedeemScript = new WhatIsScript(pubkey.ScriptPubKey);
-            ScriptPubKey = new WhatIsScript(pubkey.ScriptPubKey);
+            P2SHAddress.RedeemScript = new WhatIsScript(pubkey.ScriptPubKey, network);
+            ScriptPubKey = new WhatIsScript(pubkey.ScriptPubKey, network);
             IsCompressed = pubkey.IsCompressed;
         }
 
@@ -97,6 +111,7 @@ namespace RapidBase.Models
             set;
         }
     }
+
     public class WhatIsAddress : WhatIsBase58
     {
         public WhatIsAddress()
@@ -107,7 +122,7 @@ namespace RapidBase.Models
             : base(address)
         {
             IsP2SH = address is BitcoinScriptAddress;
-            ScriptPubKey = new WhatIsScript(address.ScriptPubKey);
+            ScriptPubKey = new WhatIsScript(address.ScriptPubKey, address.Network);
             Hash = new uint160(address.Hash.ToBytes(true), false);
         }
 
