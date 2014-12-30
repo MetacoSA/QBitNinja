@@ -38,7 +38,7 @@ namespace RapidBase.ModelBinders
 
             BlockFeature feature = new BlockFeature();
             uint height;
-            if (key.Equals("last", StringComparison.OrdinalIgnoreCase))
+            if (key.Equals("last", StringComparison.OrdinalIgnoreCase) || key.Equals("tip", StringComparison.OrdinalIgnoreCase))
             {
                 feature.Special = SpecialFeature.Last;
                 bindingContext.Model = feature;

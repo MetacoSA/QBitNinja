@@ -35,7 +35,7 @@ namespace RapidBase.Controllers
                 yield return str
                 .Replace("{blockFeature}", "326551");
                 yield return str
-                .Replace("{blockFeature}", "last");
+                .Replace("{blockFeature}", "tip");
             }
             else
             {
