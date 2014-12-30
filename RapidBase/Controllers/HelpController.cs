@@ -13,37 +13,38 @@ namespace RapidBase.Controllers
     {
         public ActionResult Index()
         {
-            var model = new HelpModel()
+            return View(new HelpModel()
             {
-                Routes = ((IEnumerable<IHttpRoute>)GlobalConfiguration.Configuration.Routes[0])
-                .Select(c => new RouteModel()
-                {
-                    Template = c.RouteTemplate,
-                    Samples = GetSamples(c.RouteTemplate).ToArray()
-                })
-                .ToArray()
-            };
-            return View(model);
-        }
-
-        private IEnumerable<string> GetSamples(string str)
-        {
-            if (str.Contains("{blockFeature}"))
-            {
-                yield return str
-                .Replace("{blockFeature}", "0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4");
-                yield return str
-                .Replace("{blockFeature}", "326551");
-                yield return str
-                .Replace("{blockFeature}", "tip?headeronly=true");
-            }
-            else
-            {
-                yield return 
-                    str
-                .Replace("{blockId}", "0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4")
-                .Replace("{txId}", "d175571aeb13d5e30297d852ef640cd943333e18f40816538ac68b450412a9c5");
-            }
+                Routes = new [] 
+                { 
+                    new RouteModel()
+                    {
+                        Template = "blocks/{blockFeature}",
+                        Samples = new[]
+                        {
+                            "blocks/0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4",
+                            "blocks/321211",
+                            "blocks/tip",
+                            "blocks/tip?format=json",
+                            "blocks/tip?format=json&headeronly=true",
+                            "blocks/tip?format=raw",
+                            "blocks/tip?format=raw&headeronly=true",
+                        }
+                    },
+                    new RouteModel()
+                    {
+                        Template = "transactions/{txId}",
+                        Samples = new[]
+                        {
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=json",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=json&headeronly=true",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=raw",
+                            "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=raw&headeronly=true",
+                        }
+                    }
+                }
+            });
         }
     }
 }
