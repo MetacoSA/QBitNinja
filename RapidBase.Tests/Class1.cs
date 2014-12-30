@@ -124,6 +124,15 @@ namespace RapidBase.Tests
                 response3 = tester.SendGet<GetBlockResponse>("blocks/last");
                 Assert.Equal(Serializer.ToString(response2), Serializer.ToString(response3));
                 ////
+
+                //Can get header only
+                response3 = tester.SendGet<GetBlockResponse>("blocks/1?headerOnly=true");
+                Assert.Null(response3.Block);
+                Assert.NotNull(response3.AdditionalInformation);
+
+                response = tester.SendGet<byte[]>("rawblocks/1?headerOnly=true");
+                Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
+                ////
             }
         }
     }
