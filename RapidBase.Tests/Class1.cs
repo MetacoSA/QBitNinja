@@ -85,9 +85,9 @@ namespace RapidBase.Tests
                 ////
 
                 //Can get it raw
-                var bytes = tester.SendGet<byte[]>("rawtransactions/" + tx.GetHash());
+                var bytes = tester.SendGet<byte[]>("transactions/" + tx.GetHash() + "?format=raw");
                 Assert.True(bytes.SequenceEqual(tx.ToBytes()));
-                response = tester.SendGet<GetTransactionResponse>("transactions/" + txId);
+                response = tester.SendGet<GetTransactionResponse>("transactions/" + txId + "?format=json");
                 /////
             }
         }
@@ -102,11 +102,11 @@ namespace RapidBase.Tests
                 var bob = new Key();
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
                 var block = tester.ChainBuilder.EmitBlock();
-                var response = tester.SendGet<byte[]>("rawblocks/" + block.GetHash());
+                var response = tester.SendGet<byte[]>("blocks/" + block.GetHash() + "?format=raw");
                 Assert.True(response.SequenceEqual(block.ToBytes()));
 
                 //404 if not found
-                AssetEx.HttpError(404, () => tester.SendGet<byte[]>("rawblocks/18179931ea977cc0030c7c3e3e4d457f384b9e00aee9d86e39fbff0c5d3f4c40"));
+                AssetEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/18179931ea977cc0030c7c3e3e4d457f384b9e00aee9d86e39fbff0c5d3f4c40?format=raw"));
                 /////
 
                 //Can get Block with additional data
@@ -126,11 +126,11 @@ namespace RapidBase.Tests
                 ////
 
                 //Can get header only
-                response3 = tester.SendGet<GetBlockResponse>("blocks/1?headerOnly=true");
+                response3 = tester.SendGet<GetBlockResponse>("blocks/1?headerOnly=true&format=json");
                 Assert.Null(response3.Block);
                 Assert.NotNull(response3.AdditionalInformation);
 
-                response = tester.SendGet<byte[]>("rawblocks/1?headerOnly=true");
+                response = tester.SendGet<byte[]>("blocks/1?headerOnly=true&format=raw");
                 Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
                 ////
             }

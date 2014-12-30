@@ -36,10 +36,19 @@ namespace RapidBase.Controllers
 
         [HttpGet]
         [Route("transactions/{txId}")]
-        public GetTransactionResponse Transaction(
+        public object Transaction(
             [ModelBinder(typeof(BitcoinSerializableModelBinder))]
-            uint256 txId
+            uint256 txId,
+            DataFormat format = DataFormat.Json
             )
+        {
+            if (format == DataFormat.Json)
+                return JsonTransaction(txId);
+            else
+                return RawTransaction(txId);
+        }
+
+        public GetTransactionResponse JsonTransaction(uint256 txId)
         {
             var client = Configuration.Indexer.CreateIndexerClient();
             var tx = client.GetTransaction(txId);
@@ -73,10 +82,7 @@ namespace RapidBase.Controllers
             };
         }
 
-        [HttpGet]
-        [Route("rawtransactions/{txId}")]
         public HttpResponseMessage RawTransaction(
-            [ModelBinder(typeof(BitcoinSerializableModelBinder))]
             uint256 txId
             )
         {
@@ -91,11 +97,9 @@ namespace RapidBase.Controllers
             return Response(tx.Transaction);
         }
 
-        [HttpGet]
-        [Route("rawblocks/{blockFeature}")]
+
         public HttpResponseMessage RawBlock(
-            [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature blockFeature, bool headerOnly = false)
+            BlockFeature blockFeature, bool headerOnly)
         {
             var block = GetBlock(blockFeature, headerOnly);
             if (block == null)
@@ -111,9 +115,17 @@ namespace RapidBase.Controllers
 
         [HttpGet]
         [Route("blocks/{blockFeature}")]
-        public GetBlockResponse Block(
+        public object Block(
             [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature blockFeature, bool headerOnly = false)
+            BlockFeature blockFeature, bool headerOnly = false, DataFormat format = DataFormat.Json)
+        {
+            if (format == DataFormat.Json)
+                return JsonBlock(blockFeature, headerOnly);
+            else
+                return RawBlock(blockFeature, headerOnly);
+        }
+
+        private GetBlockResponse JsonBlock(BlockFeature blockFeature, bool headerOnly)
         {
             var block = GetBlock(blockFeature, headerOnly);
             if (block == null)

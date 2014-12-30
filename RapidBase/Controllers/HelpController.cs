@@ -35,7 +35,7 @@ namespace RapidBase.Controllers
                 yield return str
                 .Replace("{blockFeature}", "326551");
                 yield return str
-                .Replace("{blockFeature}", "tip");
+                .Replace("{blockFeature}", "tip?headeronly=true");
             }
             else
             {

@@ -177,6 +177,7 @@
     <Compile Include="ModelBinders\BitcoinSerializableModelBinder.cs" />
     <Compile Include="ModelBinders\BlockFeatureModelBinder.cs" />
     <Compile Include="Models\BlockFeature.cs" />
+    <Compile Include="Models\DataFormat.cs" />
     <Compile Include="Models\GetBlockResponse.cs" />
     <Compile Include="Models\GetTransactionResponse.cs" />
     <Compile Include="Models\HelpModel.cs" />
