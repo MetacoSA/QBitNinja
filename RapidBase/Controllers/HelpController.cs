@@ -19,7 +19,7 @@ namespace RapidBase.Controllers
                 { 
                     new RouteModel()
                     {
-                        Template = "blocks/{blockFeature}",
+                        Template = "blocks/[blockId|height|tip]?format=[json|raw]&headeronly=[false|true]",
                         Samples = new[]
                         {
                             "blocks/0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4",
@@ -33,7 +33,7 @@ namespace RapidBase.Controllers
                     },
                     new RouteModel()
                     {
-                        Template = "transactions/{txId}",
+                        Template = "transactions/[txId]?format=[json|raw]&headeronly=[false|true]",
                         Samples = new[]
                         {
                             "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a",
