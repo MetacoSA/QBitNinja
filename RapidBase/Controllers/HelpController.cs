@@ -45,6 +45,14 @@ namespace RapidBase.Controllers
                     },
                     new RouteModel()
                     {
+                        Template = "balances/[address]",
+                        Samples = new RouteSample[]
+                        {
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe"
+                        }
+                    },
+                    new RouteModel()
+                    {
                         Template = "whatisit/[address|txId|blockId|blockheader|base58|transaction|signature|script|scriptbytes]",
                         Samples = new RouteSample[]
                         {
