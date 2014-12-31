@@ -6,6 +6,30 @@ using System.Threading.Tasks;
 
 namespace RapidBase.Models
 {
+    public class RouteSample
+    {
+        public RouteSample(string url, string comment)
+        {
+            Url = url;
+            Comment = comment;
+        }
+        public string Url
+        {
+            get;
+            set;
+        }
+        public string Comment
+        {
+            get;
+            set;
+        }
+
+        public static implicit operator RouteSample(string url)
+        {
+            return new RouteSample(url, null);
+        }
+
+    }
     public class RouteModel
     {
         public string Template
@@ -13,7 +37,7 @@ namespace RapidBase.Models
             get;
             set;
         }
-        public string[] Samples
+        public RouteSample[] Samples
         {
             get;
             set;

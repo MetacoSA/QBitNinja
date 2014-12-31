@@ -13,8 +13,14 @@
             <ul>
                 @foreach (var sample in route.Samples)
                 {
-                    <li><a href="@sample">@sample</a></li>
-                }
+                    <li>
+                        @if (@sample.Comment != null)
+                        {
+                            @sample.Comment
+                        }
+                        <a href="@sample.Url">@sample.Url</a>
+                    </li>
+                        }
             </ul>
         </li>
     }

@@ -20,7 +20,7 @@ namespace RapidBase.Controllers
                     new RouteModel()
                     {
                         Template = "blocks/[blockId|height|tip]?format=[json|raw]&headeronly=[false|true]",
-                        Samples = new[]
+                        Samples = new RouteSample[]
                         {
                             "blocks/0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4",
                             "blocks/321211",
@@ -34,7 +34,7 @@ namespace RapidBase.Controllers
                     new RouteModel()
                     {
                         Template = "transactions/[txId]?format=[json|raw]&headeronly=[false|true]",
-                        Samples = new[]
+                        Samples = new RouteSample[]
                         {
                             "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a",
                             "transactions/38d4cfeb57d6685753b7a3b3534c3cb576c34ca7344cd4582f9613ebf0c2b02a?format=json",
@@ -46,22 +46,23 @@ namespace RapidBase.Controllers
                     new RouteModel()
                     {
                         Template = "whatisit/[address|txId|blockId|blockheader|base58|transaction|signature|script|scriptbytes]",
-                        Samples = new[]
+                        Samples = new RouteSample[]
                         {
-                            "whatisit/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", //Address
-                            "whatisit/02012edcbdf6f8b7d4d315338423196ce1c4251ede5a8c9c1dfff645f67a008935", //public key
-                            "whatisit/356facdac5f5bcae995d13e667bb5864fd1e7d59", //Hash Pub key
+                            new RouteSample("whatisit/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", "P2PKH Address"),
+                            new RouteSample("whatisit/02012edcbdf6f8b7d4d315338423196ce1c4251ede5a8c9c1dfff645f67a008935", "Public key"),
+                            new RouteSample("whatisit/356facdac5f5bcae995d13e667bb5864fd1e7d59", "Hash pub key"), 
+                            new RouteSample("whatisit/OP_DUP OP_HASH160 356facdac5f5bcae995d13e667bb5864fd1e7d59 OP_EQUALVERIFY OP_CHECKSIG","Script"), 
+                            new RouteSample("whatisit/76a914356facdac5f5bcae995d13e667bb5864fd1e7d5988ac","Script bytes"), 
                             
-                            "whatisit/3P2sV4w1ZSk5gr6eePd6U2V56Mx5fT3RkD", //Address P2SH
-                            "whatisit/ea1bea7de1b975b962adbd57a9e0533449962a80", //Hash P2SH
-                            "whatisit/2103f670154f21dd26f558a5718776b3905d19ee83b01592255ea7b472d52d09d8baac", //Redeem Script
+                            new RouteSample("whatisit/3P2sV4w1ZSk5gr6eePd6U2V56Mx5fT3RkD","P2SH Address"),
+                            new RouteSample("whatisit/ea1bea7de1b975b962adbd57a9e0533449962a80", "Script Hash"),
+                            new RouteSample("whatisit/2103f670154f21dd26f558a5718776b3905d19ee83b01592255ea7b472d52d09d8baac", "Script bytes"),
 
-                            "whatisit/d3294938d12105a27a55af9c02864d6f633741bd5c5340a18972935a457275b9", //Transaction
+                            new RouteSample("whatisit/d3294938d12105a27a55af9c02864d6f633741bd5c5340a18972935a457275b9","Transaction id"),
 
-                            "whatisit/0000000000000000080feeba134552a002aeb08e815aad1c41108f680d7b5f58", //Block
-                            "whatisit/335598", //Height
-
-                            "whatisit/3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001" //Signature
+                            new RouteSample("whatisit/0000000000000000080feeba134552a002aeb08e815aad1c41108f680d7b5f58","Block id"),
+                            new RouteSample("whatisit/335598", "Block height"), //Height
+                            new RouteSample("whatisit/3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001","Signature")
                         }
                     }
                 }
