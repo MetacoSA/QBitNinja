@@ -175,8 +175,10 @@
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
     <Compile Include="JsonConverters\NetworkJsonConverter.cs" />
     <Compile Include="JsonConverters\ScriptJsonConverter.cs" />
+    <Compile Include="ModelBinders\Base58ModelBinder.cs" />
     <Compile Include="ModelBinders\BitcoinSerializableModelBinder.cs" />
     <Compile Include="ModelBinders\BlockFeatureModelBinder.cs" />
+    <Compile Include="Models\BalanceModel.cs" />
     <Compile Include="Models\BlockFeature.cs" />
     <Compile Include="Models\DataFormat.cs" />
     <Compile Include="Models\GetBlockResponse.cs" />

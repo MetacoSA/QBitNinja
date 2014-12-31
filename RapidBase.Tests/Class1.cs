@@ -139,6 +139,26 @@ namespace RapidBase.Tests
         }
 
         [Fact]
+        public void CanGetBalance()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Total == 0m);
+                Assert.True(balance.Operations.Count == 0);
+
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Total == Money.Coins(1.00m));
+                Assert.True(balance.Operations.Count == 1);
+
+
+                AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));
+            }
+        }
+
+        [Fact]
         public void CanWhatIsIt()
         {
             //TODO: These tests are fragile, a simple api change can break them. We should try to be more relax.

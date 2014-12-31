@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Web.Http;
 using System.Web.Http.ModelBinding;
 
@@ -128,6 +129,33 @@ namespace RapidBase.Controllers
                 return JsonBlock(blockFeature, headerOnly);
             else
                 return RawBlock(blockFeature, headerOnly);
+        }
+
+        [HttpGet]
+        [Route("balances/{address}")]
+        public BalanceModel Balance(
+            [ModelBinder(typeof(Base58ModelBinder))]
+            BitcoinAddress address)
+        {
+            var client = Configuration.Indexer.CreateIndexerClient();
+            CancellationTokenSource cancel = new CancellationTokenSource();
+            cancel.CancelAfter(30000);
+            try
+            {
+                var balance = 
+                    client
+                    .GetOrderedBalance(address, cancel.Token)
+                    .AsBalanceSheet(Chain);
+                return new BalanceModel(balance, Chain);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new HttpResponseException(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = "This balance is too big to be processed"
+                });
+            }
         }
 
         [HttpGet]
