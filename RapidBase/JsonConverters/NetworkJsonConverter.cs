@@ -1,10 +1,6 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase.JsonConverters
 {
@@ -25,9 +21,7 @@ namespace RapidBase.JsonConverters
                 return Network.Main;
             if (network == "TestNet")
                 return Network.TestNet;
-            if (network == "RegNet")
-                return Network.RegTest;
-            return null;
+            return network == "RegNet" ? Network.RegTest : null;
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

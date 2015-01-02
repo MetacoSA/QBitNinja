@@ -1,10 +1,7 @@
 ﻿using NBitcoin;
-using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -47,8 +44,8 @@ namespace RapidBase.Controllers
         {
             if (format == DataFormat.Json)
                 return JsonTransaction(txId);
-            else
-                return RawTransaction(txId);
+
+            return RawTransaction(txId);
         }
 
         internal GetTransactionResponse JsonTransaction(uint256 txId)
@@ -56,7 +53,7 @@ namespace RapidBase.Controllers
             var client = Configuration.Indexer.CreateIndexerClient();
             var tx = client.GetTransaction(txId);
             if (tx == null)
-                throw new HttpResponseException(new HttpResponseMessage()
+                throw new HttpResponseException(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
                     ReasonPhrase = "Transaction not found"
@@ -79,7 +76,7 @@ namespace RapidBase.Controllers
             {
                 return null;
             }
-            return new BlockInformation()
+            return new BlockInformation
             {
                 BlockId = confirmed.HashBlock,
                 BlockHeader = confirmed.Header,
@@ -95,7 +92,7 @@ namespace RapidBase.Controllers
             var client = Configuration.Indexer.CreateIndexerClient();
             var tx = client.GetTransaction(txId);
             if (tx == null)
-                throw new HttpResponseException(new HttpResponseMessage()
+                throw new HttpResponseException(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
                     ReasonPhrase = "Transaction not found"
@@ -110,7 +107,7 @@ namespace RapidBase.Controllers
             var block = GetBlock(blockFeature, headerOnly);
             if (block == null)
             {
-                throw new HttpResponseException(new HttpResponseMessage()
+                throw new HttpResponseException(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
                     ReasonPhrase = "Block not found"
@@ -127,8 +124,8 @@ namespace RapidBase.Controllers
         {
             if (format == DataFormat.Json)
                 return JsonBlock(blockFeature, headerOnly);
-            else
-                return RawBlock(blockFeature, headerOnly);
+
+            return RawBlock(blockFeature, headerOnly);
         }
 
         [HttpGet]
@@ -208,7 +205,7 @@ namespace RapidBase.Controllers
         private Block GetBlock(BlockFeature blockFeature, bool headerOnly)
         {
             var client = Configuration.Indexer.CreateIndexerClient();
-            uint256 hash = null;
+            uint256 hash;
             if (blockFeature.Special != null && blockFeature.Special.Value == SpecialFeature.Last)
             {
                 hash = Chain.Tip.HashBlock;
@@ -240,10 +237,9 @@ namespace RapidBase.Controllers
             return new Block(header.Header);
         }
 
-        private HttpResponseMessage Response(IBitcoinSerializable obj)
+        private static HttpResponseMessage Response(IBitcoinSerializable obj)
         {
-            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-            result.Content = new ByteArrayContent(obj.ToBytes());
+            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK) {Content = new ByteArrayContent(obj.ToBytes())};
             result.Content.Headers.ContentType =
                 new MediaTypeHeaderValue("application/octet-stream");
             return result;

@@ -1,10 +1,5 @@
 ﻿using Newtonsoft.Json;
 using RapidBase.JsonConverters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -21,8 +16,7 @@ namespace RapidBase
 
         public static string ToString<T>(T response)
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.Formatting = Formatting.Indented;
+            JsonSerializerSettings settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             RegisterFrontConverters(settings);
             return JsonConvert.SerializeObject(response, settings);
         }

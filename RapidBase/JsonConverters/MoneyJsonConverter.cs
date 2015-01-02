@@ -1,10 +1,6 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase.JsonConverters
 {
@@ -25,7 +21,7 @@ namespace RapidBase.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            writer.WriteValue((long)((Money)value).Satoshi);
+            writer.WriteValue(((Money)value).Satoshi);
         }
     }
 }
