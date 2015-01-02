@@ -19,7 +19,7 @@ namespace RapidBase.Models
             Operations = balance
                 .All
                 .WhereNotExpired()
-                .Select(c => new BalanceOperation(c))
+                .Select(c => new BalanceOperation(c, chain))
                 .ToList();
             Total = Operations.Select(c => c.Change).Sum();
         }
@@ -44,20 +44,37 @@ namespace RapidBase.Models
 
     public class BalanceOperation
     {
-        
+
         public BalanceOperation()
         {
             ReceivedCoins = new List<Coin>();
             SpentCoins = new List<Coin>();
         }
 
-        public BalanceOperation(OrderedBalanceChange balanceChange)
+        public BalanceOperation(OrderedBalanceChange balanceChange, ChainBase chain)
         {
             ReceivedCoins = balanceChange.ReceivedCoins.ToList();
             SpentCoins = balanceChange.SpentCoins.ToList();
             Change = balanceChange.Amount;
+            if (balanceChange.BlockId != null)
+            {
+                BlockId = balanceChange.BlockId;
+                Confirmations = (chain.Tip.Height - chain.GetBlock(balanceChange.BlockId).Height) + 1;
+            }
         }
         public Money Change
+        {
+            get;
+            set;
+        }
+
+        public int Confirmations
+        {
+            get;
+            set;
+        }
+
+        public uint256 BlockId
         {
             get;
             set;

@@ -152,7 +152,14 @@ namespace RapidBase.Tests
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Total == Money.Coins(1.00m));
                 Assert.True(balance.Operations.Count == 1);
+                Assert.True(balance.Operations[0].Confirmations == 0);
+                Assert.True(balance.Operations[0].BlockId == null);
 
+                var b = tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Operations[0].Confirmations == 1);
+                Assert.True(balance.Operations[0].BlockId == b.GetHash());
 
                 AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));
             }
@@ -297,7 +304,7 @@ namespace RapidBase.Tests
                     "{  \"Raw\": \"3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001\",  \"R\": \"a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f\",  \"S\": \"7917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf0\",  \"AnyoneCanPay\": false,  \"SigHash\": \"All\"}"
                     );
                 /////
-                
+
                 //Can decode block header
                 AssertWhatIsIt(
                     tester,
