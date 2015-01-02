@@ -124,6 +124,7 @@ namespace RapidBase.Models
             HashMerkelRoot = blockHeader.HashMerkleRoot;
             Version = blockHeader.Version.ToString();
             Bits = blockHeader.Bits.ToString();
+            Difficulty = blockHeader.Bits.Difficulty;
         }
 
         public string Version
@@ -163,6 +164,12 @@ namespace RapidBase.Models
         }
 
         public string Bits
+        {
+            get;
+            set;
+        }
+
+        public double Difficulty
         {
             get;
             set;
