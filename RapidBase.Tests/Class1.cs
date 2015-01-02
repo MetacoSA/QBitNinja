@@ -148,7 +148,7 @@ namespace RapidBase.Tests
                 Assert.True(balance.Total == 0m);
                 Assert.True(balance.Operations.Count == 0);
 
-                tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
+                var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Total == Money.Coins(1.00m));
                 Assert.True(balance.Operations.Count == 1);
@@ -160,6 +160,25 @@ namespace RapidBase.Tests
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Operations[0].Confirmations == 1);
                 Assert.True(balance.Operations[0].BlockId == b.GetHash());
+
+                tx = new TransactionBuilder()
+                      .AddKeys(bob)
+                      .AddCoins(new Coin(tx, 0U))
+                      .SendFees(Money.Coins(0.05m))
+                      .SetChange(bob)
+                      .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Operations.Count == 2);
+                Assert.True(balance.Operations[0].Confirmations == 0);
+                Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?unspentOnly=true");
+                Assert.True(balance.Operations.Count == 1);
+                Assert.True(balance.Operations[0].Confirmations == 0);
+                Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
+                Assert.True(balance.Total == Money.Coins(0.95m));
 
                 AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));
             }

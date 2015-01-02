@@ -45,10 +45,11 @@ namespace RapidBase.Controllers
                     },
                     new RouteModel()
                     {
-                        Template = "balances/[address]",
+                        Template = "balances/[address]?unspentOnly=[false|true]",
                         Samples = new RouteSample[]
                         {
-                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe"
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe",
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe?unspentOnly=true"
                         }
                     },
                     new RouteModel()

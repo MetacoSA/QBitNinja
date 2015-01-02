@@ -135,23 +135,39 @@ namespace RapidBase.Controllers
         [Route("balances/{address}")]
         public BalanceModel Balance(
             [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinAddress address)
+            BitcoinAddress address, bool unspentOnly = false)
         {
-            var client = Configuration.Indexer.CreateIndexerClient();
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
 
+            var client = Configuration.Indexer.CreateIndexerClient();
             var balance =
                 client
                 .GetOrderedBalance(address)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
                 .AsBalanceSheet(Chain);
-            var result = new BalanceModel(balance, Chain)
+
+            var balanceChanges = balance.All.WhereNotExpired().ToDictionary(_ => _.TransactionId);
+            if (unspentOnly)
+            {
+                var spentOutpoints = balanceChanges.Values.SelectMany(b => b.SpentCoins.Select(c => c.Outpoint)).ToDictionary(_ => _);
+                foreach (var change in balanceChanges.Values.ToArray())
+                {
+                    change.SpentCoins.Clear();
+                    change.ReceivedCoins.RemoveAll(c => spentOutpoints.ContainsKey(c.Outpoint));
+                    if (change.ReceivedCoins.Count == 0)
+                        balanceChanges.Remove(change.TransactionId);
+                }
+            }
+
+            var result = new BalanceModel(balanceChanges.Values, Chain)
                 {
                     IsComplete = !cancel.IsCancellationRequested
                 };
             if (!result.IsComplete)
                 result.Total = null; //Total is not correct if not complete
+
+
             return result;
         }
 

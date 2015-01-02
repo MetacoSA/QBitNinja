@@ -14,11 +14,9 @@ namespace RapidBase.Models
         {
 
         }
-        public BalanceModel(BalanceSheet balance, ConcurrentChain chain)
+        public BalanceModel(IEnumerable<OrderedBalanceChange> balance, ConcurrentChain chain)
         {
             Operations = balance
-                .All
-                .WhereNotExpired()
                 .Select(c => new BalanceOperation(c, chain))
                 .ToList();
             Total = Operations.Select(c => c.Change).Sum();
@@ -56,6 +54,8 @@ namespace RapidBase.Models
             ReceivedCoins = balanceChange.ReceivedCoins.ToList();
             SpentCoins = balanceChange.SpentCoins.ToList();
             Change = balanceChange.Amount;
+            TransactionId = balanceChange.TransactionId;
+
             if (balanceChange.BlockId != null)
             {
                 BlockId = balanceChange.BlockId;
@@ -75,6 +75,12 @@ namespace RapidBase.Models
         }
 
         public uint256 BlockId
+        {
+            get;
+            set;
+        }
+
+        public uint256 TransactionId
         {
             get;
             set;
