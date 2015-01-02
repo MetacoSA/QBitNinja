@@ -34,6 +34,12 @@ namespace RapidBase.Models
             get;
             set;
         }
+
+        public bool IsComplete
+        {
+            get;
+            set;
+        }
     }
 
     public class BalanceOperation

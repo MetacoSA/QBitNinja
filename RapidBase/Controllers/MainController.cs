@@ -140,22 +140,19 @@ namespace RapidBase.Controllers
             var client = Configuration.Indexer.CreateIndexerClient();
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
-            try
-            {
-                var balance = 
-                    client
-                    .GetOrderedBalance(address, cancel.Token)
-                    .AsBalanceSheet(Chain);
-                return new BalanceModel(balance, Chain);
-            }
-            catch (OperationCanceledException)
-            {
-                throw new HttpResponseException(new HttpResponseMessage()
+
+            var balance =
+                client
+                .GetOrderedBalance(address)
+                .TakeWhile(_ => !cancel.IsCancellationRequested)
+                .AsBalanceSheet(Chain);
+            var result = new BalanceModel(balance, Chain)
                 {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    ReasonPhrase = "This balance is too big to be processed"
-                });
-            }
+                    IsComplete = !cancel.IsCancellationRequested
+                };
+            if (!result.IsComplete)
+                result.Total = null; //Total is not correct if not complete
+            return result;
         }
 
         [HttpGet]
