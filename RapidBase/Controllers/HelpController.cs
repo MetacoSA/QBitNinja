@@ -49,7 +49,7 @@ namespace RapidBase.Controllers
                         Samples = new RouteSample[]
                         {
                             "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe",
-                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe?unspentOnly=true"
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe?unspentonly=true"
                         }
                     },
                     new RouteModel()
