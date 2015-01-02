@@ -213,6 +213,18 @@ namespace RapidBase.Controllers
                     return new WhatIsPublicKey(pubKey, Network);
             }
 
+            if (data.Length == 80 * 2)
+            {
+                var blockHeader = NoException(() =>
+                {
+                    var h = new BlockHeader();
+                    h.ReadWrite(Encoders.Hex.DecodeData(data));
+                    return h;
+                });
+                if (blockHeader != null)
+                    return new WhatIsBlockHeader(blockHeader);
+            }
+
             return "Good question Holmes !";
         }
 

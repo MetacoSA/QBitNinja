@@ -113,6 +113,62 @@ namespace RapidBase.Models
         }
     }
 
+    public class WhatIsBlockHeader
+    {
+        public WhatIsBlockHeader(BlockHeader blockHeader)
+        {
+            Hash = blockHeader.GetHash();
+            Previous = blockHeader.HashPrevBlock;
+            Time = blockHeader.BlockTime;
+            Nonce = blockHeader.Nonce;
+            HashMerkelRoot = blockHeader.HashMerkleRoot;
+            Version = blockHeader.Version.ToString();
+            Bits = blockHeader.Bits.ToString();
+        }
+
+        public string Version
+        {
+            get;
+            set;
+        }
+
+        public uint256 Hash
+        {
+            get;
+            set;
+        }
+
+        public uint256 Previous
+        {
+            get;
+            set;
+        }
+
+        public DateTimeOffset Time
+        {
+            get;
+            set;
+        }
+
+        public uint Nonce
+        {
+            get;
+            set;
+        }
+
+        public uint256 HashMerkelRoot
+        {
+            get;
+            set;
+        }
+
+        public string Bits
+        {
+            get;
+            set;
+        }
+    }
+
     public class WhatIsTransactionSignature
     {
         public WhatIsTransactionSignature()

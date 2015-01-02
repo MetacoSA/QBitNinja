@@ -297,6 +297,13 @@ namespace RapidBase.Tests
                     "{  \"Raw\": \"3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001\",  \"R\": \"a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f\",  \"S\": \"7917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf0\",  \"AnyoneCanPay\": false,  \"SigHash\": \"All\"}"
                     );
                 /////
+                
+                //Can decode block header
+                AssertWhatIsIt(
+                    tester,
+                    Encoders.Hex.EncodeData(Network.Main.GetGenesis().Header.ToBytes()),
+                    "{  \"Version\": \"1\",  \"Hash\": \"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f\",  \"Previous\": \"0000000000000000000000000000000000000000000000000000000000000000\",  \"Time\": \"2009-01-03T19:15:05+01:00\",  \"Nonce\": 2083236893,  \"HashMerkelRoot\": \"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b\",  \"Bits\": \"00000000ffff0000000000000000000000000000000000000000000000000000\"}");
+                /////
             }
         }
 
