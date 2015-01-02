@@ -189,6 +189,7 @@
     <Compile Include="RapidBaseConfiguration.cs" />
     <Compile Include="RapidBaseDependencyResolver.cs" />
     <Compile Include="Serializer.cs" />
+    <Compile Include="WhatIsIt.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
