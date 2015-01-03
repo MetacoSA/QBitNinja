@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using RapidBase.Controllers;
 using RapidBase.Models;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using Xunit;
 
@@ -138,6 +139,24 @@ namespace RapidBase.Tests
         }
 
         [Fact]
+        public void CanSendCallback()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var callback = tester.CreateCallbackTester();
+                tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration(callback.Address));
+                var eventManager = new BlockEventManager(tester.Configuration);
+                var b = tester.ChainBuilder.EmitBlock();
+                var unused = eventManager.NewBlock(tester.ChainBuilder.Chain.Tip);
+                var result = callback.GetRequest<NewBlockEvent>();
+
+                Assert.True(b.GetHash() == result.BlockId);
+                Assert.True(result.Header.ToBytes().SequenceEqual(b.Header.ToBytes()));
+                Assert.True(result.Height == 1);
+            }
+        }
+
+        [Fact]
         public void CanRegisterCallback()
         {
             using (var tester = ServerTester.Create())
@@ -149,8 +168,8 @@ namespace RapidBase.Tests
                 tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test2"));
                 var results = tester.SendGet<CallbackRegistration[]>("blocks/onnew");
                 Assert.True(results.Length == 2);
-                Assert.True(tester.Send<bool>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
-                Assert.True(!tester.Send<bool>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
+                tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id);
+                AssetEx.HttpError(404, () => tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
             }
         }
 

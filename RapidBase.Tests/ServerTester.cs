@@ -56,6 +56,13 @@ namespace RapidBase.Tests
             ChainBuilder = new ChainBuilder(this);
         }
 
+        public CallbackTester CreateCallbackTester()
+        {
+            var tester = new CallbackTester();
+            _disposables.Add(tester);
+            return tester;
+        }
+
         RapidBaseDependencyResolver _resolver;
 
         #region IDisposable Members
@@ -82,31 +89,27 @@ namespace RapidBase.Tests
             HttpClient client = new HttpClient();
             var response = client.GetAsync(Address + relativeAddress).Result;
             response.EnsureSuccessStatusCode();
-            var mediaFormat = new JsonMediaTypeFormatter();
-            Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
             if (typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
             if (typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
-            return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
+            return response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
         }
 
         [DebuggerHidden]
         public TResponse Send<TResponse>(HttpMethod method, string relativeAddress, object body = null)
         {
             HttpClient client = new HttpClient();
-            var mediaFormat = new JsonMediaTypeFormatter();
-            Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
             var response = client.SendAsync(new HttpRequestMessage(method, Address + relativeAddress)
             {
-                Content = body == null ? null : new ObjectContent(body.GetType(), body, mediaFormat)
+                Content = body == null ? null : new ObjectContent(body.GetType(), body, Serializer.JsonMediaTypeFormatter)
             }).Result;
             response.EnsureSuccessStatusCode();
             if (typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
             if (typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
-            return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
+            return response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
         }
 
         private static void Clean(CloudBlobContainer cloudBlobContainer)

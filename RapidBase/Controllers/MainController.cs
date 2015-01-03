@@ -126,10 +126,17 @@ namespace RapidBase.Controllers
 
         [HttpDelete]
         [Route("blocks/onnew/{registrationId}")]
-        public bool OnNewBlock(string registrationId)
+        public void OnNewBlock(string registrationId)
         {
             var repo = Configuration.CreateCallbackRepository();
-            return repo.Delete("onnewblock", registrationId);
+            if (!repo.Delete("onnewblock", registrationId))
+            {
+                throw new HttpResponseException(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    ReasonPhrase = "Registration Id not found"
+                });
+            }
         }
 
         [HttpGet]

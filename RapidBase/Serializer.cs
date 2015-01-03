@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using RapidBase.JsonConverters;
+using System.Net.Http.Formatting;
 
 namespace RapidBase
 {
@@ -23,14 +24,28 @@ namespace RapidBase
                 Formatting = Formatting.Indented
             };
             RegisterFrontConverters(settings);
-            return JsonConvert.DeserializeObject<T>(data);
+            return JsonConvert.DeserializeObject<T>(data, settings);
         }
 
         public static string ToString<T>(T response)
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented
+            };
             RegisterFrontConverters(settings);
             return JsonConvert.SerializeObject(response, settings);
+        }
+
+        public static MediaTypeFormatter JsonMediaTypeFormatter
+        {
+            get
+            {
+                var mediaFormat = new JsonMediaTypeFormatter();
+                Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
+                mediaFormat.Indent = true;
+                return mediaFormat;
+            }
         }
     }
 }
