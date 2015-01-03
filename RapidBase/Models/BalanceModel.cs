@@ -19,6 +19,7 @@ namespace RapidBase.Models
                 .ToList();
             PageTotal = Operations.Select(o => o.Amount).Sum();
             Total = PageTotal;
+            Count = Operations.Count;
         }
 
         public Money Total
@@ -27,6 +28,12 @@ namespace RapidBase.Models
             set;
         }
         public Money PageTotal
+        {
+            get;
+            set;
+        }
+
+        public int Count
         {
             get;
             set;
@@ -64,7 +71,8 @@ namespace RapidBase.Models
             if (balanceChange.BlockId != null)
             {
                 BlockId = balanceChange.BlockId;
-                Confirmations = (chain.Tip.Height - chain.GetBlock(balanceChange.BlockId).Height) + 1;
+                Height = chain.GetBlock(balanceChange.BlockId).Height;
+                Confirmations = (chain.Tip.Height - Height) + 1;
             }
         }
         public Money Amount
@@ -78,7 +86,11 @@ namespace RapidBase.Models
             get;
             set;
         }
-
+        public int Height
+        {
+            get;
+            set;
+        }
         public uint256 BlockId
         {
             get;
