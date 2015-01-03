@@ -116,6 +116,30 @@ namespace RapidBase.Controllers
             return Response(headerOnly ? (IBitcoinSerializable)block.Header : block);
         }
 
+        [HttpPost]
+        [Route("blocks/onnew")]
+        public CallbackRegistration OnNewBlock(CallbackRegistration registration)
+        {
+            var repo = Configuration.CreateCallbackRepository();
+            return repo.CreateCallback("onnewblock", registration);
+        }
+
+        [HttpDelete]
+        [Route("blocks/onnew/{registrationId}")]
+        public bool OnNewBlock(string registrationId)
+        {
+            var repo = Configuration.CreateCallbackRepository();
+            return repo.Delete("onnewblock", registrationId);
+        }
+
+        [HttpGet]
+        [Route("blocks/onnew")]
+        public CallbackRegistration[] OnNewBlock()
+        {
+            var repo = Configuration.CreateCallbackRepository();
+            return repo.GetCallbacks("onnewblock");
+        }
+
         [HttpGet]
         [Route("blocks/{blockFeature}")]
         public object Block(

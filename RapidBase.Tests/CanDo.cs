@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using RapidBase.Controllers;
 using RapidBase.Models;
 using System.Linq;
+using System.Net.Http;
 using Xunit;
 
 namespace RapidBase.Tests
@@ -134,7 +135,24 @@ namespace RapidBase.Tests
                 Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
                 ////
             }
-        }   
+        }
+
+        [Fact]
+        public void CanRegisterCallback()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var result = tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test1"));
+                Assert.True(result.Id != null);
+                var result2 = tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test1"));
+                Assert.True(result.Id == result2.Id);
+                tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test2"));
+                var results = tester.SendGet<CallbackRegistration[]>("blocks/onnew");
+                Assert.True(results.Length == 2);
+                Assert.True(tester.Send<bool>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
+                Assert.True(!tester.Send<bool>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
+            }
+        }
 
         [Fact]
         public void CanGetBalance()

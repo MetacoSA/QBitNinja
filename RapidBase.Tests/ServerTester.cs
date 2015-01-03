@@ -44,7 +44,10 @@ namespace RapidBase.Tests
             Configuration.Indexer.StorageNamespace = ns;
             var server = WebApp.Start(Address, appBuilder =>
             {
-                var config = new HttpConfiguration {IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always};
+                var config = new HttpConfiguration
+                {
+                    IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always
+                };
                 WebApiConfig.Register(config, Configuration);
                 _resolver = (RapidBaseDependencyResolver)config.DependencyResolver;
                 appBuilder.UseWebApi(config);
@@ -81,6 +84,24 @@ namespace RapidBase.Tests
             response.EnsureSuccessStatusCode();
             var mediaFormat = new JsonMediaTypeFormatter();
             Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
+            if (typeof(TResponse) == typeof(byte[]))
+                return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
+            if (typeof(string) == typeof(TResponse))
+                return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
+            return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
+        }
+
+        [DebuggerHidden]
+        public TResponse Send<TResponse>(HttpMethod method, string relativeAddress, object body = null)
+        {
+            HttpClient client = new HttpClient();
+            var mediaFormat = new JsonMediaTypeFormatter();
+            Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
+            var response = client.SendAsync(new HttpRequestMessage(method, Address + relativeAddress)
+            {
+                Content = body == null ? null : new ObjectContent(body.GetType(), body, mediaFormat)
+            }).Result;
+            response.EnsureSuccessStatusCode();
             if (typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
             if (typeof(string) == typeof(TResponse))

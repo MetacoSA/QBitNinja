@@ -16,6 +16,16 @@ namespace RapidBase
             settings.Converters.Add(new BalanceLocatorJsonConverter());
         }
 
+        public static T ToObject<T>(string data)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented
+            };
+            RegisterFrontConverters(settings);
+            return JsonConvert.DeserializeObject<T>(data);
+        }
+
         public static string ToString<T>(T response)
         {
             JsonSerializerSettings settings = new JsonSerializerSettings {Formatting = Formatting.Indented};

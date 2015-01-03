@@ -164,6 +164,8 @@
   <ItemGroup>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="CallbackRegistration.cs" />
+    <Compile Include="CallbackRepository.cs" />
     <Compile Include="Controllers\HelpController.cs" />
     <Compile Include="Controllers\MainController.cs" />
     <Compile Include="Global.asax.cs">
