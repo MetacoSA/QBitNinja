@@ -125,7 +125,7 @@
   <ItemGroup>
     <Compile Include="AssetEx.cs" />
     <Compile Include="ChainBuilder.cs" />
-    <Compile Include="Class1.cs" />
+    <Compile Include="CanDo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServerTester.cs" />
   </ItemGroup>

@@ -1,10 +1,7 @@
 ﻿using Autofac;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web.Http.Dependencies;
 using Autofac.Integration.WebApi;
 using NBitcoin;
@@ -16,33 +13,27 @@ namespace RapidBase
     {
         class AutoFacDependencyScope : IDependencyScope
         {
-            private ILifetimeScope lifetimeScope;
-            private IDependencyScope dependencyScope;
+            private readonly ILifetimeScope _lifetimeScope;
+            private readonly IDependencyScope _dependencyScope;
 
             public AutoFacDependencyScope(ILifetimeScope lifetimeScope, IDependencyScope dependencyScope)
             {
-                this.lifetimeScope = lifetimeScope;
-                this.dependencyScope = dependencyScope;
+                _lifetimeScope = lifetimeScope;
+                _dependencyScope = dependencyScope;
             }
 
             #region IDependencyScope Members
 
             public object GetService(Type serviceType)
             {
-                object result = null;
-                if (lifetimeScope.TryResolve(serviceType, out result))
-                {
-                    return result;
-                }
-                return dependencyScope.GetService(serviceType);
+                object result;
+                return _lifetimeScope.TryResolve(serviceType, out result) ? result : _dependencyScope.GetService(serviceType);
             }
 
             public IEnumerable<object> GetServices(Type serviceType)
             {
                 var service = GetService(serviceType);
-                if (service == null)
-                    return dependencyScope.GetServices(serviceType);
-                return new[] { service };
+                return service == null ? _dependencyScope.GetServices(serviceType) : new[] { service };
             }
 
 
@@ -52,21 +43,23 @@ namespace RapidBase
 
             public void Dispose()
             {
-                this.lifetimeScope.Dispose();
-                this.dependencyScope.Dispose();
+                _lifetimeScope.Dispose();
+                _dependencyScope.Dispose();
             }
 
             #endregion
         }
-        IDependencyResolver _DefaultResolver;
-        IContainer _Container;
+
+        readonly IDependencyResolver _defaultResolver;
+        readonly IContainer _container;
+
         public RapidBaseDependencyResolver(RapidBaseConfiguration configuration, IDependencyResolver defaultResolver)
         {
-            this._DefaultResolver = defaultResolver;
+            _defaultResolver = defaultResolver;
             ContainerBuilder builder = new ContainerBuilder();
-            builder.Register<RapidBaseConfiguration>(ctx => configuration).SingleInstance();
-            builder.Register<IndexerClient>(ctx => configuration.Indexer.CreateIndexerClient());
-            builder.Register<ConcurrentChain>(ctx =>
+            builder.Register(ctx => configuration).SingleInstance();
+            builder.Register(ctx => configuration.Indexer.CreateIndexerClient());
+            builder.Register(ctx =>
             {
                 var client = ctx.Resolve<IndexerClient>();
                 ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
@@ -75,7 +68,7 @@ namespace RapidBase
                 return chain;
             }).SingleInstance();
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
-            _Container = builder.Build();
+            _container = builder.Build();
         }
 
 
@@ -83,7 +76,7 @@ namespace RapidBase
 
         public IDependencyScope BeginScope()
         {
-            return new AutoFacDependencyScope(_Container.BeginLifetimeScope(), _DefaultResolver.BeginScope());
+            return new AutoFacDependencyScope(_container.BeginLifetimeScope(), _defaultResolver.BeginScope());
         }
 
         #endregion
@@ -97,20 +90,15 @@ namespace RapidBase
 
         public object GetService(Type serviceType)
         {
-            object result = null;
-            if (_Container.TryResolve(serviceType, out result))
-            {
-                return result;
-            }
-            return _DefaultResolver.GetService(serviceType);
+            object result;
+
+            return _container.TryResolve(serviceType, out result) ? result : _defaultResolver.GetService(serviceType);
         }
 
         public IEnumerable<object> GetServices(Type serviceType)
         {
             var service = GetService(serviceType);
-            if (service == null)
-                return _DefaultResolver.GetServices(serviceType);
-            return new[] { service };
+            return service == null ? _defaultResolver.GetServices(serviceType) : new[] { service };
         }
 
         #endregion
@@ -119,7 +107,7 @@ namespace RapidBase
 
         public void Dispose()
         {
-            _Container.Dispose();
+            _container.Dispose();
         }
 
         #endregion

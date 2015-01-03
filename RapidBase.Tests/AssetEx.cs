@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Globalization;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace RapidBase.Tests
@@ -21,7 +18,7 @@ namespace RapidBase.Tests
             }
             catch (HttpRequestException ex)
             {
-                Assert.True(ex.Message.Contains(code.ToString()));
+                Assert.True(ex.Message.Contains(code.ToString(CultureInfo.InvariantCulture)));
             }
         }
     }

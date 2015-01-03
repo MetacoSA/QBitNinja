@@ -1,26 +1,23 @@
 ﻿using NBitcoin;
 using NBitcoin.Indexer;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase.Tests
 {
     public class ChainBuilder
     {
-        private ServerTester _Parent;
+        private readonly ServerTester _parent;
 
         public ChainBuilder(ServerTester serverTester)
         {
-            this._Parent = serverTester;
+            _parent = serverTester;
             Chain = new ConcurrentChain(Network.TestNet);
         }
 
         public void Broadcast(Transaction funding)
         {
-            _OngoingTransactions.Add(funding);
+            _ongoingTransactions.Add(funding);
             var indexer = CreateIndexer();
             indexer.Index(new TransactionEntry.Entity(null, funding, null));
             foreach (var entity in OrderedBalanceChange.ExtractScriptBalances(null, funding, null, null, 0))
@@ -31,11 +28,11 @@ namespace RapidBase.Tests
 
         private AzureIndexer CreateIndexer()
         {
-            var indexer = _Parent.Configuration.Indexer.CreateIndexer();
+            var indexer = _parent.Configuration.Indexer.CreateIndexer();
             return indexer;
         }
 
-        List<Transaction> _OngoingTransactions = new List<Transaction>();
+        readonly List<Transaction> _ongoingTransactions = new List<Transaction>();
 
         public Transaction EmitMoney(Money money, IDestination destination, bool broadcast = true)
         {
@@ -60,7 +57,7 @@ namespace RapidBase.Tests
         internal Block EmitBlock(uint? nonce = null)
         {
             var block = new Block();
-            block.Transactions.AddRange(_OngoingTransactions.ToList());
+            block.Transactions.AddRange(_ongoingTransactions.ToList());
             block.Header.HashPrevBlock = Chain.Tip.HashBlock;
             block.Header.Nonce = nonce == null ? RandomUtils.GetUInt32() : nonce.Value;
             var indexer = CreateIndexer();
@@ -80,7 +77,7 @@ namespace RapidBase.Tests
             var prev = Chain.GetBlock(block.Header.HashPrevBlock);
             Chain.SetTip(new ChainedBlock(block.Header, block.GetHash(), prev));
             indexer.IndexChain(Chain);
-            _OngoingTransactions.Clear();
+            _ongoingTransactions.Clear();
             return block;
         }
 

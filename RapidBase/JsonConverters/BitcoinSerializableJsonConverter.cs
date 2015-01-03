@@ -2,9 +2,6 @@
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace RapidBase.JsonConverters
 {
@@ -27,7 +24,7 @@ namespace RapidBase.JsonConverters
             return obj;
         }
 
-        private void InverseIfNeeded(Type type, byte[] bytes)
+        private static void InverseIfNeeded(Type type, byte[] bytes)
         {
             var inverse = type == typeof(uint256) || type == typeof(uint160);
             if (inverse)

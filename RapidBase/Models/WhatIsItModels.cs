@@ -1,10 +1,7 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase.Models
 {
@@ -287,12 +284,11 @@ namespace RapidBase.Models
             Network = data.Network;
         }
 
-        private string ToString(Base58Type base58Type)
+        private static string ToString(Base58Type base58Type)
         {
-            return Enum.GetNames(typeof(Base58Type))
-                .Where(n => ((Base58Type)Enum.Parse(typeof(Base58Type), n)) == base58Type)
-                .FirstOrDefault();
+            return Enum.GetNames(typeof(Base58Type)).FirstOrDefault(n => ((Base58Type)Enum.Parse(typeof(Base58Type), n)) == base58Type);
         }
+
         public string Base58
         {
             get;

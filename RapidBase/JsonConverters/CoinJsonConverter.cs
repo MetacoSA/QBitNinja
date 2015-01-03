@@ -1,10 +1,6 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase.JsonConverters
 {
@@ -16,7 +12,7 @@ namespace RapidBase.JsonConverters
             {
 
             }
-            public CoinJson(Coin coin)
+            public CoinJson(ICoin coin)
             {
                 TransactionId = coin.Outpoint.Hash;
                 Index = coin.Outpoint.N;
@@ -70,9 +66,7 @@ namespace RapidBase.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (reader.TokenType == JsonToken.Null)
-                return null;
-            return serializer.Deserialize<CoinJson>(reader).ToCoin();
+            return reader.TokenType == JsonToken.Null ? null : serializer.Deserialize<CoinJson>(reader).ToCoin();
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

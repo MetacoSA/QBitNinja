@@ -3,10 +3,7 @@ using NBitcoin.DataEncoders;
 using RapidBase.Controllers;
 using RapidBase.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -14,7 +11,7 @@ namespace RapidBase
     {
         public WhatIsIt(MainController controller)
         {
-            this.Controller = controller;
+            Controller = controller;
         }
 
         public MainController Controller
@@ -142,11 +139,8 @@ namespace RapidBase
                 address.RedeemScript = TryFetchRedeem(address);
                 return address.RedeemScript != null;
             }
-            else
-            {
-                address.PublicKey = TryFetchPublicKey(address);
-                return address.PublicKey != null;
-            }
+            address.PublicKey = TryFetchPublicKey(address);
+            return address.PublicKey != null;
         }
 
 

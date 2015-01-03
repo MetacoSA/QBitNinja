@@ -5,19 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web.Http;
 using System.Runtime.CompilerServices;
-using Xunit;
 using System.Diagnostics;
-using System.IO;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System.Net.Http.Formatting;
 using Microsoft.WindowsAzure.Storage;
-using System.Net.Http.Headers;
-using System.Net;
 
 namespace RapidBase.Tests
 {
@@ -40,7 +34,7 @@ namespace RapidBase.Tests
             set;
         }
 
-        List<IDisposable> _Disposables = new List<IDisposable>();
+        readonly List<IDisposable> _disposables = new List<IDisposable>();
 
 
         public ServerTester(string ns)
@@ -50,17 +44,16 @@ namespace RapidBase.Tests
             Configuration.Indexer.StorageNamespace = ns;
             var server = WebApp.Start(Address, appBuilder =>
             {
-                var config = new HttpConfiguration();
-                config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
+                var config = new HttpConfiguration {IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always};
                 WebApiConfig.Register(config, Configuration);
-                _Resolver = (RapidBaseDependencyResolver)config.DependencyResolver;
+                _resolver = (RapidBaseDependencyResolver)config.DependencyResolver;
                 appBuilder.UseWebApi(config);
             });
-            _Disposables.Add(server);
+            _disposables.Add(server);
             ChainBuilder = new ChainBuilder(this);
         }
 
-        RapidBaseDependencyResolver _Resolver;
+        RapidBaseDependencyResolver _resolver;
 
         #region IDisposable Members
 
@@ -68,7 +61,7 @@ namespace RapidBase.Tests
         {
             Clean(Configuration.Indexer.GetBlocksContainer());
             Clean(Configuration.Indexer.CreateTableClient());
-            foreach (var dispo in _Disposables)
+            foreach (var dispo in _disposables)
                 dispo.Dispose();
         }
 
@@ -90,13 +83,12 @@ namespace RapidBase.Tests
             Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
             if (typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
-            else if (typeof(string) == typeof(TResponse))
+            if (typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
-            else
-                return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
+            return response.Content.ReadAsAsync<TResponse>(new[] { mediaFormat }).Result;
         }
 
-        private void Clean(Microsoft.WindowsAzure.Storage.Blob.CloudBlobContainer cloudBlobContainer)
+        private static void Clean(CloudBlobContainer cloudBlobContainer)
         {
             if (!cloudBlobContainer.Exists())
                 return;
@@ -129,7 +121,7 @@ namespace RapidBase.Tests
         {
             foreach (var table in client.ListTables())
             {
-                if (table.Name.StartsWith(this.Configuration.Indexer.StorageNamespace, StringComparison.InvariantCultureIgnoreCase))
+                if (table.Name.StartsWith(Configuration.Indexer.StorageNamespace, StringComparison.InvariantCultureIgnoreCase))
                 {
                     foreach (var entity in table.ExecuteQuery(new TableQuery()))
                     {
@@ -142,7 +134,7 @@ namespace RapidBase.Tests
 
         public void UpdateServerChain()
         {
-            _Resolver.UpdateChain();
+            _resolver.UpdateChain();
         }
     }
 }
