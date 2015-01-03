@@ -16,14 +16,7 @@ namespace RapidBase.Models
             Operations = balance
                 .Select(c => new BalanceOperation(c, chain))
                 .ToList();
-            Total = Operations.Select(c => c.Change).Sum();
         }
-        public Money Total
-        {
-            get;
-            set;
-        }
-
         public List<BalanceOperation> Operations
         {
             get;
