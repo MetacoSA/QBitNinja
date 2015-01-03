@@ -14,16 +14,31 @@ namespace RapidBase.Models
         public BalanceModel(IEnumerable<OrderedBalanceChange> balance, ConcurrentChain chain)
         {
             Operations = balance
+                .Where(b => b.SpentCoins.Count > 0 || b.ReceivedCoins.Count > 0)
                 .Select(c => new BalanceOperation(c, chain))
                 .ToList();
+            PageTotal = Operations.Select(o => o.Amount).Sum();
+            Total = PageTotal;
         }
-        public List<BalanceOperation> Operations
+
+        public Money Total
+        {
+            get;
+            set;
+        }
+        public Money PageTotal
         {
             get;
             set;
         }
 
-        public bool IsComplete
+        public BalanceLocator Continuation
+        {
+            get;
+            set;
+        }
+
+        public List<BalanceOperation> Operations
         {
             get;
             set;
@@ -43,7 +58,7 @@ namespace RapidBase.Models
         {
             ReceivedCoins = balanceChange.ReceivedCoins.ToList();
             SpentCoins = balanceChange.SpentCoins.ToList();
-            Change = balanceChange.Amount;
+            Amount = balanceChange.Amount;
             TransactionId = balanceChange.TransactionId;
 
             if (balanceChange.BlockId != null)
@@ -52,7 +67,7 @@ namespace RapidBase.Models
                 Confirmations = (chain.Tip.Height - chain.GetBlock(balanceChange.BlockId).Height) + 1;
             }
         }
-        public Money Change
+        public Money Amount
         {
             get;
             set;
@@ -88,7 +103,7 @@ namespace RapidBase.Models
         }
         public override string ToString()
         {
-            return Change.ToString();
+            return Amount.ToString();
         }
     }
 }

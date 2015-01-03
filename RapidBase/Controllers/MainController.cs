@@ -132,39 +132,63 @@ namespace RapidBase.Controllers
         [Route("balances/{address}")]
         public BalanceModel Balance(
             [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinAddress address, bool unspentOnly = false)
+            BitcoinAddress address,
+            [ModelBinder(typeof(BalanceLocatorModelBinder))]
+            BalanceLocator continuation = null,
+            [ModelBinder(typeof(BalanceLocatorModelBinder))]
+            BalanceLocator until = null,
+            bool unspentOnly = false)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
 
+            BalanceQuery query = null;
+            if (continuation != null)
+            {
+                query = new BalanceQuery();
+                query.From = continuation;
+                query.FromIncluded = false;
+            }
+            if (until != null)
+            {
+                if (query == null)
+                    query = new BalanceQuery();
+                query.To = until;
+            }
+
             var client = Configuration.Indexer.CreateIndexerClient();
             var balance =
                 client
-                .GetOrderedBalance(address)
+                .GetOrderedBalance(address, query)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
                 .AsBalanceSheet(Chain);
 
-            var balanceChanges = balance.All.WhereNotExpired().ToDictionary(_ => _.TransactionId);
+            var balanceChanges = balance.All.WhereNotExpired().ToList();
             if (unspentOnly)
             {
-                var spentOutpoints = balanceChanges.Values.SelectMany(b => b.SpentCoins.Select(c => c.Outpoint)).ToDictionary(_ => _);
-                foreach (var change in balanceChanges.Values.ToArray())
+                var changeByTxId = balanceChanges.ToDictionary(_ => _.TransactionId);
+                var spentOutpoints = changeByTxId.Values.SelectMany(b => b.SpentCoins.Select(c => c.Outpoint)).ToDictionary(_ => _);
+                foreach (var change in changeByTxId.Values.ToArray())
                 {
                     change.SpentCoins.Clear();
                     change.ReceivedCoins.RemoveAll(c => spentOutpoints.ContainsKey(c.Outpoint));
-                    if (change.ReceivedCoins.Count == 0)
-                        balanceChanges.Remove(change.TransactionId);
                 }
             }
 
-            var result = new BalanceModel(balanceChanges.Values, Chain)
+            var result = new BalanceModel(balanceChanges, Chain);
+            if (cancel.IsCancellationRequested)
+            {
+                result.Total = null;
+                if (balanceChanges.Count > 0)
                 {
-                    IsComplete = !cancel.IsCancellationRequested
-                };
-            if (!result.IsComplete)
-                result.Total = null; //Total is not correct if not complete
-
-
+                    var lastop = balanceChanges[balanceChanges.Count - 1];
+                    result.Continuation = lastop.CreateBalanceLocator();
+                }
+            }
+            if (query != null)
+            {
+                result.Total = null;
+            }
             return result;
         }
 
@@ -239,7 +263,10 @@ namespace RapidBase.Controllers
 
         private static HttpResponseMessage Response(IBitcoinSerializable obj)
         {
-            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK) {Content = new ByteArrayContent(obj.ToBytes())};
+            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(obj.ToBytes())
+            };
             result.Content.Headers.ContentType =
                 new MediaTypeHeaderValue("application/octet-stream");
             return result;

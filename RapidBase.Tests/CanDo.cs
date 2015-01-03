@@ -1,6 +1,8 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
+using NBitcoin.Indexer;
 using Newtonsoft.Json.Linq;
+using RapidBase.Controllers;
 using RapidBase.Models;
 using System.Linq;
 using Xunit;
@@ -132,7 +134,7 @@ namespace RapidBase.Tests
                 Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
                 ////
             }
-        }
+        }   
 
         [Fact]
         public void CanGetBalance()
