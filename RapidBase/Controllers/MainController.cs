@@ -137,6 +137,8 @@ namespace RapidBase.Controllers
             BalanceLocator continuation = null,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
             BalanceLocator until = null,
+            [ModelBinder(typeof(BalanceLocatorModelBinder))]
+            BalanceLocator from = null,
             bool unspentOnly = false)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
@@ -148,6 +150,13 @@ namespace RapidBase.Controllers
                 query = new BalanceQuery();
                 query.From = continuation;
                 query.FromIncluded = false;
+            }
+            if (from != null)
+            {
+                if (query == null)
+                    query = new BalanceQuery();
+                query.From = from;
+                query.FromIncluded = true;
             }
             if (until != null)
             {
