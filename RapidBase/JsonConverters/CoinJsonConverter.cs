@@ -22,10 +22,17 @@ namespace RapidBase.JsonConverters
                 Index = coin.Outpoint.N;
                 ScriptPubKey = coin.ScriptPubKey;
                 Value = coin.Amount;
+                if (coin is ScriptCoin)
+                {
+                    RedeemScript = ((ScriptCoin)coin).Redeem;
+                }
             }
             public Coin ToCoin()
             {
-                return new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey));
+                if (RedeemScript == null)
+                    return new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey));
+                else
+                    return new ScriptCoin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey), RedeemScript);
             }
             public uint256 TransactionId
             {
@@ -44,6 +51,12 @@ namespace RapidBase.JsonConverters
             }
 
             public Script ScriptPubKey
+            {
+                get;
+                set;
+            }
+
+            public Script RedeemScript
             {
                 get;
                 set;

@@ -68,9 +68,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NBitcoin.1.0.7.12\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.Indexer, Version=2.0.3.5, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin.Indexer, Version=2.0.3.6, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.Indexer.2.0.3.5\lib\net45\NBitcoin.Indexer.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.Indexer.2.0.3.6\lib\net45\NBitcoin.Indexer.dll</HintPath>
     </Reference>
     <Reference Include="Owin">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
