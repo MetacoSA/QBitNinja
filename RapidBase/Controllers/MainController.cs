@@ -48,6 +48,13 @@ namespace RapidBase.Controllers
             return RawTransaction(txId);
         }
 
+        [HttpPost]
+        [Route("wallets")]
+        public WalletModel CreateWallet(WalletModel wallet)
+        {
+            return null;
+        }
+
         internal GetTransactionResponse JsonTransaction(uint256 txId)
         {
             var client = Configuration.Indexer.CreateIndexerClient();

@@ -25,17 +25,9 @@ namespace RapidBase
 
         public CloudTable GetCallbackTable()
         {
-            return GetTable("btccallbacks");
+            return Indexer.GetTable("btccallbacks");
         }
 
-        public CloudTable GetTable(string tableName)
-        {
-            return Indexer.CreateTableClient().GetTableReference(GetFullName(tableName));
-        }
-        private string GetFullName(string storageObjectName)
-        {
-            return (Indexer.StorageNamespace + storageObjectName).ToLowerInvariant();
-        }
 
         public CallbackRepository CreateCallbackRepository()
         {

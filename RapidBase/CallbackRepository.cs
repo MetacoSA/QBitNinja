@@ -14,7 +14,11 @@ namespace RapidBase
         public CallbackRepository(RapidBaseConfiguration configuration)
         {
             Configuration = configuration;
+            _Table = new CrudTable<CallbackRegistration>(Configuration.GetCallbackTable());
         }
+
+        CrudTable<CallbackRegistration> _Table;
+
         public RapidBaseConfiguration Configuration
         {
             get;
@@ -25,17 +29,9 @@ namespace RapidBase
             callback.Id = null;
             var callbackStr = Serializer.ToString(callback);
             var id = Hash(callbackStr);
-            var table = Configuration.GetCallbackTable();
-            table.Execute(TableOperation.InsertOrReplace(new DynamicTableEntity(eventName, id)
-            {
-                Properties =
-                {
-                    new KeyValuePair<string,EntityProperty>("data",new EntityProperty(callbackStr))
-                }
-            }));
-            var result = Serializer.ToObject<CallbackRegistration>(callbackStr);
-            result.Id = id;
-            return result;
+            callback.Id = id;
+            _Table.Create(eventName, id, callback);
+            return callback;
         }
 
         private string Hash(string data)
@@ -45,40 +41,12 @@ namespace RapidBase
 
         public CallbackRegistration[] GetCallbacks(string eventName)
         {
-            var table = Configuration.GetCallbackTable();
-            return table.ExecuteQuery(new TableQuery()
-            {
-                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, eventName)
-            })
-            .Select(e => Parse(e))
-            .ToArray();
-        }
-
-        private CallbackRegistration Parse(DynamicTableEntity entity)
-        {
-            var registration = Serializer.ToObject<CallbackRegistration>(entity.Properties["data"].StringValue);
-            registration.Id = entity.RowKey;
-            return registration;
+            return _Table.Read(eventName);
         }
 
         public bool Delete(string eventName, string id)
         {
-            var table = Configuration.GetCallbackTable();
-            try
-            {
-
-                table.Execute(TableOperation.Delete(new DynamicTableEntity(eventName, id)
-                {
-                    ETag = "*"
-                }));
-                return true;
-            }
-            catch (StorageException ex)
-            {
-                if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 404)
-                    return false;
-                throw;
-            }
+            return _Table.Delete(eventName, id);
         }
     }
 }
