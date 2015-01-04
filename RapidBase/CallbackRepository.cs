@@ -11,19 +11,15 @@ namespace RapidBase
 {
     public class CallbackRepository
     {
-        public CallbackRepository(RapidBaseConfiguration configuration)
+        public CallbackRepository(CrudTable<CallbackRegistration> table)
         {
-            Configuration = configuration;
-            _Table = new CrudTable<CallbackRegistration>(Configuration.GetCallbackTable());
+            if (table == null)
+                throw new ArgumentNullException("table");
+            _Table = table;
         }
 
         CrudTable<CallbackRegistration> _Table;
 
-        public RapidBaseConfiguration Configuration
-        {
-            get;
-            set;
-        }
         public CallbackRegistration CreateCallback(string eventName, CallbackRegistration callback)
         {
             callback.Id = null;

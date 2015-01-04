@@ -7,7 +7,10 @@ namespace RapidBase
     {
         public static RapidBaseConfiguration FromConfiguration()
         {
-            var conf = new RapidBaseConfiguration {Indexer = IndexerConfiguration.FromConfiguration()};
+            var conf = new RapidBaseConfiguration
+            {
+                Indexer = IndexerConfiguration.FromConfiguration()
+            };
             return conf;
         }
 
@@ -31,7 +34,7 @@ namespace RapidBase
 
         public CallbackRepository CreateCallbackRepository()
         {
-            return new CallbackRepository(this);
+            return new CallbackRepository(new CrudTable<CallbackRegistration>(this.GetCallbackTable()));
         }
     }
 }
