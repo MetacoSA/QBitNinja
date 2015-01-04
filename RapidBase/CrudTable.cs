@@ -18,6 +18,12 @@ namespace RapidBase
             _Table = table;
         }
 
+        public string Scope
+        {
+            get;
+            set;
+        }
+
         private readonly CloudTable _Table;
         public CloudTable Table
         {
@@ -48,9 +54,12 @@ namespace RapidBase
             .ToArray();
         }
 
-        private string Escape(string collection)
+        private string Escape(string collection, bool scoped = true)
         {
-            return FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(collection));
+            var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(collection));
+            if (Scope != null && scoped)
+                result = Escape(Scope, false) + result;
+            return result;
         }
 
         public bool Delete(string collection, string item)
