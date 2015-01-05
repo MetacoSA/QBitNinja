@@ -156,6 +156,14 @@ namespace RapidBase.Tests
             }
         }
 
+        //[Fact]
+        //public void CanManageWallet()
+        //{
+        //    using (var tester = ServerTester.Create())
+        //    {
+        //    }
+        //}
+
         [Fact]
         public void CanRegisterCallback()
         {

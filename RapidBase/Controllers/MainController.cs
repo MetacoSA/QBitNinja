@@ -1,7 +1,9 @@
-﻿using NBitcoin;
+﻿using Microsoft.WindowsAzure.Storage;
+using NBitcoin;
 using NBitcoin.Indexer;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -52,7 +54,44 @@ namespace RapidBase.Controllers
         [Route("wallets")]
         public WalletModel CreateWallet(WalletModel wallet)
         {
-            return null;
+            if (string.IsNullOrEmpty(wallet.Name))
+                throw new FormatException("Invalid wallet name");
+            var repo = Configuration.CreateWalletRepository();
+            repo.Create(wallet);
+            return wallet;
+        }
+
+        [HttpPost]
+        [Route("wallets/{walletName}/addresses")]
+        public WalletAddress AddWalletAddresses(
+            string walletName,
+            [FromBody]WalletAddress address)
+        {
+            if (address.RedeemScript != null && address.Address == null)
+            {
+                address.Address = address.RedeemScript.GetScriptAddress(Network);
+            }
+            if(address.Address == null)
+                    throw new FormatException("Address is missing");
+            var repo = Configuration.CreateWalletRepository();
+            repo.AddAddress(walletName, address);
+            return address;
+        }
+
+        [HttpGet]
+        [Route("wallets/{walletName}/addresses")]
+        public WalletAddress[] WalletAddresses(string walletName)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            return repo.GetAddresses(walletName);
+        }
+
+        [HttpGet]
+        [Route("wallets")]
+        public WalletModel[] Wallets()
+        {
+            var repo = Configuration.CreateWalletRepository();
+            return repo.Get();
         }
 
         internal GetTransactionResponse JsonTransaction(uint256 txId)
@@ -136,14 +175,7 @@ namespace RapidBase.Controllers
         public void OnNewBlock(string registrationId)
         {
             var repo = Configuration.CreateCallbackRepository();
-            if (!repo.Delete("onnewblock", registrationId))
-            {
-                throw new HttpResponseException(new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    ReasonPhrase = "Registration Id not found"
-                });
-            }
+            repo.Delete("onnewblock", registrationId);
         }
 
         [HttpGet]

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.WindowsAzure.Storage;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -18,6 +19,15 @@ namespace RapidBase
                     StatusCode = HttpStatusCode.BadRequest,
                     ReasonPhrase = actionExecutedContext.Exception.Message
                 });
+            }
+            if (actionExecutedContext.Exception is StorageException)
+            {
+                var storageEx = actionExecutedContext.Exception as StorageException;
+                if(storageEx.RequestInformation != null && storageEx.RequestInformation.HttpStatusCode == 404)
+                    actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage()
+                    {
+                        StatusCode = HttpStatusCode.NotFound
+                    });
             }
             base.OnException(actionExecutedContext);
         }

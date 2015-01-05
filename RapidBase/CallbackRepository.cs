@@ -40,9 +40,9 @@ namespace RapidBase
             return _Table.Read(eventName);
         }
 
-        public bool Delete(string eventName, string id)
+        public void Delete(string eventName, string id)
         {
-            return _Table.Delete(eventName, id);
+            _Table.Delete(eventName, id);
         }
     }
 }

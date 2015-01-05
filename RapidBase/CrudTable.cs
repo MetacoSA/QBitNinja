@@ -62,23 +62,12 @@ namespace RapidBase
             return result;
         }
 
-        public bool Delete(string collection, string item)
+        public void Delete(string collection, string item)
         {
-            try
+            Table.Execute(TableOperation.Delete(new DynamicTableEntity(Escape(collection), Escape(item))
             {
-
-                Table.Execute(TableOperation.Delete(new DynamicTableEntity(Escape(collection), Escape(item))
-                {
-                    ETag = "*"
-                }));
-                return true;
-            }
-            catch (StorageException ex)
-            {
-                if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 404)
-                    return false;
-                throw;
-            }
+                ETag = "*"
+            }));
         }
     }
 }
