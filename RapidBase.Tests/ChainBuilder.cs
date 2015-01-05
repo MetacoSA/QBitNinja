@@ -92,5 +92,24 @@ namespace RapidBase.Tests
             get;
             set;
         }
+
+        public Transaction SendMoney(BitcoinSecret from, BitcoinSecret to, Transaction tx, Money amount)
+        {
+            var result =
+                new TransactionBuilder()
+                .AddKeys(from)
+                .AddCoins(tx.Outputs.Select(o => new Coin(tx, o)).ToArray())
+                .Send(to, amount)
+                .SetChange(from.GetAddress())
+                .BuildTransaction(true);
+            Broadcast(result);
+            return result;
+        }
+
+        public void SetTip(BlockHeader blockHeader)
+        {
+            var t = Chain.GetBlock(blockHeader.GetHash());
+            Chain.SetTip(t);
+        }
     }
 }

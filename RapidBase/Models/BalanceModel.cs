@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.Indexer;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,26 +18,6 @@ namespace RapidBase.Models
                 .Where(b => b.SpentCoins.Count > 0 || b.ReceivedCoins.Count > 0)
                 .Select(c => new BalanceOperation(c, chain))
                 .ToList();
-            PageTotal = Operations.Select(o => o.Amount).Sum();
-            Total = PageTotal;
-            Count = Operations.Count;
-        }
-
-        public Money Total
-        {
-            get;
-            set;
-        }
-        public Money PageTotal
-        {
-            get;
-            set;
-        }
-
-        public int Count
-        {
-            get;
-            set;
         }
 
         public BalanceLocator Continuation
@@ -46,6 +27,58 @@ namespace RapidBase.Models
         }
 
         public List<BalanceOperation> Operations
+        {
+            get;
+            set;
+        }
+    }
+
+
+    public class BalanceSummaryDetails
+    {
+        public BalanceSummaryDetails()
+        {
+            Received = Money.Zero;
+            Amount = Money.Zero;
+        }
+        public int TransactionCount
+        {
+            get;
+            set;
+        }
+        public Money Amount
+        {
+            get;
+            set;
+        }
+        public Money Received
+        {
+            get;
+            set;
+        }
+    }
+    public class BalanceSummary
+    {
+        public BalanceSummary()
+        {
+            Pending = new BalanceSummaryDetails();
+            Confirmed = new BalanceSummaryDetails();
+        }
+
+        public BalanceSummaryDetails Pending
+        {
+            get;
+            set;
+        }
+
+        public BalanceSummaryDetails Confirmed
+        {
+            get;
+            set;
+        }
+
+        [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]
+        public int Newest
         {
             get;
             set;

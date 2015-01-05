@@ -69,5 +69,11 @@ namespace RapidBase
                 ETag = "*"
             }));
         }
+
+        public T ReadOne(string collection, string item)
+        {
+            var e = Table.Execute(TableOperation.Retrieve(collection, item)).Result as DynamicTableEntity;
+            return Serializer.ToObject<T>(e.Properties["data"].StringValue);
+        }
     }
 }

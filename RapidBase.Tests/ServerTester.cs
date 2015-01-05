@@ -12,6 +12,8 @@ using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System.Net.Http.Formatting;
 using Microsoft.WindowsAzure.Storage;
+using RapidBase.Models;
+using Xunit;
 
 namespace RapidBase.Tests
 {
@@ -159,6 +161,12 @@ namespace RapidBase.Tests
         public void UpdateServerChain()
         {
             _resolver.UpdateChain();
+        }
+
+        public void AssertTotal(BitcoinAddress address, Money total)
+        {
+            var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
+            Assert.Equal(total, summary.Pending.Amount + summary.Confirmed.Amount);
         }
     }
 }

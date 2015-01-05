@@ -4,6 +4,7 @@ using NBitcoin.Indexer;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -71,8 +72,8 @@ namespace RapidBase.Controllers
             {
                 address.Address = address.RedeemScript.GetScriptAddress(Network);
             }
-            if(address.Address == null)
-                    throw new FormatException("Address is missing");
+            if (address.Address == null)
+                throw new FormatException("Address is missing");
             var repo = Configuration.CreateWalletRepository();
             repo.AddAddress(walletName, address);
             return address;
@@ -198,6 +199,100 @@ namespace RapidBase.Controllers
             return RawBlock(blockFeature, headerOnly);
         }
 
+
+        [HttpGet]
+        [Route("balances/{address}/summary")]
+        public BalanceSummary BalanceSummary(
+            [ModelBinder(typeof(Base58ModelBinder))]
+            BitcoinAddress address)
+        {
+            BalanceSummary cachedSummary = null;
+
+            CancellationTokenSource cancel = new CancellationTokenSource();
+            cancel.CancelAfter(30000);
+
+
+            int newest = 0;
+
+            var client = Configuration.Indexer.CreateIndexerClient();
+            var diff =
+                client
+                .GetOrderedBalance(address)
+                .WhereNotExpired(TimeSpan.FromHours(1.0))
+                .TakeWhile(_ => !cancel.IsCancellationRequested)
+                .TakeWhile(_ =>
+                {
+                    if (_.CustomData != null &&
+                        _.CustomData.Contains("TransactionCount") &&
+                        _.BlockId != null &&
+                        Chain.GetBlock(_.BlockId) != null) //Quick check, less costly than exception
+                    {
+                        try
+                        {
+                            cachedSummary = Serializer.ToObject<BalanceSummary>(_.CustomData);
+                            return false;
+                        }
+                        catch
+                        {
+                        }
+                    }
+                    if (newest == 0)
+                        newest = (_.TransactionId == null ? 0 : _.TransactionId.GetHashCode())
+                                 ^
+                                 (_.BlockId == null ? 0 : _.BlockId.GetHashCode());
+                    return true;
+                })
+                .AsBalanceSheet(Chain);
+
+            if (cachedSummary != null && newest == cachedSummary.Newest)
+            {
+                cachedSummary.Newest = 0;
+                return cachedSummary;
+            }
+
+            cancel.Token.ThrowIfCancellationRequested();
+            cachedSummary = cachedSummary ?? new BalanceSummary();
+
+            var unconfs
+                = diff.Unconfirmed.Count == 0 ? new List<OrderedBalanceChange>()
+                : client
+                .GetOrderedBalance(address)
+                .WhereNotExpired(TimeSpan.FromHours(1.0))
+                .TakeWhile(_ => _.Height > Chain.Height - 30)
+                .AsBalanceSheet(Chain)
+                .Unconfirmed;
+
+            var summary = new BalanceSummary()
+            {
+                Confirmed = new BalanceSummaryDetails()
+                {
+                    Amount = diff.Confirmed.Select(_=>_.Amount).Sum() + cachedSummary.Confirmed.Amount,
+                    TransactionCount = diff.Confirmed.Count + cachedSummary.Confirmed.TransactionCount,
+                    Received = diff.Confirmed.Select(_=>_.Amount < Money.Zero ? Money.Zero : _.Amount).Sum() + cachedSummary.Confirmed.Received,
+                },
+                Pending = new BalanceSummaryDetails()
+                {
+                    Amount = unconfs.Select(_ => _.Amount).Sum(),
+                    TransactionCount = unconfs.Count,
+                    Received = unconfs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
+                }
+            };
+
+            var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
+                diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
+
+
+            if (cacheBearer != null)
+            {
+                summary.Newest = newest;
+                cacheBearer.CustomData = Serializer.ToString(summary);
+                summary.Newest = 0;
+                Configuration.Indexer.CreateIndexer().Index(new[] { cacheBearer });
+            }
+
+            return summary;
+        }
+
         [HttpGet]
         [Route("balances/{address}")]
         public BalanceModel Balance(
@@ -257,16 +352,11 @@ namespace RapidBase.Controllers
             var result = new BalanceModel(balanceChanges, Chain);
             if (cancel.IsCancellationRequested)
             {
-                result.Total = null;
                 if (balanceChanges.Count > 0)
                 {
                     var lastop = balanceChanges[balanceChanges.Count - 1];
                     result.Continuation = lastop.CreateBalanceLocator();
                 }
-            }
-            if (query != null)
-            {
-                result.Total = null;
             }
             return result;
         }

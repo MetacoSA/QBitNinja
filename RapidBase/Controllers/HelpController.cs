@@ -47,6 +47,14 @@ namespace RapidBase.Controllers
                             "balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=336410&until=336000"
                         }
                     },
+                    new RouteModel
+                    {
+                        Template = "balances/[address]/summary",
+                        Samples = new RouteSample[]
+                        {
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe/summary"
+                        }
+                    },
                     new RouteModel()
                     {
                         Template = "whatisit/[address|txId|blockId|blockheader|base58|transaction|signature|script|scriptbytes]",

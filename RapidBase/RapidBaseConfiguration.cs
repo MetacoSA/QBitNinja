@@ -26,6 +26,7 @@ namespace RapidBase
             Indexer.EnsureSetup();
             GetCallbackTable().CreateIfNotExists();
             GetRapidWalletTable().CreateIfNotExists();
+            GetCacheCloudTable().CreateIfNotExists();
         }
 
         public CloudTable GetCallbackTable()
@@ -41,11 +42,21 @@ namespace RapidBase
         {
             return Indexer.GetTable("rapidwalletaddresses");
         }
+        private CloudTable GetCacheCloudTable()
+        {
+            return Indexer.GetTable("rapidcache");
+        }
+
 
         //////TODO: These methods will need to be in a "RapidUserConfiguration" that need to know about the user for data isolation (using CrudTable.Scope)
         public CallbackRepository CreateCallbackRepository()
         {
             return new CallbackRepository(new CrudTable<CallbackRegistration>(this.GetCallbackTable()));
+        }
+
+        public CrudTable<T> GetCacheTable<T>()
+        {
+            return new CrudTable<T>(this.GetCacheCloudTable());
         }
 
         public WalletRepository CreateWalletRepository()

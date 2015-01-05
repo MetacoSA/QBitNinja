@@ -156,6 +156,146 @@ namespace RapidBase.Tests
             }
         }
 
+        [Fact]
+        public void CanGetBalanceSummary()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                var alice = new Key().GetBitcoinSecret(Network.TestNet);
+
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary(), result);
+
+                var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Pending = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    }
+                }, result);
+
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    }
+                }, result);
+                //Should now take the cache
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    }
+                }, result);
+
+                tx = tester.ChainBuilder.EmitMoney("1.5", bob);
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    },
+                    Pending = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.5"),
+                        Amount = Money.Parse("1.5")
+                    }
+                }, result);
+
+                var forkPoint = tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.5")
+                    }
+                }, result);
+
+                tester.ChainBuilder.SendMoney(bob, alice, tx, Money.Parse("0.11"));
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.5")
+                    },
+                    Pending = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0"),
+                        Amount = -Money.Parse("0.11")
+                    }
+                }, result);
+
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.39")
+                    }
+                }, result);
+
+                //Fork, the previous should be in pending now
+                tester.ChainBuilder.SetTip(forkPoint.Header);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.5")
+                    },
+                    Pending = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0"),
+                        Amount = -Money.Parse("0.11")
+                    }
+                }, result);
+            }
+        }
+
         //[Fact]
         //public void CanManageWallet()
         //{
@@ -188,12 +328,12 @@ namespace RapidBase.Tests
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
-                Assert.True(balance.Total == 0m);
+                tester.AssertTotal(bob.GetAddress(), 0);
                 Assert.True(balance.Operations.Count == 0);
 
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
-                Assert.True(balance.Total == Money.Coins(1.00m));
+                tester.AssertTotal(bob.GetAddress(), Money.Coins(1.0m));
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].BlockId == null);
@@ -221,7 +361,7 @@ namespace RapidBase.Tests
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
-                Assert.True(balance.Total == Money.Coins(0.95m));
+                tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
 
                 AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
             }
