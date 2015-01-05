@@ -165,7 +165,11 @@ namespace RapidBase.Tests
                 var alice = new Key().GetBitcoinSecret(Network.TestNet);
 
                 var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
-                AssertEx.AssertJsonEqual(new BalanceSummary(), result);
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails(),
+                    Pending = new BalanceSummaryDetails()
+                }, result);
 
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
 
@@ -192,7 +196,8 @@ namespace RapidBase.Tests
                         TransactionCount = 1,
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
-                    }
+                    },
+                    Pending = new BalanceSummaryDetails()
                 }, result);
                 //Should now take the cache
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
@@ -203,8 +208,11 @@ namespace RapidBase.Tests
                         TransactionCount = 1,
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
-                    }
+                    },
+                    Pending = new BalanceSummaryDetails()
                 }, result);
+
+                var beforeAliceHeight = tester.ChainBuilder.Chain.Height;
 
                 tx = tester.ChainBuilder.EmitMoney("1.5", bob);
 
@@ -236,7 +244,8 @@ namespace RapidBase.Tests
                         TransactionCount = 2,
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.5")
-                    }
+                    },
+                    Pending = new BalanceSummaryDetails()
                 }, result);
 
                 tester.ChainBuilder.SendMoney(bob, alice, tx, Money.Parse("0.11"));
@@ -269,7 +278,8 @@ namespace RapidBase.Tests
                         TransactionCount = 3,
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.39")
-                    }
+                    },
+                    Pending = new BalanceSummaryDetails()
                 }, result);
 
                 //Fork, the previous should be in pending now
@@ -292,6 +302,19 @@ namespace RapidBase.Tests
                         Received = Money.Parse("0"),
                         Amount = -Money.Parse("0.11")
                     }
+                }, result);
+
+                //Can ask old balance
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + beforeAliceHeight);
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    },
+                    Pending = null
                 }, result);
             }
         }

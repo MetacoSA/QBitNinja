@@ -204,20 +204,30 @@ namespace RapidBase.Controllers
         [Route("balances/{address}/summary")]
         public BalanceSummary BalanceSummary(
             [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinAddress address)
+            BitcoinAddress address,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature at = null)
         {
             BalanceSummary cachedSummary = null;
 
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
 
+            var query = new BalanceQuery();
+            if (at != null)
+            {
+                var chainedBlock = GetChainedBlock(at);
+                if (chainedBlock == null)
+                    throw new FormatException("'at' not found in the blockchain");
+                query.From = new BalanceLocator(chainedBlock.Height);
+            }
 
             int newest = 0;
 
             var client = Configuration.Indexer.CreateIndexerClient();
             var diff =
                 client
-                .GetOrderedBalance(address)
+                .GetOrderedBalance(address, query)
                 .WhereNotExpired(TimeSpan.FromHours(1.0))
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
                 .TakeWhile(_ =>
@@ -247,14 +257,22 @@ namespace RapidBase.Controllers
             if (cachedSummary != null && newest == cachedSummary.Newest)
             {
                 cachedSummary.Newest = 0;
+                if (at != null)
+                {
+                    cachedSummary.Pending = null;
+                }
                 return cachedSummary;
             }
 
             cancel.Token.ThrowIfCancellationRequested();
-            cachedSummary = cachedSummary ?? new BalanceSummary();
+            cachedSummary = cachedSummary ?? new BalanceSummary()
+            {
+                Confirmed = new BalanceSummaryDetails(),
+                Pending = new BalanceSummaryDetails()
+            };
 
             var unconfs
-                = diff.Unconfirmed.Count == 0 ? new List<OrderedBalanceChange>()
+                = (diff.Unconfirmed.Count == 0 || at != null) ? new List<OrderedBalanceChange>()
                 : client
                 .GetOrderedBalance(address)
                 .WhereNotExpired(TimeSpan.FromHours(1.0))
@@ -266,9 +284,9 @@ namespace RapidBase.Controllers
             {
                 Confirmed = new BalanceSummaryDetails()
                 {
-                    Amount = diff.Confirmed.Select(_=>_.Amount).Sum() + cachedSummary.Confirmed.Amount,
+                    Amount = diff.Confirmed.Select(_ => _.Amount).Sum() + cachedSummary.Confirmed.Amount,
                     TransactionCount = diff.Confirmed.Count + cachedSummary.Confirmed.TransactionCount,
-                    Received = diff.Confirmed.Select(_=>_.Amount < Money.Zero ? Money.Zero : _.Amount).Sum() + cachedSummary.Confirmed.Received,
+                    Received = diff.Confirmed.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum() + cachedSummary.Confirmed.Received,
                 },
                 Pending = new BalanceSummaryDetails()
                 {
@@ -278,6 +296,7 @@ namespace RapidBase.Controllers
                 }
             };
 
+           
             var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
                 diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
 
@@ -290,6 +309,10 @@ namespace RapidBase.Controllers
                 Configuration.Indexer.CreateIndexer().Index(new[] { cacheBearer });
             }
 
+            if (at != null)
+            {
+                summary.Pending = null;
+            }
             return summary;
         }
 
@@ -395,25 +418,34 @@ namespace RapidBase.Controllers
             };
         }
 
-        private Block GetBlock(BlockFeature blockFeature, bool headerOnly)
+        private ChainedBlock GetChainedBlock(BlockFeature blockFeature)
         {
-            var client = Configuration.Indexer.CreateIndexerClient();
-            uint256 hash;
+            ChainedBlock chainedBlock;
             if (blockFeature.Special != null && blockFeature.Special.Value == SpecialFeature.Last)
             {
-                hash = Chain.Tip.HashBlock;
+                chainedBlock = Chain.Tip;
             }
             else if (blockFeature.Height != -1)
             {
                 var h = Chain.GetBlock(blockFeature.Height);
                 if (h == null)
                     return null;
-                hash = h.HashBlock;
+                chainedBlock = h;
             }
             else
             {
-                hash = blockFeature.BlockId;
+                chainedBlock = Chain.GetBlock(blockFeature.BlockId);
             }
+            return chainedBlock;
+        }
+
+        private Block GetBlock(BlockFeature blockFeature, bool headerOnly)
+        {
+            var chainedBlock = GetChainedBlock(blockFeature);
+            var hash = chainedBlock == null ? blockFeature.BlockId : chainedBlock.HashBlock;
+            if (hash == null)
+                return null;
+            var client = Configuration.Indexer.CreateIndexerClient();
             return headerOnly ? GetHeader(hash, client) : client.GetBlock(hash);
         }
 

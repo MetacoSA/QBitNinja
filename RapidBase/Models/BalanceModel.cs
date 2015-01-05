@@ -61,10 +61,9 @@ namespace RapidBase.Models
     {
         public BalanceSummary()
         {
-            Pending = new BalanceSummaryDetails();
             Confirmed = new BalanceSummaryDetails();
         }
-
+        [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]
         public BalanceSummaryDetails Pending
         {
             get;

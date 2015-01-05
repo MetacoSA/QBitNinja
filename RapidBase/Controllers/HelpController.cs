@@ -49,10 +49,11 @@ namespace RapidBase.Controllers
                     },
                     new RouteModel
                     {
-                        Template = "balances/[address]/summary",
+                        Template = "balances/[address]/summary?at={blockFeature}",
                         Samples = new RouteSample[]
                         {
-                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe/summary"
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe/summary",
+                            "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe/summary?at=318331",
                         }
                     },
                     new RouteModel()

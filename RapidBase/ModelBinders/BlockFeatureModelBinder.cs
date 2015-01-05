@@ -19,7 +19,7 @@ namespace RapidBase.ModelBinders
                 bindingContext.ModelName);
             if (val == null)
             {
-                return false;
+                return true;
             }
 
             string key = val.RawValue as string;
