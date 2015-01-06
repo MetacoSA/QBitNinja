@@ -169,7 +169,9 @@ namespace RapidBase.Tests
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails(),
-                    UnConfirmed = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
                 }, result);
 
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
@@ -179,6 +181,13 @@ namespace RapidBase.Tests
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    },
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
                         Received = Money.Parse("1.0"),
@@ -198,7 +207,14 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    UnConfirmed = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    }
                 }, result);
                 //Should now take the cache
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
@@ -210,7 +226,14 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    UnConfirmed = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    }
                 }, result);
 
                 var beforeAliceHeight = tester.ChainBuilder.Chain.Height;
@@ -231,7 +254,14 @@ namespace RapidBase.Tests
                         TransactionCount = 1,
                         Received = Money.Parse("1.5"),
                         Amount = Money.Parse("1.5")
-                    }
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.5")
+                    },
+                    Immature = new BalanceSummaryDetails()
                 }, result);
 
                 var forkPoint = tester.ChainBuilder.EmitBlock();
@@ -246,7 +276,14 @@ namespace RapidBase.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.5")
                     },
-                    UnConfirmed = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.5")
+                    },
+                    Immature = new BalanceSummaryDetails()
                 }, result);
 
                 tester.ChainBuilder.SendMoney(bob, alice, tx, Money.Parse("0.11"));
@@ -265,6 +302,13 @@ namespace RapidBase.Tests
                         TransactionCount = 1,
                         Received = Money.Parse("0"),
                         Amount = -Money.Parse("0.11")
+                    },
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.39")
                     }
                 }, result);
 
@@ -280,7 +324,14 @@ namespace RapidBase.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.39")
                     },
-                    UnConfirmed = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.39")
+                    }
                 }, result);
 
                 //Fork, the previous should be in pending now
@@ -302,6 +353,13 @@ namespace RapidBase.Tests
                         TransactionCount = 1,
                         Received = Money.Parse("0"),
                         Amount = -Money.Parse("0.11")
+                    },
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("2.5"),
+                        Amount = Money.Parse("2.39")
                     }
                 }, result);
 
@@ -315,7 +373,14 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    UnConfirmed = null
+                    UnConfirmed = null,
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("1.0"),
+                        Amount = Money.Parse("1.0")
+                    }
                 }, result);
             }
         }

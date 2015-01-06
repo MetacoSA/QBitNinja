@@ -261,6 +261,7 @@ namespace RapidBase.Controllers
                 {
                     cachedSummary.UnConfirmed = null;
                 }
+                cachedSummary.CalculateSpendable();
                 return cachedSummary;
             }
 
@@ -302,9 +303,11 @@ namespace RapidBase.Controllers
                     Amount = unconfs.Select(_ => _.Amount).Sum(),
                     TransactionCount = unconfs.Count,
                     Received = unconfs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
-                }
+                },
+                Immature = new BalanceSummaryDetails()
             };
             summary.Confirmed += cachedSummary.Confirmed;
+            summary.CalculateSpendable();
 
             var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
                 diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
@@ -322,6 +325,8 @@ namespace RapidBase.Controllers
             {
                 summary.UnConfirmed = null;
             }
+
+            summary.CalculateSpendable();
             return summary;
         }
 
