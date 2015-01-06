@@ -225,7 +225,9 @@ namespace RapidBase.Controllers
             query.PageSizes = new[] { 1, 10, 100 };
 
             var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + address);
-            var cachedSummary = cacheTable.Query(Chain, query).FirstOrDefault();
+            var cachedSummary = cacheTable.Query(Chain, query)
+                                          .Where(c => (c.Locator.BlockHash == atBlock.HashBlock && at != null) || c.Immature.TransactionCount == 0)
+                                          .FirstOrDefault();
             if (cachedSummary != null && at != null && cachedSummary.Locator.Height == atBlock.Height)
             {
                 cachedSummary.PrepareForSend(at);
@@ -277,7 +279,6 @@ namespace RapidBase.Controllers
                 UnConfirmed = BalanceSummaryDetails.CreateFrom(unconfs),
             };
             summary.Confirmed += cachedSummary.Confirmed;
-            summary.Immature += cachedSummary.Immature;
             summary.Locator = new BalanceLocator(atBlock.Height, atBlock.HashBlock);
 
             if (

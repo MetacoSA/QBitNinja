@@ -39,25 +39,25 @@ namespace RapidBase
         public void Create(BalanceLocator locator, T item)
         {
             var str = Serializer.ToString(item);
-            Table.Execute(TableOperation.InsertOrReplace(new DynamicTableEntity(Escape(Scope), Escape(locator))
+            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
             {
                 Properties =
                 {
                     new KeyValuePair<string,EntityProperty>("data",new EntityProperty(str))
                 }
-            }));
+            };
+            Table.Execute(TableOperation.InsertOrReplace(entity));
         }
 
         public IEnumerable<T> Query(ChainBase chain, BalanceQuery query = null)
         {
             if (query == null)
                 query = new BalanceQuery();
-            var tableQuery = query.CreateEntityQuery(Escape(Scope));
+            var tableQuery = query.CreateTableQuery(Escape(Scope), "");
             return ExecuteBalanceQuery(Table, tableQuery, query.PageSizes)
                    .Where(_ => chain.Contains(UnEscapeLocator(_.RowKey).BlockHash))
                    .Select(_ => Serializer.ToObject<T>(_.Properties["data"].StringValue));
         }
-
 
 
         private IEnumerable<DynamicTableEntity> ExecuteBalanceQuery(CloudTable table, TableQuery tableQuery, IEnumerable<int> pages)
@@ -79,12 +79,19 @@ namespace RapidBase
 
         private string Escape(BalanceLocator locator)
         {
-            locator = new BalanceLocator(locator.Height, locator.BlockHash ?? new uint256(0), locator.TransactionId ?? new uint256(0));
-            return locator.ToString();
+            locator = Normalize(locator);
+            return "-" + locator.ToString(true);
         }
         private BalanceLocator UnEscapeLocator(string str)
         {
-            return BalanceLocator.Parse(str);
+            return BalanceLocator.Parse(str.Substring(1), true);
+        }
+
+
+        private static BalanceLocator Normalize(BalanceLocator locator)
+        {
+            locator = new BalanceLocator(locator.Height, locator.BlockHash ?? new uint256(0), locator.TransactionId ?? new uint256(0));
+            return locator;
         }
 
         private string Escape(string scope)

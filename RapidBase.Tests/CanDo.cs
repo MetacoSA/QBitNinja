@@ -4,6 +4,7 @@ using NBitcoin.Indexer;
 using Newtonsoft.Json.Linq;
 using RapidBase.Controllers;
 using RapidBase.Models;
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -157,6 +158,53 @@ namespace RapidBase.Tests
             }
         }
 
+
+        [Fact]
+        public void CanUseCacheTable()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var table = tester.Configuration.GetChainCacheTable<string>("test");
+                var a1 = tester.ChainBuilder.AddToChain();
+                table.Create(GetLocator(tester.ChainBuilder), "a1");
+                var a2 = tester.ChainBuilder.AddToChain();
+                var a3 = tester.ChainBuilder.AddToChain();
+                table.Create(GetLocator(tester.ChainBuilder), "a3");
+
+                var result = table.Query(tester.ChainBuilder.Chain, new BalanceQuery()
+                {
+                    From = GetLocator(a3),
+                    To = GetLocator(a1),
+                });
+                AssertIs("a3,a1", result);
+
+                tester.ChainBuilder.SetTip(a1.Header);
+                var b2 = tester.ChainBuilder.AddToChain();
+                table.Create(GetLocator(tester.ChainBuilder), "b2");
+
+                result = table.Query(tester.ChainBuilder.Chain, new BalanceQuery()
+                {
+                    To = GetLocator(a1),
+                });
+                AssertIs("b2,a1", result);
+            }
+        }
+
+        private void AssertIs(string expected, System.Collections.Generic.IEnumerable<string> actual)
+        {
+            Assert.Equal(expected, String.Join(",", actual.ToArray()));
+        }
+
+        private BalanceLocator GetLocator(ChainedBlock chainedBlock)
+        {
+            return new BalanceLocator(chainedBlock.Height, chainedBlock.HashBlock);
+        }
+
+        private BalanceLocator GetLocator(ChainBuilder chainBuilder)
+        {
+            return GetLocator(chainBuilder.Chain.Tip);
+        }
+
         [Fact]
         public void CanGetBalanceSummary2()
         {
@@ -167,7 +215,6 @@ namespace RapidBase.Tests
 
                 tester.ChainBuilder.EmitMoney("0.1", bob, coinbase: true);
                 var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
-
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
@@ -185,13 +232,41 @@ namespace RapidBase.Tests
                     Spendable = new BalanceSummaryDetails()
                 }, result);
 
+                //The at should remove any unconfirmed info
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=0");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                }, result);
+
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
+                //Coinbase 1 confirmed
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.1"),
+                        Amount = Money.Parse("0.1")
+                    },
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.1"),
+                        Amount = Money.Parse("0.1")
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                }, result);
+
+                //Same query with at
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=1");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
                     Confirmed = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,

@@ -61,6 +61,16 @@ namespace RapidBase.Tests
             return new TxOut(Money.Parse("1.2345"), new Key().PubKey);
         }
 
+        internal ChainedBlock AddToChain()
+        {
+            var header = new BlockHeader();
+            header.HashPrevBlock = Chain.Tip.HashBlock;
+            header.Nonce = RandomUtils.GetUInt32();
+            var prev = Chain.GetBlock(header.HashPrevBlock);
+            Chain.SetTip(new ChainedBlock(header, header.GetHash(), prev));
+            return Chain.Tip;
+        }
+
         internal Block EmitBlock(uint? nonce = null)
         {
             var block = new Block();
