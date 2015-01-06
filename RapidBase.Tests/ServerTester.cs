@@ -166,7 +166,7 @@ namespace RapidBase.Tests
         public void AssertTotal(BitcoinAddress address, Money total)
         {
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
-            Assert.Equal(total, summary.Pending.Amount + summary.Confirmed.Amount);
+            Assert.Equal(total, summary.UnConfirmed.Amount + summary.Confirmed.Amount);
         }
     }
 }

@@ -56,6 +56,35 @@ namespace RapidBase.Models
             get;
             set;
         }
+
+        public static BalanceSummaryDetails operator +(BalanceSummaryDetails c1, BalanceSummaryDetails c2)
+        {
+            if (c1 == null)
+                return c2;
+            if (c2 == null)
+                return c1;
+            return new BalanceSummaryDetails()
+            {
+                Amount = c1.Amount + c2.Amount,
+                TransactionCount = c1.TransactionCount + c2.TransactionCount,
+                Received = c1.Received + c2.Received
+            };
+        }
+        public static BalanceSummaryDetails operator -(BalanceSummaryDetails c1, BalanceSummaryDetails c2)
+        {
+            return c1 + (-c2);
+        }
+
+        public static BalanceSummaryDetails operator -(BalanceSummaryDetails c1)
+        {
+            if (c1 == null)
+                return null;
+            BalanceSummaryDetails result = new BalanceSummaryDetails();
+            result.Amount = -c1.Amount;
+            result.Received = -c1.Received;
+            result.TransactionCount = -c1.TransactionCount;
+            return result;
+        }
     }
     public class BalanceSummary
     {
@@ -64,7 +93,7 @@ namespace RapidBase.Models
             Confirmed = new BalanceSummaryDetails();
         }
         [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]
-        public BalanceSummaryDetails Pending
+        public BalanceSummaryDetails UnConfirmed
         {
             get;
             set;
@@ -74,6 +103,22 @@ namespace RapidBase.Models
         {
             get;
             set;
+        }
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public BalanceSummaryDetails Spendable
+        {
+            get;
+            set;
+        }
+        public BalanceSummaryDetails Immature
+        {
+            get;
+            set;
+        }
+
+        public void CalculateSpendable()
+        {
+            Spendable = UnConfirmed + (Confirmed - Immature);
         }
 
         [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]

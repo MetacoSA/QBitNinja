@@ -169,7 +169,7 @@ namespace RapidBase.Tests
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails(),
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                 }, result);
 
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
@@ -178,7 +178,7 @@ namespace RapidBase.Tests
 
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
                         Received = Money.Parse("1.0"),
@@ -198,7 +198,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                 }, result);
                 //Should now take the cache
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
@@ -210,7 +210,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                 }, result);
 
                 var beforeAliceHeight = tester.ChainBuilder.Chain.Height;
@@ -226,7 +226,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
                         Received = Money.Parse("1.5"),
@@ -246,7 +246,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.5")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                 }, result);
 
                 tester.ChainBuilder.SendMoney(bob, alice, tx, Money.Parse("0.11"));
@@ -260,7 +260,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.5")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
                         Received = Money.Parse("0"),
@@ -280,7 +280,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.39")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                 }, result);
 
                 //Fork, the previous should be in pending now
@@ -297,7 +297,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.5")
                     },
-                    Pending = new BalanceSummaryDetails()
+                    UnConfirmed = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
                         Received = Money.Parse("0"),
@@ -315,7 +315,7 @@ namespace RapidBase.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     },
-                    Pending = null
+                    UnConfirmed = null
                 }, result);
             }
         }

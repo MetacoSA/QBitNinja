@@ -259,7 +259,7 @@ namespace RapidBase.Controllers
                 cachedSummary.Newest = 0;
                 if (at != null)
                 {
-                    cachedSummary.Pending = null;
+                    cachedSummary.UnConfirmed = null;
                 }
                 return cachedSummary;
             }
@@ -277,7 +277,7 @@ namespace RapidBase.Controllers
             cachedSummary = cachedSummary ?? new BalanceSummary()
             {
                 Confirmed = new BalanceSummaryDetails(),
-                Pending = new BalanceSummaryDetails()
+                UnConfirmed = new BalanceSummaryDetails()
             };
 
             var unconfs
@@ -293,18 +293,18 @@ namespace RapidBase.Controllers
             {
                 Confirmed = new BalanceSummaryDetails()
                 {
-                    Amount = diff.Confirmed.Select(_ => _.Amount).Sum() + cachedSummary.Confirmed.Amount,
-                    TransactionCount = diff.Confirmed.Count + cachedSummary.Confirmed.TransactionCount,
-                    Received = diff.Confirmed.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum() + cachedSummary.Confirmed.Received,
+                    Amount = diff.Confirmed.Select(_ => _.Amount).Sum(),
+                    TransactionCount = diff.Confirmed.Count,
+                    Received = diff.Confirmed.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
                 },
-                Pending = new BalanceSummaryDetails()
+                UnConfirmed = new BalanceSummaryDetails()
                 {
                     Amount = unconfs.Select(_ => _.Amount).Sum(),
                     TransactionCount = unconfs.Count,
                     Received = unconfs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
                 }
             };
-
+            summary.Confirmed += cachedSummary.Confirmed;
 
             var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
                 diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
@@ -320,7 +320,7 @@ namespace RapidBase.Controllers
 
             if (at != null)
             {
-                summary.Pending = null;
+                summary.UnConfirmed = null;
             }
             return summary;
         }

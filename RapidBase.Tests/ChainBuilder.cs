@@ -34,7 +34,7 @@ namespace RapidBase.Tests
 
         readonly List<Transaction> _ongoingTransactions = new List<Transaction>();
 
-        public Transaction EmitMoney(Money money, IDestination destination, bool broadcast = true)
+        public Transaction EmitMoney(Money money, IDestination destination, bool broadcast = true, bool coinbase = false)
         {
             var funding = new Transaction()
             {
@@ -44,6 +44,13 @@ namespace RapidBase.Tests
                     //CreateRandom()
                 }
             };
+            if (coinbase)
+            {
+                funding.Inputs.Add(new TxIn()
+                {
+                    ScriptSig = new Script(RandomUtils.GetBytes(32))
+                });
+            }
             if (broadcast)
                 Broadcast(funding);
             return funding;
