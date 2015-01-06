@@ -208,7 +208,6 @@ namespace RapidBase.Controllers
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature at = null)
         {
-            BalanceSummary cachedSummary = null;
 
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
@@ -220,46 +219,36 @@ namespace RapidBase.Controllers
                 var chainedBlock = GetChainedBlock(at);
                 if (chainedBlock == null)
                     throw new FormatException("'at' not found in the blockchain");
-                query.From = new BalanceLocator(chainedBlock.Height);
+                query.From = new BalanceLocator(chainedBlock.Height, chainedBlock.HashBlock);
                 atBlock = chainedBlock;
             }
-
-
-            int newest = 0;
             query.PageSizes = new[] { 1, 10, 100 };
+
+            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + address);
+            var cachedSummary = cacheTable.Query(Chain, query).FirstOrDefault();
+            if (cachedSummary != null && at != null && cachedSummary.Locator.Height == atBlock.Height)
+            {
+                cachedSummary.PrepareForSend(at);
+                return cachedSummary;
+            }
+
+            cachedSummary = cachedSummary ?? new BalanceSummary()
+            {
+                Confirmed = new BalanceSummaryDetails(),
+                UnConfirmed = new BalanceSummaryDetails()
+            };
+
+            int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedSummary.Locator.Height;
+            if (at == null) //Need more block to find the unconfs
+                stopAtHeight = stopAtHeight - 12;
+
             var client = Configuration.Indexer.CreateIndexerClient();
             var diff =
                 client
                 .GetOrderedBalance(address, query)
                 .WhereNotExpired(TimeSpan.FromHours(1.0))
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
-                .TakeWhile(_ =>
-                {
-                    if (_.CustomData != null &&
-                        _.CustomData.Contains("TransactionCount") &&
-                        _.BlockId != null &&
-                        Chain.GetBlock(_.BlockId) != null) //Quick check, less costly than exception
-                    {
-                        try
-                        {
-                            cachedSummary = Serializer.ToObject<BalanceSummary>(_.CustomData);
-                            if (atBlock.Height >= cachedSummary.NextMaturityHeight) //Cache invalid. Some coins matured
-                            {
-                                cachedSummary = null;
-                                return true;
-                            }
-                            return false;
-                        }
-                        catch
-                        {
-                        }
-                    }
-                    if (newest == 0)
-                        newest = (_.TransactionId == null ? 0 : _.TransactionId.GetHashCode())
-                                 ^
-                                 (_.BlockId == null ? 0 : _.BlockId.GetHashCode());
-                    return true;
-                })
+                .TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight)
                 .AsBalanceSheet(Chain);
 
             if (cancel.Token.IsCancellationRequested)
@@ -271,84 +260,38 @@ namespace RapidBase.Controllers
                 });
             }
 
-            if (cachedSummary != null && newest == cachedSummary.Newest)
-            {
-                cachedSummary.PrepareForSend(at);
-                return cachedSummary;
-            }
+            var unconfs = diff.Unconfirmed;
+            var confs = cachedSummary.Locator == null ?
+                                            diff.Confirmed :
+                                            diff.Confirmed.Where(c => c.Height > cachedSummary.Locator.Height).ToList();
 
-
-            cachedSummary = cachedSummary ?? new BalanceSummary()
-            {
-                Confirmed = new BalanceSummaryDetails(),
-                UnConfirmed = new BalanceSummaryDetails(),
-                NextMaturityHeight = int.MaxValue
-            };
-
-            var unconfs
-                = (diff.Unconfirmed.Count == 0 || at != null) ? new List<OrderedBalanceChange>()
-                : client
-                .GetOrderedBalance(address, new BalanceQuery()
-                {
-                    PageSizes = new[] { 5, 10 }
-                })
-                .WhereNotExpired(TimeSpan.FromHours(1.0))
-                .TakeWhile(_ => _.Height > Chain.Height - 30)
-                .AsBalanceSheet(Chain)
-                .Unconfirmed;
-
-            var confs = diff.Confirmed;
-            var immature = diff.Confirmed
-                                .Concat(unconfs)
-                                .Where(c => !IsMature(c, atBlock))
-                                .ToList();
-
+            var immatureConf = confs.Where(c => !IsMature(c, atBlock)).ToList();
+            var immatureUnconf = unconfs.Where(c => !IsMature(c, atBlock)).ToList();
+            var immature = immatureConf.Concat(immatureUnconf).ToList();
 
 
             var summary = new BalanceSummary()
             {
-                Confirmed = new BalanceSummaryDetails()
-                {
-                    Amount = confs.Select(_ => _.Amount).Sum(),
-                    TransactionCount = confs.Count,
-                    Received = confs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
-                },
-                Immature = new BalanceSummaryDetails()
-                {
-                    Amount = immature.Select(_ => _.Amount).Sum(),
-                    TransactionCount = immature.Count,
-                    Received = immature.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
-                },
-                UnConfirmed = new BalanceSummaryDetails()
-                {
-                    Amount = unconfs.Select(_ => _.Amount).Sum(),
-                    TransactionCount = unconfs.Count,
-                    Received = unconfs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
-                },
+                Confirmed = BalanceSummaryDetails.CreateFrom(confs),
+                Immature = BalanceSummaryDetails.CreateFrom(immature),
+                UnConfirmed = BalanceSummaryDetails.CreateFrom(unconfs),
             };
             summary.Confirmed += cachedSummary.Confirmed;
             summary.Immature += cachedSummary.Immature;
-            summary.NextMaturityHeight = int.MaxValue;
-            var olderImmature = immature.Where(i => i.BlockId != null).MinElement(i => i.Height);
-            if (olderImmature != null)
+            summary.Locator = new BalanceLocator(atBlock.Height, atBlock.HashBlock);
+
+            if (
+                cachedSummary.Locator == null ||
+                cachedSummary.Locator.Height != summary.Locator.Height ||
+                cachedSummary.Locator.BlockHash != summary.Locator.BlockHash)
             {
-                summary.NextMaturityHeight = Math.Min(olderImmature.Height + Configuration.CoinbaseMaturity - 1, cachedSummary.NextMaturityHeight);
-            }
-
-
-            var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
-                diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
-
-
-            if (cacheBearer != null)
-            {
-                if (cacheBearer.Height == atBlock.Height)
+                cachedSummary = new Models.BalanceSummary()
                 {
-                    summary.Newest = newest;
-                    cacheBearer.CustomData = Serializer.ToString(summary);
-                    Configuration.Indexer.CreateIndexer().Index(new[] { cacheBearer });
-                }
-
+                    Confirmed = summary.Confirmed,
+                    Immature = summary.Immature - BalanceSummaryDetails.CreateFrom(immatureUnconf),
+                    Locator = summary.Locator
+                };
+                cacheTable.Create(cachedSummary.Locator, cachedSummary);
             }
 
             summary.PrepareForSend(at);

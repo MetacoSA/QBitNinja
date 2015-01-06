@@ -167,6 +167,7 @@
     <Compile Include="BlockEventManager.cs" />
     <Compile Include="CallbackRegistration.cs" />
     <Compile Include="CallbackRepository.cs" />
+    <Compile Include="ChainTable.cs" />
     <Compile Include="Controllers\HelpController.cs" />
     <Compile Include="Controllers\MainController.cs" />
     <Compile Include="CrudTable.cs" />

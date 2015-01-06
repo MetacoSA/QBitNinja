@@ -31,6 +31,7 @@ namespace RapidBase
             GetCallbackTable().CreateIfNotExists();
             GetRapidWalletTable().CreateIfNotExists();
             GetCacheCloudTable().CreateIfNotExists();
+            GetChainCacheCloudTable().CreateIfNotExists();
         }
 
         public CloudTable GetCallbackTable()
@@ -51,6 +52,11 @@ namespace RapidBase
             return Indexer.GetTable("rapidcache");
         }
 
+        private CloudTable GetChainCacheCloudTable()
+        {
+            return Indexer.GetTable("rapidchainchache");
+        }
+
 
         //////TODO: These methods will need to be in a "RapidUserConfiguration" that need to know about the user for data isolation (using CrudTable.Scope)
         public CallbackRepository CreateCallbackRepository()
@@ -66,10 +72,19 @@ namespace RapidBase
         public WalletRepository CreateWalletRepository()
         {
             return new WalletRepository(
-                    Indexer.CreateIndexerClient(), 
+                    Indexer.CreateIndexerClient(),
                     new CrudTable<WalletModel>(this.GetRapidWalletTable()),
                     new CrudTable<WalletAddress>(this.GetRapidWalletAddressTable()));
         }
+
+        public ChainTable<T> GetChainCacheTable<T>(string purpose)
+        {
+            return new ChainTable<T>(this.GetChainCacheCloudTable())
+            {
+                Scope = purpose
+            };
+        }
+
         ///////
 
         public int CoinbaseMaturity

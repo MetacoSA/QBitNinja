@@ -85,6 +85,16 @@ namespace RapidBase.Models
             result.TransactionCount = -c1.TransactionCount;
             return result;
         }
+
+        internal static BalanceSummaryDetails CreateFrom(List<OrderedBalanceChange> changes)
+        {
+            return new BalanceSummaryDetails()
+            {
+                Amount = changes.Select(_ => _.Amount).Sum(),
+                TransactionCount = changes.Count,
+                Received = changes.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
+            };
+        }
     }
     public class BalanceSummary
     {
@@ -92,7 +102,7 @@ namespace RapidBase.Models
         {
             Confirmed = new BalanceSummaryDetails();
         }
-        [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public BalanceSummaryDetails UnConfirmed
         {
             get;
@@ -121,25 +131,13 @@ namespace RapidBase.Models
             Spendable = UnConfirmed + (Confirmed - Immature);
         }
 
-        [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]
-        public int Newest
-        {
-            get;
-            set;
-        }
-
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public int NextMaturityHeight
+        public BalanceLocator Locator
         {
             get;
             set;
         }
 
-        private void StripInternalInfo()
-        {
-            Newest = 0;
-            NextMaturityHeight = 0;
-        }
 
         internal void PrepareForSend(BlockFeature at)
         {
@@ -148,7 +146,7 @@ namespace RapidBase.Models
                 UnConfirmed = null;
             }
             CalculateSpendable();
-            StripInternalInfo();
+            Locator = null;
         }
     }
 

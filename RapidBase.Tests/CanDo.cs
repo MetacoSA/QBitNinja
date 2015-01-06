@@ -351,6 +351,23 @@ namespace RapidBase.Tests
                         Amount = Money.Parse("0.4") + Money.Parse("0.21"),
                     }
                 }, result);
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + (2 + 4));
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                    },
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("0.4") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.4") + Money.Parse("0.21"),
+                    }
+                }, result);
 
                 //Did not altered history when the first coinbase was confirmed
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + firstMaturityHeight);
