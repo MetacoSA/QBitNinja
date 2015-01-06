@@ -264,6 +264,15 @@ namespace RapidBase.Controllers
                 return cachedSummary;
             }
 
+            if (cancel.Token.IsCancellationRequested)
+            {
+                throw new HttpResponseException(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = "The server can't fetch the balance summary because the balance is too big. Please, load it in several step with ?at={blockFeature} parameter. Once fully loaded after all the step, the summary will return in constant time."
+                });
+            }
+
             cancel.Token.ThrowIfCancellationRequested();
             cachedSummary = cachedSummary ?? new BalanceSummary()
             {
