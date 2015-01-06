@@ -159,6 +159,7 @@ namespace RapidBase.Tests
         [Fact]
         public void CanGetBalanceSummary()
         {
+
             using (var tester = ServerTester.Create())
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);

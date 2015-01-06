@@ -223,7 +223,7 @@ namespace RapidBase.Controllers
             }
 
             int newest = 0;
-
+            query.PageSizes = new[] { 1, 10, 100 };
             var client = Configuration.Indexer.CreateIndexerClient();
             var diff =
                 client
@@ -305,7 +305,7 @@ namespace RapidBase.Controllers
                 }
             };
 
-           
+
             var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
                 diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
 
