@@ -147,6 +147,14 @@ namespace RapidBase.Models
             }
             CalculateSpendable();
             Locator = null;
+            OlderImmature = 0;
+        }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public int OlderImmature
+        {
+            get;
+            set;
         }
     }
 

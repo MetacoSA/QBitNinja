@@ -226,7 +226,10 @@ namespace RapidBase.Controllers
 
             var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + address);
             var cachedSummary = cacheTable.Query(Chain, query)
-                                          .Where(c => (c.Locator.BlockHash == atBlock.HashBlock && at != null) || c.Immature.TransactionCount == 0)
+                                          .Where(c =>
+                                              (c.Locator.BlockHash == atBlock.HashBlock && at != null) ||
+                                              c.Immature.TransactionCount == 0 ||
+                                              ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)))
                                           .FirstOrDefault();
             if (cachedSummary != null && at != null && cachedSummary.Locator.Height == atBlock.Height)
             {
@@ -237,7 +240,8 @@ namespace RapidBase.Controllers
             cachedSummary = cachedSummary ?? new BalanceSummary()
             {
                 Confirmed = new BalanceSummaryDetails(),
-                UnConfirmed = new BalanceSummaryDetails()
+                UnConfirmed = new BalanceSummaryDetails(),
+                OlderImmature = int.MaxValue
             };
 
             int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedSummary.Locator.Height;
@@ -279,18 +283,20 @@ namespace RapidBase.Controllers
                 UnConfirmed = BalanceSummaryDetails.CreateFrom(unconfs),
             };
             summary.Confirmed += cachedSummary.Confirmed;
+            summary.Immature += cachedSummary.Immature;
             summary.Locator = new BalanceLocator(atBlock.Height, atBlock.HashBlock);
 
             if (
                 cachedSummary.Locator == null ||
-                cachedSummary.Locator.Height != summary.Locator.Height ||
                 cachedSummary.Locator.BlockHash != summary.Locator.BlockHash)
             {
+                var olderImmature = immature.Select(_ => _.Height).Concat(new[] { int.MaxValue }).Min();
                 cachedSummary = new Models.BalanceSummary()
                 {
                     Confirmed = summary.Confirmed,
-                    Immature = summary.Immature - BalanceSummaryDetails.CreateFrom(immatureUnconf),
-                    Locator = summary.Locator
+                    Immature = summary.Immature - BalanceSummaryDetails.CreateFrom(immatureUnconf), //Does not store unconf info
+                    Locator = summary.Locator,
+                    OlderImmature = Math.Min(cachedSummary.OlderImmature, olderImmature)
                 };
                 cacheTable.Create(cachedSummary.Locator, cachedSummary);
             }
@@ -299,13 +305,14 @@ namespace RapidBase.Controllers
             return summary;
         }
 
+        private bool IsMature(int height, ChainedBlock tip)
+        {
+            return (tip.Height - height + 1) >= Configuration.CoinbaseMaturity;
+        }
+
         private bool IsMature(OrderedBalanceChange c, ChainedBlock tip)
         {
-            return !c.IsCoinbase ||
-                    (
-                        c.BlockId != null &&
-                        (tip.Height - c.Height + 1) >= Configuration.CoinbaseMaturity
-                    );
+            return !c.IsCoinbase || (c.BlockId != null && IsMature(c.Height,tip));
         }
 
         [HttpGet]
