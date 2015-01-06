@@ -6,6 +6,10 @@ namespace RapidBase
 {
     public class RapidBaseConfiguration
     {
+        public RapidBaseConfiguration()
+        {
+            CoinbaseMaturity = 100;
+        }
         public static RapidBaseConfiguration FromConfiguration()
         {
             var conf = new RapidBaseConfiguration
@@ -67,5 +71,11 @@ namespace RapidBase
                     new CrudTable<WalletAddress>(this.GetRapidWalletAddressTable()));
         }
         ///////
+
+        public int CoinbaseMaturity
+        {
+            get;
+            set;
+        }
     }
 }

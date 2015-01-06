@@ -127,6 +127,29 @@ namespace RapidBase.Models
             get;
             set;
         }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public int NextMaturityHeight
+        {
+            get;
+            set;
+        }
+
+        private void StripInternalInfo()
+        {
+            Newest = 0;
+            NextMaturityHeight = 0;
+        }
+
+        internal void PrepareForSend(BlockFeature at)
+        {
+            if (at != null)
+            {
+                UnConfirmed = null;
+            }
+            CalculateSpendable();
+            StripInternalInfo();
+        }
     }
 
     public class BalanceOperation

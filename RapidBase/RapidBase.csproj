@@ -170,6 +170,7 @@
     <Compile Include="Controllers\HelpController.cs" />
     <Compile Include="Controllers\MainController.cs" />
     <Compile Include="CrudTable.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

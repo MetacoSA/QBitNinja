@@ -6,6 +6,7 @@ using System.Web.Http.Dependencies;
 using Autofac.Integration.WebApi;
 using NBitcoin;
 using NBitcoin.Indexer;
+using System.Threading;
 
 namespace RapidBase
 {
@@ -112,12 +113,15 @@ namespace RapidBase
 
         #endregion
 
-        public void UpdateChain()
+        public bool UpdateChain()
         {
             var client = Get<IndexerClient>();
             var chain = Get<ConcurrentChain>();
+            var oldTip = chain.Tip.HashBlock;
             var changes = client.GetChainChangesUntilFork(chain.Tip, false);
             changes.UpdateChain(chain);
+            var newTip = chain.Tip.HashBlock;
+            return newTip != oldTip;
         }
     }
 }

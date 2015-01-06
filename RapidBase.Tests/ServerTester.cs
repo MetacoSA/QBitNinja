@@ -14,6 +14,7 @@ using System.Net.Http.Formatting;
 using Microsoft.WindowsAzure.Storage;
 using RapidBase.Models;
 using Xunit;
+using System.Threading;
 
 namespace RapidBase.Tests
 {
@@ -160,7 +161,8 @@ namespace RapidBase.Tests
 
         public void UpdateServerChain()
         {
-            _resolver.UpdateChain();
+            if (!_resolver.UpdateChain())
+                Assert.True(false, "Chain should have updated");
         }
 
         public void AssertTotal(BitcoinAddress address, Money total)

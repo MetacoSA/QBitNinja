@@ -214,13 +214,16 @@ namespace RapidBase.Controllers
             cancel.CancelAfter(30000);
 
             var query = new BalanceQuery();
+            var atBlock = Chain.Tip;
             if (at != null)
             {
                 var chainedBlock = GetChainedBlock(at);
                 if (chainedBlock == null)
                     throw new FormatException("'at' not found in the blockchain");
                 query.From = new BalanceLocator(chainedBlock.Height);
+                atBlock = chainedBlock;
             }
+
 
             int newest = 0;
             query.PageSizes = new[] { 1, 10, 100 };
@@ -240,6 +243,11 @@ namespace RapidBase.Controllers
                         try
                         {
                             cachedSummary = Serializer.ToObject<BalanceSummary>(_.CustomData);
+                            if (atBlock.Height >= cachedSummary.NextMaturityHeight) //Cache invalid. Some coins matured
+                            {
+                                cachedSummary = null;
+                                return true;
+                            }
                             return false;
                         }
                         catch
@@ -254,17 +262,6 @@ namespace RapidBase.Controllers
                 })
                 .AsBalanceSheet(Chain);
 
-            if (cachedSummary != null && newest == cachedSummary.Newest)
-            {
-                cachedSummary.Newest = 0;
-                if (at != null)
-                {
-                    cachedSummary.UnConfirmed = null;
-                }
-                cachedSummary.CalculateSpendable();
-                return cachedSummary;
-            }
-
             if (cancel.Token.IsCancellationRequested)
             {
                 throw new HttpResponseException(new HttpResponseMessage()
@@ -274,29 +271,53 @@ namespace RapidBase.Controllers
                 });
             }
 
-            cancel.Token.ThrowIfCancellationRequested();
+            if (cachedSummary != null && newest == cachedSummary.Newest)
+            {
+                cachedSummary.PrepareForSend(at);
+                return cachedSummary;
+            }
+
+
             cachedSummary = cachedSummary ?? new BalanceSummary()
             {
                 Confirmed = new BalanceSummaryDetails(),
-                UnConfirmed = new BalanceSummaryDetails()
+                UnConfirmed = new BalanceSummaryDetails(),
+                NextMaturityHeight = int.MaxValue
             };
 
             var unconfs
                 = (diff.Unconfirmed.Count == 0 || at != null) ? new List<OrderedBalanceChange>()
                 : client
-                .GetOrderedBalance(address)
+                .GetOrderedBalance(address, new BalanceQuery()
+                {
+                    PageSizes = new[] { 5, 10 }
+                })
                 .WhereNotExpired(TimeSpan.FromHours(1.0))
                 .TakeWhile(_ => _.Height > Chain.Height - 30)
                 .AsBalanceSheet(Chain)
                 .Unconfirmed;
 
+            var confs = diff.Confirmed;
+            var immature = diff.Confirmed
+                                .Concat(unconfs)
+                                .Where(c => !IsMature(c, atBlock))
+                                .ToList();
+
+
+
             var summary = new BalanceSummary()
             {
                 Confirmed = new BalanceSummaryDetails()
                 {
-                    Amount = diff.Confirmed.Select(_ => _.Amount).Sum(),
-                    TransactionCount = diff.Confirmed.Count,
-                    Received = diff.Confirmed.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
+                    Amount = confs.Select(_ => _.Amount).Sum(),
+                    TransactionCount = confs.Count,
+                    Received = confs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
+                },
+                Immature = new BalanceSummaryDetails()
+                {
+                    Amount = immature.Select(_ => _.Amount).Sum(),
+                    TransactionCount = immature.Count,
+                    Received = immature.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
                 },
                 UnConfirmed = new BalanceSummaryDetails()
                 {
@@ -304,10 +325,16 @@ namespace RapidBase.Controllers
                     TransactionCount = unconfs.Count,
                     Received = unconfs.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
                 },
-                Immature = new BalanceSummaryDetails()
             };
             summary.Confirmed += cachedSummary.Confirmed;
-            summary.CalculateSpendable();
+            summary.Immature += cachedSummary.Immature;
+            summary.NextMaturityHeight = int.MaxValue;
+            var olderImmature = immature.Where(i => i.BlockId != null).MinElement(i => i.Height);
+            if (olderImmature != null)
+            {
+                summary.NextMaturityHeight = Math.Min(olderImmature.Height + Configuration.CoinbaseMaturity - 1, cachedSummary.NextMaturityHeight);
+            }
+
 
             var cacheBearer = diff.Confirmed.Count != 0 ? diff.Confirmed[0] :
                 diff.Unconfirmed.Count != 0 ? diff.Unconfirmed[0] : null;
@@ -315,19 +342,26 @@ namespace RapidBase.Controllers
 
             if (cacheBearer != null)
             {
-                summary.Newest = newest;
-                cacheBearer.CustomData = Serializer.ToString(summary);
-                summary.Newest = 0;
-                Configuration.Indexer.CreateIndexer().Index(new[] { cacheBearer });
+                if (cacheBearer.Height == atBlock.Height)
+                {
+                    summary.Newest = newest;
+                    cacheBearer.CustomData = Serializer.ToString(summary);
+                    Configuration.Indexer.CreateIndexer().Index(new[] { cacheBearer });
+                }
+
             }
 
-            if (at != null)
-            {
-                summary.UnConfirmed = null;
-            }
-
-            summary.CalculateSpendable();
+            summary.PrepareForSend(at);
             return summary;
+        }
+
+        private bool IsMature(OrderedBalanceChange c, ChainedBlock tip)
+        {
+            return !c.IsCoinbase ||
+                    (
+                        c.BlockId != null &&
+                        (tip.Height - c.Height + 1) >= Configuration.CoinbaseMaturity
+                    );
         }
 
         [HttpGet]
