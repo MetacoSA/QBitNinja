@@ -31,6 +31,33 @@ namespace RapidBase.Models
             set;
         }
 
+        public ChainedBlock GetChainedBlock(ChainBase chain)
+        {
+            ChainedBlock chainedBlock;
+            if (Special != null && Special.Value == SpecialFeature.Last)
+            {
+                chainedBlock = chain.Tip;
+            }
+            else if (Height != -1)
+            {
+                var h = chain.GetBlock(Height);
+                if (h == null)
+                    return null;
+                chainedBlock = h;
+            }
+            else
+            {
+                chainedBlock = chain.GetBlock(BlockId);
+            }
+            if (chainedBlock != null)
+            {
+                var height = chainedBlock.Height + Offset;
+                height = Math.Max(0, height);
+                chainedBlock = chain.GetBlock(height);
+            }
+            return chainedBlock;
+        }
+
         public static BlockFeature Parse(string str)
         {
             var input = str;

@@ -217,7 +217,7 @@ namespace RapidBase.Controllers
             var atBlock = Chain.Tip;
             if (at != null)
             {
-                var chainedBlock = GetChainedBlock(at);
+                var chainedBlock = at.GetChainedBlock(Chain);
                 if (chainedBlock == null)
                     throw new FormatException("'at' not found in the blockchain");
                 query.From = new BalanceLocator(chainedBlock.Height, chainedBlock.HashBlock);
@@ -328,6 +328,7 @@ namespace RapidBase.Controllers
             BalanceLocator until = null,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
             BalanceLocator from = null,
+            bool includeImmature = false,
             bool unspentOnly = false)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
@@ -419,36 +420,9 @@ namespace RapidBase.Controllers
             };
         }
 
-        private ChainedBlock GetChainedBlock(BlockFeature blockFeature)
-        {
-            ChainedBlock chainedBlock;
-            if (blockFeature.Special != null && blockFeature.Special.Value == SpecialFeature.Last)
-            {
-                chainedBlock = Chain.Tip;
-            }
-            else if (blockFeature.Height != -1)
-            {
-                var h = Chain.GetBlock(blockFeature.Height);
-                if (h == null)
-                    return null;
-                chainedBlock = h;
-            }
-            else
-            {
-                chainedBlock = Chain.GetBlock(blockFeature.BlockId);
-            }
-            if (chainedBlock != null)
-            {
-                var height = chainedBlock.Height + blockFeature.Offset;
-                height = Math.Max(0, height);
-                chainedBlock = Chain.GetBlock(height);
-            }
-            return chainedBlock;
-        }
-
         private Block GetBlock(BlockFeature blockFeature, bool headerOnly)
         {
-            var chainedBlock = GetChainedBlock(blockFeature);
+            var chainedBlock = blockFeature.GetChainedBlock(Chain);
             var hash = chainedBlock == null ? blockFeature.BlockId : chainedBlock.HashBlock;
             if (hash == null)
                 return null;
