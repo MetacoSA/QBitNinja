@@ -19,6 +19,7 @@ namespace RapidBase.Controllers
                             "blocks/0000000000000000119fe3f65fd3038cbe8429ad2cf7c2de1e5e7481b34a01b4",
                             "blocks/321211",
                             "blocks/tip",
+                            "blocks/tip-1",
                             "blocks/tip?format=json",
                             "blocks/tip?format=json&headeronly=true",
                             "blocks/tip?format=raw",

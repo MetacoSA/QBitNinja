@@ -141,6 +141,25 @@ namespace RapidBase.Tests
                 response = tester.SendGet<byte[]>("blocks/1?headerOnly=true&format=raw");
                 Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
                 ////
+
+                //Check the blockFeature
+                var block2 = tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                response2 = tester.SendGet<GetBlockResponse>("blocks/tip-1");
+                Assert.True(response2.Block.ToBytes().SequenceEqual(block.ToBytes()));
+
+                response2 = tester.SendGet<GetBlockResponse>("blocks/tip");
+                Assert.True(response2.Block.ToBytes().SequenceEqual(block2.ToBytes()));
+
+                response2 = tester.SendGet<GetBlockResponse>("blocks/tip-10?headerOnly=true");
+                Assert.True(response2.AdditionalInformation.BlockHeader.ToBytes().SequenceEqual(Network.TestNet.GetGenesis().Header.ToBytes()));
+
+                AssetEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/tip+1?format=raw"));
+
+                response2 = tester.SendGet<GetBlockResponse>("blocks/" + block.Header.GetHash() + "+1");
+                Assert.True(response2.Block.ToBytes().SequenceEqual(block2.ToBytes()));
+                /////
             }
         }
 

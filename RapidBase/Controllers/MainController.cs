@@ -306,7 +306,7 @@ namespace RapidBase.Controllers
                 cacheTable.Create(cachedSummary.Locator, cachedSummary);
             }
 
-            
+
             summary.PrepareForSend(at, debug);
             return summary;
         }
@@ -440,6 +440,12 @@ namespace RapidBase.Controllers
             else
             {
                 chainedBlock = Chain.GetBlock(blockFeature.BlockId);
+            }
+            if (chainedBlock != null)
+            {
+                var height = chainedBlock.Height + blockFeature.Offset;
+                height = Math.Max(0, height);
+                chainedBlock = Chain.GetBlock(height);
             }
             return chainedBlock;
         }
