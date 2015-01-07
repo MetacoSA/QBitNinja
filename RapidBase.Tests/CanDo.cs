@@ -1031,7 +1031,7 @@ namespace RapidBase.Tests
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].BlockId == null);
 
-                var b = tester.ChainBuilder.EmitBlock();
+                var b = tester.ChainBuilder.EmitBlock(); //1
                 tester.UpdateServerChain();
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Operations[0].Confirmations == 1);
@@ -1056,7 +1056,7 @@ namespace RapidBase.Tests
                 Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
                 tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
 
-                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock(); //2
                 tester.UpdateServerChain();
 
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
@@ -1065,7 +1065,7 @@ namespace RapidBase.Tests
                 tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
 
                 tester.ChainBuilder.EmitMoney(Money.Parse("0.02"), bob, coinbase: true);
-                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock(); //3
                 tester.UpdateServerChain();
 
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
@@ -1074,6 +1074,17 @@ namespace RapidBase.Tests
 
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?includeimmature=true");
                 Assert.True(balance.Operations.Count == 3); //Except if asked for
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=1");
+                Assert.True(balance.Operations.Count == 1); //Should only have the operation at 1
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=1&includeimmature=true");
+                Assert.True(balance.Operations.Count == 1); //Should only have the operation at 1
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?until=2&includeimmature=true");
+                Assert.True(balance.Operations.Count == 2); //Should only have the operation at 2 and the immature
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=2&until=1&includeimmature=true");
+                Assert.True(balance.Operations.Count == 2); //Should only have the 2 operations
 
                 AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
             }

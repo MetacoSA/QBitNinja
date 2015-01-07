@@ -307,7 +307,7 @@ namespace RapidBase.Controllers
         {
             return ToBalanceLocator(AtBlock(feature));
         }
-        
+
         private BalanceLocator ToBalanceLocator(ChainedBlock atBlock)
         {
             return new BalanceLocator(atBlock.Height, atBlock.HashBlock);
@@ -343,39 +343,39 @@ namespace RapidBase.Controllers
             BitcoinAddress address,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
             BalanceLocator continuation = null,
-            [ModelBinder(typeof(BalanceLocatorModelBinder))]
-            BlockFeature until = null,
-            [ModelBinder(typeof(BalanceLocatorModelBinder))]
-            BlockFeature from = null,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature at = null, //Balance entries at this point of time, if provided, then unconfirmed will be filtered
+            BlockFeature until = null,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature from = null,
             bool includeImmature = false,
             bool unspentOnly = false)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
 
-            var atBlock = AtBlock(at);
-
-            BalanceQuery query = null;
+            BalanceQuery query = new BalanceQuery();
             if (continuation != null)
             {
                 query = new BalanceQuery();
                 query.From = continuation;
                 query.FromIncluded = false;
             }
+
             if (from != null)
             {
-                if (query == null)
-                    query = new BalanceQuery();
                 query.From = ToBalanceLocator(from);
                 query.FromIncluded = true;
             }
             if (until != null)
             {
-                if (query == null)
-                    query = new BalanceQuery();
                 query.To = ToBalanceLocator(until);
+                query.FromIncluded = true;
+            }
+
+            if (query != null)
+            {
+                if (query.To.Height > query.From.Height)
+                    throw InvalidParameters("Invalid agurment : from < until");
             }
 
             var client = Configuration.Indexer.CreateIndexerClient();
@@ -383,12 +383,24 @@ namespace RapidBase.Controllers
                 client
                 .GetOrderedBalance(address, query)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
-                .Where(o => o.BlockId != null || at == null)
                 .WhereNotExpired()
-                .Where(o => includeImmature || IsMature(o, atBlock))
+                .Where(o => includeImmature || IsMature(o, Chain.Tip))
                 .AsBalanceSheet(Chain);
 
+
+
             var balanceChanges = balance.All;
+            if (until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
+            {
+                for (int i = balanceChanges.Count - 1 ; i >= 0 ; i--)
+                {
+                    var last = balanceChanges[i];
+                    if (last.BlockId == null)
+                        balanceChanges.RemoveAt(i);
+                    else
+                        break;
+                }
+            }
             if (unspentOnly)
             {
                 var changeByTxId = balanceChanges.ToDictionary(_ => _.TransactionId);
@@ -410,6 +422,15 @@ namespace RapidBase.Controllers
                 }
             }
             return result;
+        }
+
+        private Exception InvalidParameters(string message)
+        {
+            return new HttpResponseException(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    ReasonPhrase = message
+                });
         }
 
         [HttpGet]

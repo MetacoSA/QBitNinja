@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using NBitcoin.Indexer;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -86,6 +87,8 @@ namespace RapidBase.Tests
             block.Transactions.AddRange(_ongoingTransactions.ToList());
             block.Header.HashPrevBlock = Chain.Tip.HashBlock;
             block.Header.Nonce = nonce == null ? RandomUtils.GetUInt32() : nonce.Value;
+            if (nonce == null) //if != null, probably want a deterministic block
+                block.Header.BlockTime = DateTime.UtcNow;
             var indexer = CreateIndexer();
             var blockHash = block.GetHash();
             foreach (var tx in block.Transactions)
