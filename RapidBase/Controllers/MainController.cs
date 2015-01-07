@@ -213,16 +213,12 @@ namespace RapidBase.Controllers
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
 
+            var atBlock = AtBlock(at);
+
             var query = new BalanceQuery();
-            var atBlock = Chain.Tip;
             if (at != null)
-            {
-                var chainedBlock = at.GetChainedBlock(Chain);
-                if (chainedBlock == null)
-                    throw new FormatException("'at' not found in the blockchain");
-                query.From = new BalanceLocator(chainedBlock.Height, chainedBlock.HashBlock);
-                atBlock = chainedBlock;
-            }
+                query.From = ToBalanceLocator(atBlock);
+
             query.PageSizes = new[] { 1, 10, 100 };
 
             var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + address);
@@ -307,6 +303,29 @@ namespace RapidBase.Controllers
             return summary;
         }
 
+        private BalanceLocator ToBalanceLocator(BlockFeature feature)
+        {
+            return ToBalanceLocator(AtBlock(feature));
+        }
+        
+        private BalanceLocator ToBalanceLocator(ChainedBlock atBlock)
+        {
+            return new BalanceLocator(atBlock.Height, atBlock.HashBlock);
+        }
+
+        private ChainedBlock AtBlock(BlockFeature at)
+        {
+            var atBlock = Chain.Tip;
+            if (at != null)
+            {
+                var chainedBlock = at.GetChainedBlock(Chain);
+                if (chainedBlock == null)
+                    throw new FormatException("'at' not found in the blockchain");
+                atBlock = chainedBlock;
+            }
+            return atBlock;
+        }
+
         private bool IsMature(int height, ChainedBlock tip)
         {
             return (tip.Height - height + 1) >= Configuration.CoinbaseMaturity;
@@ -325,14 +344,18 @@ namespace RapidBase.Controllers
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
             BalanceLocator continuation = null,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
-            BalanceLocator until = null,
+            BlockFeature until = null,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
-            BalanceLocator from = null,
+            BlockFeature from = null,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature at = null, //Balance entries at this point of time, if provided, then unconfirmed will be filtered
             bool includeImmature = false,
             bool unspentOnly = false)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
+
+            var atBlock = AtBlock(at);
 
             BalanceQuery query = null;
             if (continuation != null)
@@ -345,14 +368,14 @@ namespace RapidBase.Controllers
             {
                 if (query == null)
                     query = new BalanceQuery();
-                query.From = from;
+                query.From = ToBalanceLocator(from);
                 query.FromIncluded = true;
             }
             if (until != null)
             {
                 if (query == null)
                     query = new BalanceQuery();
-                query.To = until;
+                query.To = ToBalanceLocator(until);
             }
 
             var client = Configuration.Indexer.CreateIndexerClient();
@@ -360,9 +383,12 @@ namespace RapidBase.Controllers
                 client
                 .GetOrderedBalance(address, query)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
+                .Where(o => o.BlockId != null || at == null)
+                .WhereNotExpired()
+                .Where(o => includeImmature || IsMature(o, atBlock))
                 .AsBalanceSheet(Chain);
 
-            var balanceChanges = balance.All.WhereNotExpired().ToList();
+            var balanceChanges = balance.All;
             if (unspentOnly)
             {
                 var changeByTxId = balanceChanges.ToDictionary(_ => _.TransactionId);

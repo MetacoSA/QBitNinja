@@ -1056,6 +1056,25 @@ namespace RapidBase.Tests
                 Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
                 tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
 
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Operations.Count == 2);
+                Assert.True(balance.Operations[0].Confirmations == 1);
+                tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
+
+                tester.ChainBuilder.EmitMoney(Money.Parse("0.02"), bob, coinbase: true);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Operations.Count == 2); //Immature should not appear
+                tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?includeimmature=true");
+                Assert.True(balance.Operations.Count == 3); //Except if asked for
+
                 AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
             }
         }

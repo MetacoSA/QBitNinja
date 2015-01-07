@@ -40,12 +40,13 @@ namespace RapidBase.Controllers
                     },
                     new RouteModel
                     {
-                        Template = "balances/[address]?unspentOnly=[false|true]&from=[height]&to=[height]&continuation=[continuation]",
+                        Template = "balances/[address]?unspentOnly=[false|true]&from=[blockFeature]&to=[blockFeature]&continuation=[continuation]",
                         Samples = new RouteSample[]
                         {
                             "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe",
                             "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe?unspentonly=true",
-                            "balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=336410&until=336000"
+                            "balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=336410&until=336000",
+                            "balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=tip&until=336000"
                         }
                     },
                     new RouteModel
