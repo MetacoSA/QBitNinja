@@ -273,11 +273,7 @@ namespace RapidBase.Controllers
                                             diff.Confirmed :
                                             diff.Confirmed.Where(c => c.Height > cachedSummary.Locator.Height).ToList();
 
-            var immatureConf = confs.Where(c => !IsMature(c, atBlock)).ToList();
-            var immatureUnconf = unconfs
-                                .Where(c => !IsMature(c, atBlock))
-                                .ToList();
-            var immature = immatureConf.Concat(immatureUnconf).ToList();
+            var immature = confs.Where(c => !IsMature(c, atBlock)).ToList();
 
 
             var summary = new BalanceSummary()
@@ -299,7 +295,7 @@ namespace RapidBase.Controllers
                 cachedSummary = new Models.BalanceSummary()
                 {
                     Confirmed = summary.Confirmed,
-                    Immature = summary.Immature - BalanceSummaryDetails.CreateFrom(immatureUnconf), //Does not store unconf info
+                    Immature = summary.Immature,
                     Locator = summary.Locator,
                     OlderImmature = Math.Min(cachedSummary.OlderImmature, olderImmature)
                 };
