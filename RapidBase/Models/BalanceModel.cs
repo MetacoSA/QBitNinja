@@ -96,6 +96,13 @@ namespace RapidBase.Models
             };
         }
     }
+
+    public enum CacheHit
+    {
+        NoCache,
+        PartialCache,
+        FullCache
+    }
     public class BalanceSummary
     {
         public BalanceSummary()
@@ -139,7 +146,7 @@ namespace RapidBase.Models
         }
 
 
-        internal void PrepareForSend(BlockFeature at)
+        internal void PrepareForSend(BlockFeature at, bool debug)
         {
             if (at != null)
             {
@@ -147,11 +154,22 @@ namespace RapidBase.Models
             }
             CalculateSpendable();
             Locator = null;
+            if (!debug)
+            {
+                CacheHit = null;
+            }
             OlderImmature = 0;
         }
 
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int OlderImmature
+        {
+            get;
+            set;
+        }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public CacheHit? CacheHit
         {
             get;
             set;

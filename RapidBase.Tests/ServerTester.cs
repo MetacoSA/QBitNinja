@@ -57,6 +57,7 @@ namespace RapidBase.Tests
             });
             _disposables.Add(server);
             ChainBuilder = new ChainBuilder(this);
+            _resolver.Get<ConcurrentChain>(); //So ConcurrentChain load
         }
 
         public CallbackTester CreateCallbackTester()

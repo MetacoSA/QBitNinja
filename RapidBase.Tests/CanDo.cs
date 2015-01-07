@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using Microsoft.WindowsAzure.Storage.Auth;
+using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using Newtonsoft.Json.Linq;
@@ -96,6 +97,8 @@ namespace RapidBase.Tests
             }
         }
 
+
+
         [Fact]
         public void CanGetBlock()
         {
@@ -106,6 +109,7 @@ namespace RapidBase.Tests
                 var bob = new Key();
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
                 var block = tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
                 var response = tester.SendGet<byte[]>("blocks/" + block.GetHash() + "?format=raw");
                 Assert.True(response.SequenceEqual(block.ToBytes()));
 
@@ -205,6 +209,233 @@ namespace RapidBase.Tests
             return GetLocator(chainBuilder.Chain.Tip);
         }
 
+
+        [Fact]
+        public void CanGetBalanceSummary3()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                tester.Configuration.CoinbaseMaturity = 5;
+                //Alice hit an invalid cached summary
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                var alice = new Key().GetBitcoinSecret(Network.TestNet);
+
+                tester.ChainBuilder.EmitMoney(Money.Parse("0.9"), alice, coinbase: true);
+                var firstCoinbase = tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                var result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.9"),
+                        Amount = Money.Parse("0.9")
+                    },
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.9"),
+                        Amount = Money.Parse("0.9")
+                    },
+                    Spendable = new BalanceSummaryDetails(),
+                    CacheHit = CacheHit.NoCache
+                }, result);
+
+                tester.ChainBuilder.EmitMoney(Money.Parse("0.8"), alice, coinbase: true);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                //2 conf for coinbase, nothing changed for alice
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.7"),
+                        Amount = Money.Parse("1.7")
+                    },
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.7"),
+                        Amount = Money.Parse("1.7")
+                    },
+                    Spendable = new BalanceSummaryDetails(),
+                    CacheHit = CacheHit.PartialCache
+                }, result);
+
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                //5 conf for coinbase, it is mature, and so the cache should not be hit.
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.7"),
+                        Amount = Money.Parse("1.7")
+                    },
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.8"),
+                        Amount = Money.Parse("0.8")
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.9"),
+                        Amount = Money.Parse("0.9")
+                    },
+                    CacheHit = CacheHit.NoCache //The previous cache have expired immature, so it miss
+                }, result);
+
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.7"),
+                        Amount = Money.Parse("1.7")
+                    },
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.7"),
+                        Amount = Money.Parse("1.7")
+                    },
+                    CacheHit = CacheHit.NoCache //The previous cache have expired immature, so it miss
+                }, result);
+
+                var tx = tester.ChainBuilder.EmitMoney(Money.Parse("0.1"), alice, coinbase: true);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                tester.ChainBuilder.SendMoney(alice, bob, tx, Money.Parse("0.04"));
+
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("1.8"),
+                        Amount = Money.Parse("1.8")
+                    },
+                    UnConfirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0"),
+                        Amount = -Money.Parse("0.04")
+                    },
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.1"),
+                        Amount = Money.Parse("0.1")
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 3,
+                        Received = Money.Parse("1.7"),
+                        Amount = Money.Parse("1.66")
+                    },
+                    CacheHit = CacheHit.PartialCache //The previous cache have not expired immature, so it should not miss
+                }, result);
+
+                //Fork happen, making loose the second coinbase of Alice, and the remaining unconfirmed will not be in this new chain
+                tester.ChainBuilder.ClearMempool();
+                tester.ChainBuilder.SetTip(firstCoinbase.Header);
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitMoney(Money.Parse("0.21"), alice, coinbase: true);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    UnConfirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0"),
+                        Amount = -Money.Parse("0.04")
+                    },
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.11"),
+                        Amount = Money.Parse("1.11")
+                    },
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Amount = Money.Parse("0.21"),
+                        Received = Money.Parse("0.21"),
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Amount = Money.Parse("0.86"),
+                        Received = Money.Parse("0.9")
+                    },
+                    CacheHit = CacheHit.NoCache //The previous cache have not expired because coinbase 1 matured
+                }, result);
+
+                tester.ChainBuilder.EmitBlock();
+
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    UnConfirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0"),
+                        Amount = -Money.Parse("0.04")
+                    },
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("1.11"),
+                        Amount = Money.Parse("1.11")
+                    },
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Amount = Money.Parse("0.21"),
+                        Received = Money.Parse("0.21"),
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Amount = Money.Parse("0.86"),
+                        Received = Money.Parse("0.9")
+                    },
+                    CacheHit = CacheHit.PartialCache //The previous cache have not expired (where there is coinbase 2)
+                }, result);
+
+            }
+        }
+
         [Fact]
         public void CanGetBalanceSummary2()
         {
@@ -212,47 +443,49 @@ namespace RapidBase.Tests
             {
                 tester.Configuration.CoinbaseMaturity = 5;
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
-
+                tester.ChainBuilder.EmitMoney("0.01", bob, coinbase: false);
                 tester.ChainBuilder.EmitMoney("0.1", bob, coinbase: true);
-                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
-                        Received = Money.Parse("0.1"),
-                        Amount = Money.Parse("0.1")
+                        Received = Money.Parse("0.01"),
+                        Amount = Money.Parse("0.01")
                     },
-                    Immature = new BalanceSummaryDetails()
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
                     {
                         TransactionCount = 1,
-                        Received = Money.Parse("0.1"),
-                        Amount = Money.Parse("0.1")
+                        Received = Money.Parse("0.01"),
+                        Amount = Money.Parse("0.01")
                     },
-                    Spendable = new BalanceSummaryDetails()
+                    CacheHit = CacheHit.NoCache
                 }, result);
 
                 //The at should remove any unconfirmed info
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=0");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=0&debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Immature = new BalanceSummaryDetails(),
-                    Spendable = new BalanceSummaryDetails()
+                    Spendable = new BalanceSummaryDetails(),
+                    CacheHit = CacheHit.FullCache
                 }, result);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
                 //Coinbase 1 confirmed
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 1,
-                        Received = Money.Parse("0.1"),
-                        Amount = Money.Parse("0.1")
+                        TransactionCount = 2,
+                        Received = Money.Parse("0.11"),
+                        Amount = Money.Parse("0.11")
                     },
                     Immature = new BalanceSummaryDetails()
                     {
@@ -261,17 +494,24 @@ namespace RapidBase.Tests
                         Amount = Money.Parse("0.1")
                     },
                     Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.01"),
+                        Amount = Money.Parse("0.01")
+                    },
+                    CacheHit = CacheHit.PartialCache
                 }, result);
 
                 //Same query with at
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=1");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=1&debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
+                    UnConfirmed = null,
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 1,
-                        Received = Money.Parse("0.1"),
-                        Amount = Money.Parse("0.1")
+                        TransactionCount = 2,
+                        Received = Money.Parse("0.11"),
+                        Amount = Money.Parse("0.11")
                     },
                     Immature = new BalanceSummaryDetails()
                     {
@@ -280,52 +520,59 @@ namespace RapidBase.Tests
                         Amount = Money.Parse("0.1")
                     },
                     Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.01"),
+                        Amount = Money.Parse("0.01")
+                    },
+                    CacheHit = CacheHit.FullCache
                 }, result);
 
                 tester.ChainBuilder.EmitMoney("0.21", bob, coinbase: true);
                 tester.ChainBuilder.EmitMoney("0.3", bob);
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 2,
-                        Received = Money.Parse("0.3") + Money.Parse("0.21"),
-                        Amount = Money.Parse("0.3") + Money.Parse("0.21"),
-                    },
-                    Confirmed = new BalanceSummaryDetails()
-                    {
-                        TransactionCount = 1,
-                        Received = Money.Parse("0.1"),
-                        Amount = Money.Parse("0.1")
-                    },
-                    Immature = new BalanceSummaryDetails()
-                    {
-                        TransactionCount = 2,
-                        Received = Money.Parse("0.21") + Money.Parse("0.1"),
-                        Amount = Money.Parse("0.21") + Money.Parse("0.1"),
-                    },
-                    Spendable = new BalanceSummaryDetails()
-                    {
                         TransactionCount = 1,
                         Received = Money.Parse("0.3"),
                         Amount = Money.Parse("0.3"),
-                    }
+                    },
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("0.11"),
+                        Amount = Money.Parse("0.11")
+                    },
+                    Immature = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 1,
+                        Received = Money.Parse("0.1"),
+                        Amount = Money.Parse("0.1"),
+                    },
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        TransactionCount = 2,
+                        Received = Money.Parse("0.01") + Money.Parse("0.3"),
+                        Amount = Money.Parse("0.01") + Money.Parse("0.3")
+                    },
+                    CacheHit = CacheHit.PartialCache
                 }, result);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails()
                     {
@@ -335,10 +582,11 @@ namespace RapidBase.Tests
                     },
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 1,
-                        Received = Money.Parse("0.3"),
-                        Amount = Money.Parse("0.3"),
-                    }
+                        TransactionCount = 2,
+                        Received = Money.Parse("0.01") + Money.Parse("0.3"),
+                        Amount = Money.Parse("0.01") + Money.Parse("0.3"),
+                    },
+                    CacheHit = CacheHit.PartialCache
                 }, result);
 
                 tester.ChainBuilder.EmitBlock();
@@ -346,7 +594,7 @@ namespace RapidBase.Tests
                 tester.UpdateServerChain();
 
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
-                Assert.True(result.Spendable.Amount == Money.Parse("0.3"));
+                Assert.True(result.Spendable.Amount == Money.Parse("0.31"));
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -354,15 +602,15 @@ namespace RapidBase.Tests
                 var firstMaturityHeight = tester.ChainBuilder.Chain.Height;
 
                 //First coinbase is now mature
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails()
                     {
@@ -372,21 +620,23 @@ namespace RapidBase.Tests
                     },
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 2,
-                        Received = Money.Parse("0.4"),
-                        Amount = Money.Parse("0.4"),
-                    }
+                        TransactionCount = 3,
+                        Received = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
+                        Amount = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
+                    },
+                    CacheHit = CacheHit.PartialCache
                 }, result);
 
                 //Did not altered history
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + (tester.ChainBuilder.Chain.Height - 1));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
+                    UnConfirmed = null,
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails()
                     {
@@ -396,9 +646,9 @@ namespace RapidBase.Tests
                     },
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 1,
-                        Received = Money.Parse("0.3"),
-                        Amount = Money.Parse("0.3"),
+                        TransactionCount = 2,
+                        Received = Money.Parse("0.01") + Money.Parse("0.3"),
+                        Amount = Money.Parse("0.01") + Money.Parse("0.3"),
                     }
                 }, result);
 
@@ -414,45 +664,48 @@ namespace RapidBase.Tests
                     UnConfirmed = new BalanceSummaryDetails(),
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails(),
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.4") + Money.Parse("0.21"),
-                        Amount = Money.Parse("0.4") + Money.Parse("0.21"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     }
                 }, result);
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + (2 + 4));
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true&at=" + (2 + 4));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
+                    UnConfirmed = null,
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails(),
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.4") + Money.Parse("0.21"),
-                        Amount = Money.Parse("0.4") + Money.Parse("0.21"),
-                    }
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                    },
+                    CacheHit = CacheHit.PartialCache
                 }, result);
 
                 //Did not altered history when the first coinbase was confirmed
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + firstMaturityHeight);
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
+                    UnConfirmed = null,
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails()
                     {
@@ -462,27 +715,28 @@ namespace RapidBase.Tests
                     },
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 2,
-                        Received = Money.Parse("0.4"),
-                        Amount = Money.Parse("0.4"),
+                        TransactionCount = 3,
+                        Received = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
+                        Amount = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
                     }
                 }, result);
 
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + (firstMaturityHeight + 1));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
+                    UnConfirmed = null,
                     Confirmed = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
-                        Amount = Money.Parse("0.1") + Money.Parse("0.21") + Money.Parse("0.3"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21")
                     },
                     Immature = new BalanceSummaryDetails(),
                     Spendable = new BalanceSummaryDetails()
                     {
-                        TransactionCount = 3,
-                        Received = Money.Parse("0.4") + Money.Parse("0.21"),
-                        Amount = Money.Parse("0.4") + Money.Parse("0.21"),
+                        TransactionCount = 4,
+                        Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
+                        Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     }
                 }, result);
             }

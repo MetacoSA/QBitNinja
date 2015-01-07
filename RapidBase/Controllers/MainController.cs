@@ -206,7 +206,8 @@ namespace RapidBase.Controllers
             [ModelBinder(typeof(Base58ModelBinder))]
             BitcoinAddress address,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature at = null)
+            BlockFeature at = null,
+            bool debug = false)
         {
 
             CancellationTokenSource cancel = new CancellationTokenSource();
@@ -233,7 +234,8 @@ namespace RapidBase.Controllers
                                           .FirstOrDefault();
             if (cachedSummary != null && at != null && cachedSummary.Locator.Height == atBlock.Height)
             {
-                cachedSummary.PrepareForSend(at);
+                cachedSummary.CacheHit = CacheHit.FullCache;
+                cachedSummary.PrepareForSend(at, debug);
                 return cachedSummary;
             }
 
@@ -272,7 +274,9 @@ namespace RapidBase.Controllers
                                             diff.Confirmed.Where(c => c.Height > cachedSummary.Locator.Height).ToList();
 
             var immatureConf = confs.Where(c => !IsMature(c, atBlock)).ToList();
-            var immatureUnconf = unconfs.Where(c => !IsMature(c, atBlock)).ToList();
+            var immatureUnconf = unconfs
+                                .Where(c => !IsMature(c, atBlock))
+                                .ToList();
             var immature = immatureConf.Concat(immatureUnconf).ToList();
 
 
@@ -285,6 +289,7 @@ namespace RapidBase.Controllers
             summary.Confirmed += cachedSummary.Confirmed;
             summary.Immature += cachedSummary.Immature;
             summary.Locator = new BalanceLocator(atBlock.Height, atBlock.HashBlock);
+            summary.CacheHit = cachedSummary.Locator == null ? CacheHit.NoCache : CacheHit.PartialCache;
 
             if (
                 cachedSummary.Locator == null ||
@@ -301,7 +306,8 @@ namespace RapidBase.Controllers
                 cacheTable.Create(cachedSummary.Locator, cachedSummary);
             }
 
-            summary.PrepareForSend(at);
+            
+            summary.PrepareForSend(at, debug);
             return summary;
         }
 
@@ -312,7 +318,7 @@ namespace RapidBase.Controllers
 
         private bool IsMature(OrderedBalanceChange c, ChainedBlock tip)
         {
-            return !c.IsCoinbase || (c.BlockId != null && IsMature(c.Height,tip));
+            return !c.IsCoinbase || (c.BlockId != null && IsMature(c.Height, tip));
         }
 
         [HttpGet]

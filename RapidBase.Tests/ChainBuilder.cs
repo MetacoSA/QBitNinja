@@ -52,7 +52,12 @@ namespace RapidBase.Tests
                 });
             }
             if (broadcast)
-                Broadcast(funding);
+            {
+                if (!coinbase)
+                    Broadcast(funding);
+                _ongoingTransactions.Add(funding);
+            }
+
             return funding;
         }
 
@@ -71,6 +76,10 @@ namespace RapidBase.Tests
             return Chain.Tip;
         }
 
+        public void ClearMempool()
+        {
+            _ongoingTransactions.Clear();
+        }
         internal Block EmitBlock(uint? nonce = null)
         {
             var block = new Block();
@@ -128,5 +137,6 @@ namespace RapidBase.Tests
             var t = Chain.GetBlock(blockHeader.GetHash());
             Chain.SetTip(t);
         }
+
     }
 }
