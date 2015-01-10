@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RapidBase.JsonConverters;
 using System.Net.Http.Formatting;
 
@@ -15,6 +16,7 @@ namespace RapidBase
             settings.Converters.Add(new ScriptJsonConverter());
             settings.Converters.Add(new NetworkJsonConverter());
             settings.Converters.Add(new BalanceLocatorJsonConverter());
+            settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
         }
 
         public static T ToObject<T>(string data)
