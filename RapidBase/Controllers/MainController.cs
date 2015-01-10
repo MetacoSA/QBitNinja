@@ -224,11 +224,13 @@ namespace RapidBase.Controllers
             var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + address);
             var cachedSummary = cacheTable.Query(Chain, query)
                                           .Where(c =>
-                                              (c.Locator.BlockHash == atBlock.HashBlock && at != null) ||
+                                              (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
                                               c.Immature.TransactionCount == 0 ||
                                               ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)))
                                           .FirstOrDefault();
-            if (cachedSummary != null && at != null && cachedSummary.Locator.Height == atBlock.Height)
+
+            var cachedLocator = cachedSummary == null ? null : (ConfirmedBalanceLocator)cachedSummary.Locator;
+            if (cachedSummary != null && at != null && cachedLocator.Height == atBlock.Height)
             {
                 cachedSummary.CacheHit = CacheHit.FullCache;
                 cachedSummary.PrepareForSend(at, debug);
@@ -242,7 +244,7 @@ namespace RapidBase.Controllers
                 OlderImmature = int.MaxValue
             };
 
-            int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedSummary.Locator.Height;
+            int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedLocator.Height;
             if (at == null) //Need more block to find the unconfs
                 stopAtHeight = stopAtHeight - 12;
 
@@ -265,9 +267,9 @@ namespace RapidBase.Controllers
             }
 
             var unconfs = diff.Unconfirmed;
-            var confs = cachedSummary.Locator == null ?
+            var confs = cachedLocator == null ?
                                             diff.Confirmed :
-                                            diff.Confirmed.Where(c => c.Height > cachedSummary.Locator.Height).ToList();
+                                            diff.Confirmed.Where(c => c.Height > cachedLocator.Height).ToList();
 
             var immature = confs.Where(c => !IsMature(c, atBlock)).ToList();
 
@@ -280,22 +282,24 @@ namespace RapidBase.Controllers
             };
             summary.Confirmed += cachedSummary.Confirmed;
             summary.Immature += cachedSummary.Immature;
-            summary.Locator = new BalanceLocator(atBlock.Height, atBlock.HashBlock);
+            summary.Locator = new ConfirmedBalanceLocator(atBlock.Height, atBlock.HashBlock);
             summary.CacheHit = cachedSummary.Locator == null ? CacheHit.NoCache : CacheHit.PartialCache;
+
+            var newCachedLocator = (ConfirmedBalanceLocator)summary.Locator;
 
             if (
                 cachedSummary.Locator == null ||
-                cachedSummary.Locator.BlockHash != summary.Locator.BlockHash)
+                newCachedLocator.BlockHash != cachedLocator.BlockHash)
             {
                 var olderImmature = immature.Select(_ => _.Height).Concat(new[] { int.MaxValue }).Min();
-                cachedSummary = new Models.BalanceSummary()
+                var newCachedSummary = new Models.BalanceSummary()
                 {
                     Confirmed = summary.Confirmed,
                     Immature = summary.Immature,
                     Locator = summary.Locator,
                     OlderImmature = Math.Min(cachedSummary.OlderImmature, olderImmature)
                 };
-                cacheTable.Create(cachedSummary.Locator, cachedSummary);
+                cacheTable.Create(newCachedLocator, newCachedSummary);
             }
 
 
@@ -303,14 +307,14 @@ namespace RapidBase.Controllers
             return summary;
         }
 
-        private BalanceLocator ToBalanceLocator(BlockFeature feature)
+        private ConfirmedBalanceLocator ToBalanceLocator(BlockFeature feature)
         {
             return ToBalanceLocator(AtBlock(feature));
         }
 
-        private BalanceLocator ToBalanceLocator(ChainedBlock atBlock)
+        private ConfirmedBalanceLocator ToBalanceLocator(ChainedBlock atBlock)
         {
-            return new BalanceLocator(atBlock.Height, atBlock.HashBlock);
+            return new ConfirmedBalanceLocator(atBlock.Height, atBlock.HashBlock);
         }
 
         private ChainedBlock AtBlock(BlockFeature at)
@@ -370,11 +374,13 @@ namespace RapidBase.Controllers
             {
                 query.To = ToBalanceLocator(until);
                 query.FromIncluded = true;
+
+
             }
 
             if (query != null)
             {
-                if (query.To.Height > query.From.Height)
+                if (query.To.YoungerThan(query.From))
                     throw InvalidParameters("Invalid agurment : from < until");
             }
 

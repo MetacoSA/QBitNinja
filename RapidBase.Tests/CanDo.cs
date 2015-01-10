@@ -218,12 +218,12 @@ namespace RapidBase.Tests
             Assert.Equal(expected, String.Join(",", actual.ToArray()));
         }
 
-        private BalanceLocator GetLocator(ChainedBlock chainedBlock)
+        private ConfirmedBalanceLocator GetLocator(ChainedBlock chainedBlock)
         {
-            return new BalanceLocator(chainedBlock.Height, chainedBlock.HashBlock);
+            return new ConfirmedBalanceLocator(chainedBlock.Height, chainedBlock.HashBlock);
         }
 
-        private BalanceLocator GetLocator(ChainBuilder chainBuilder)
+        private ConfirmedBalanceLocator GetLocator(ChainBuilder chainBuilder)
         {
             return GetLocator(chainBuilder.Chain.Tip);
         }

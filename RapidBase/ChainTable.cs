@@ -36,7 +36,7 @@ namespace RapidBase
             set;
         }
 
-        public void Create(BalanceLocator locator, T item)
+        public void Create(ConfirmedBalanceLocator locator, T item)
         {
             var str = Serializer.ToString(item);
             var entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
@@ -55,7 +55,7 @@ namespace RapidBase
                 query = new BalanceQuery();
             var tableQuery = query.CreateTableQuery(Escape(Scope), "");
             return ExecuteBalanceQuery(Table, tableQuery, query.PageSizes)
-                   .Where(_ => chain.Contains(UnEscapeLocator(_.RowKey).BlockHash))
+                   .Where(_ => chain.Contains(((ConfirmedBalanceLocator)UnEscapeLocator(_.RowKey)).BlockHash))
                    .Select(_ => Serializer.ToObject<T>(_.Properties["data"].StringValue));
         }
 
@@ -77,7 +77,7 @@ namespace RapidBase
             } while (continuation != null);
         }
 
-        private string Escape(BalanceLocator locator)
+        private string Escape(ConfirmedBalanceLocator locator)
         {
             locator = Normalize(locator);
             return "-" + locator.ToString(true);
@@ -88,9 +88,9 @@ namespace RapidBase
         }
 
 
-        private static BalanceLocator Normalize(BalanceLocator locator)
+        private static ConfirmedBalanceLocator Normalize(ConfirmedBalanceLocator locator)
         {
-            locator = new BalanceLocator(locator.Height, locator.BlockHash ?? new uint256(0), locator.TransactionId ?? new uint256(0));
+            locator = new ConfirmedBalanceLocator(locator.Height, locator.BlockHash ?? new uint256(0), locator.TransactionId ?? new uint256(0));
             return locator;
         }
 

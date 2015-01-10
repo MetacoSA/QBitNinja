@@ -86,7 +86,8 @@ namespace RapidBase
             if (sig != null)
                 return new WhatIsTransactionSignature(sig);
 
-            if ((data.StartsWith("02") && data.Length / 2 == 33) || (data.StartsWith("03") && data.Length / 2 == 65))
+            var pubkeyBytes = NoException(() => Encoders.Hex.DecodeData(data));
+            if (pubkeyBytes != null && PubKey.Check(pubkeyBytes, true))
             {
                 var pubKey = NoException(() => new PubKey(data));
                 if (pubKey != null)
