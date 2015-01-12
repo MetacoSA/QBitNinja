@@ -66,7 +66,7 @@ namespace RapidBase.Controllers
                             "balances/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe/summary?at=318331",
                         }
                     },
-                    new RouteModel()
+                    new RouteModel
                     {
                         Template = "whatisit/[address|txId|blockId|blockheader|base58|transaction|signature|script|scriptbytes]",
                         Samples = new[]

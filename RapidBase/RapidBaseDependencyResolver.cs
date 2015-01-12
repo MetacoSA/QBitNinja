@@ -6,7 +6,6 @@ using System.Web.Http.Dependencies;
 using Autofac.Integration.WebApi;
 using NBitcoin;
 using NBitcoin.Indexer;
-using System.Threading;
 
 namespace RapidBase
 {

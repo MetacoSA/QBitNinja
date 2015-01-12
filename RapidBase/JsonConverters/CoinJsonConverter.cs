@@ -25,11 +25,9 @@ namespace RapidBase.JsonConverters
             }
             public Coin ToCoin()
             {
-                if (RedeemScript == null)
-                    return new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey));
-                else
-                    return new ScriptCoin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey), RedeemScript);
+                return RedeemScript == null ? new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey)) : new ScriptCoin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey), RedeemScript);
             }
+
             public uint256 TransactionId
             {
                 get;

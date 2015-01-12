@@ -1263,7 +1263,7 @@ namespace RapidBase.Tests
 
         }
 
-        private JObject ToCamel(JObject data)
+        private static JObject ToCamel(JObject data)
         {
             foreach (var prop in data.Properties().ToList())
             {

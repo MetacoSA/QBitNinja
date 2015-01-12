@@ -54,8 +54,7 @@ namespace RapidBase.Models
         {
             Hex = pubkey.ToHex();
             Address = new WhatIsAddress(pubkey.GetAddress(network));
-            P2SHAddress = new WhatIsAddress(pubkey.ScriptPubKey.GetScriptAddress(network));
-            P2SHAddress.RedeemScript = new WhatIsScript(pubkey.ScriptPubKey, network);
+            P2SHAddress = new WhatIsAddress(pubkey.ScriptPubKey.GetScriptAddress(network)) {RedeemScript = new WhatIsScript(pubkey.ScriptPubKey, network)};
             ScriptPubKey = new WhatIsScript(pubkey.ScriptPubKey, network);
             IsCompressed = pubkey.IsCompressed;
         }
@@ -183,17 +182,18 @@ namespace RapidBase.Models
         {
             Raw = Encoders.Hex.EncodeData(signature.ToBytes());
             AnyoneCanPay = ((int)signature.SigHash & (int)NBitcoin.SigHash.AnyoneCanPay) != 0;
-            if ((((int)signature.SigHash & 31) == (int)NBitcoin.SigHash.Single))
+            
+            switch (((int)signature.SigHash & 31))
             {
-                SigHash = "Single";
-            }
-            else if ((((int)signature.SigHash & 31) == (int)NBitcoin.SigHash.None))
-            {
-                SigHash = "None";
-            }
-            else
-            {
-                SigHash = "All";
+                case (int)NBitcoin.SigHash.Single:
+                    SigHash = "Single";
+                    break;
+                case (int)NBitcoin.SigHash.None:
+                    SigHash = "None";
+                    break;
+                default:
+                    SigHash = "All";
+                    break;
             }
 
             R = signature.Signature.R.ToString(16);

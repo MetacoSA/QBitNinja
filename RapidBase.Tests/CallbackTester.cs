@@ -1,50 +1,47 @@
 ﻿using NBitcoin;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace RapidBase.Tests
 {
     public class CallbackTester : IDisposable
     {
-        HttpListener _Listener;
+        readonly HttpListener _listener;
         public CallbackTester()
         {
             Address = "http://localhost:" + (ushort)RandomUtils.GetUInt32() + "/";
-            _Listener = new HttpListener();
-            _Listener.Prefixes.Add(Address);
-            _Listener.Start();
-            _Listener.BeginGetContext(OnRequest, null);
+            _listener = new HttpListener();
+            _listener.Prefixes.Add(Address);
+            _listener.Start();
+            _listener.BeginGetContext(OnRequest, null);
         }
 
         void OnRequest(IAsyncResult ar)
         {
             try
             {
-                var request = _Listener.EndGetContext(ar);
-                _Requests.Add(request);
-                _Listener.BeginGetContext(OnRequest, null);
+                var request = _listener.EndGetContext(ar);
+                _requests.Add(request);
+                _listener.BeginGetContext(OnRequest, null);
             }
             catch
             {
             }
         }
 
-        BlockingCollection<HttpListenerContext> _Requests = new BlockingCollection<HttpListenerContext>();
-        HttpListenerContext _Request;
+        readonly BlockingCollection<HttpListenerContext> _requests = new BlockingCollection<HttpListenerContext>();
+        HttpListenerContext _request;
         public HttpListenerContext WaitRequest()
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(5000);
-            _Request = _Requests.GetConsumingEnumerable(cancel.Token).FirstOrDefault();
-            return _Request;
+            _request = _requests.GetConsumingEnumerable(cancel.Token).FirstOrDefault();
+            return _request;
         }
 
         public T GetRequest<T>()
@@ -58,14 +55,14 @@ namespace RapidBase.Tests
 
         public void CloseRequest()
         {
-            _Request.Response.Close();
+            _request.Response.Close();
         }
 
         #region IDisposable Members
 
         public void Dispose()
         {
-            _Listener.Stop();
+            _listener.Stop();
         }
 
         #endregion

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -14,19 +13,19 @@ namespace RapidBase
     /// </summary>
     public class ChainTable<T>
     {
-        CloudTable _CloudTable;
+        readonly CloudTable _cloudTable;
         public ChainTable(CloudTable cloudTable)
         {
             if (cloudTable == null)
                 throw new ArgumentNullException("cloudTable");
-            _CloudTable = cloudTable;
+            _cloudTable = cloudTable;
         }
 
         public CloudTable Table
         {
             get
             {
-                return _CloudTable;
+                return _cloudTable;
             }
         }
 
@@ -77,12 +76,12 @@ namespace RapidBase
             } while (continuation != null);
         }
 
-        private string Escape(ConfirmedBalanceLocator locator)
+        private static string Escape(ConfirmedBalanceLocator locator)
         {
             locator = Normalize(locator);
             return "-" + locator.ToString(true);
         }
-        private BalanceLocator UnEscapeLocator(string str)
+        private static BalanceLocator UnEscapeLocator(string str)
         {
             return BalanceLocator.Parse(str.Substring(1), true);
         }
@@ -94,7 +93,7 @@ namespace RapidBase
             return locator;
         }
 
-        private string Escape(string scope)
+        private static string Escape(string scope)
         {
             var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(scope));
             return result;
