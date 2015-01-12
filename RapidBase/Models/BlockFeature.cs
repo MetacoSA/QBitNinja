@@ -64,7 +64,7 @@ namespace RapidBase.Models
             var feature = new BlockFeature();
             uint height;
 
-            var split = str.Split(new char[] { '-', '+' }, StringSplitOptions.None);
+            var split = str.Split(new[] { '-', '+' }, StringSplitOptions.None);
             if (split.Length != 1 && split.Length != 2)
                 ThrowInvalidFormat();
             str = split[0];

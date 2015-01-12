@@ -1,11 +1,6 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
-using NBitcoin.Crypto;
+﻿using NBitcoin.Crypto;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -15,10 +10,10 @@ namespace RapidBase
         {
             if (table == null)
                 throw new ArgumentNullException("table");
-            _Table = table;
+            _table = table;
         }
 
-        CrudTable<CallbackRegistration> _Table;
+        readonly CrudTable<CallbackRegistration> _table;
 
         public CallbackRegistration CreateCallback(string eventName, CallbackRegistration callback)
         {
@@ -26,23 +21,23 @@ namespace RapidBase
             var callbackStr = Serializer.ToString(callback);
             var id = Hash(callbackStr);
             callback.Id = id;
-            _Table.Create(eventName, id, callback);
+            _table.Create(eventName, id, callback);
             return callback;
         }
 
-        private string Hash(string data)
+        private static string Hash(string data)
         {
             return Hashes.Hash256(Encoding.UTF8.GetBytes(data)).ToString();
         }
 
         public CallbackRegistration[] GetCallbacks(string eventName)
         {
-            return _Table.Read(eventName);
+            return _table.Read(eventName);
         }
 
         public void Delete(string eventName, string id)
         {
-            _Table.Delete(eventName, id);
+            _table.Delete(eventName, id);
         }
     }
 }

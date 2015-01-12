@@ -108,28 +108,26 @@ namespace RapidBase
             return null;
         }
 
-        private Script GetScriptFromText(string data)
+        private static Script GetScriptFromText(string data)
         {
             if (!data.Contains(' '))
                 return null;
             return GetScriptFromBytes(Encoders.Hex.EncodeData(new Script(data).ToBytes(true)));
         }
 
-        private Script GetScriptFromBytes(string data)
+        private static Script GetScriptFromBytes(string data)
         {
             var bytes = Encoders.Hex.DecodeData(data);
             var script = Script.FromBytesUnsafe(bytes);
             bool hasOps = false;
-            var reader = script.CreateReader(false);
+            var reader = script.CreateReader();
             foreach (var op in reader.ToEnumerable())
             {
                 hasOps = true;
                 if (op.IncompleteData || (op.Name == "OP_UNKNOWN" && op.PushData == null))
                     return null;
             }
-            if (!hasOps)
-                return null;
-            return script;
+            return !hasOps ? null : script;
         }
 
 
@@ -168,9 +166,7 @@ namespace RapidBase
             if (scriptSig == null)
                 return null;
             var result = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
-            if (result == null)
-                return null;
-            return new WhatIsScript(result.RedeemScript, Network);
+            return result == null ? null : new WhatIsScript(result.RedeemScript, Network);
         }
 
         private WhatIsPublicKey TryFetchPublicKey(WhatIsAddress address)
@@ -179,9 +175,7 @@ namespace RapidBase
             if (scriptSig == null)
                 return null;
             var result = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
-            if (result == null)
-                return null;
-            return new WhatIsPublicKey(result.PublicKey, Network);
+            return result == null ? null : new WhatIsPublicKey(result.PublicKey, Network);
         }
 
         public T NoException<T>(Func<T> act) where T : class

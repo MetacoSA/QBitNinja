@@ -1,5 +1,4 @@
-﻿using NBitcoin;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RapidBase.JsonConverters;
 using System.Net.Http.Formatting;
@@ -44,7 +43,7 @@ namespace RapidBase
             get
             {
                 var mediaFormat = new JsonMediaTypeFormatter();
-                Serializer.RegisterFrontConverters(mediaFormat.SerializerSettings);
+                RegisterFrontConverters(mediaFormat.SerializerSettings);
                 mediaFormat.Indent = true;
                 return mediaFormat;
             }

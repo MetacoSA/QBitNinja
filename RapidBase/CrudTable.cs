@@ -1,11 +1,9 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
+﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin.Indexer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -15,7 +13,7 @@ namespace RapidBase
         {
             if (table == null)
                 throw new ArgumentNullException("table");
-            _Table = table;
+            _table = table;
         }
 
         public string Scope
@@ -24,12 +22,12 @@ namespace RapidBase
             set;
         }
 
-        private readonly CloudTable _Table;
+        private readonly CloudTable _table;
         public CloudTable Table
         {
             get
             {
-                return _Table;
+                return _table;
             }
         }
 
@@ -44,9 +42,10 @@ namespace RapidBase
                 }
             }));
         }
+
         public T[] Read(string collection)
         {
-            return Table.ExecuteQuery(new TableQuery()
+            return Table.ExecuteQuery(new TableQuery
             {
                 FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(collection))
             })
