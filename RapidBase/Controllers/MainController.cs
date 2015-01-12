@@ -198,6 +198,15 @@ namespace RapidBase.Controllers
 
             return RawBlock(blockFeature, headerOnly);
         }
+        [HttpGet]
+        [Route("blocks/{blockFeature}/header")]
+        public WhatIsBlockHeader BlockHeader(
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature blockFeature)
+        {
+            var block = GetBlock(blockFeature, true);
+            return new WhatIsBlockHeader(block.Header);
+        }
 
 
         [HttpGet]

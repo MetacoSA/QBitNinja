@@ -26,6 +26,14 @@ namespace RapidBase.Controllers
                             "blocks/tip?format=raw&headeronly=true",
                         }
                     },
+                     new RouteModel
+                    {
+                        Template = "blocks/[blockFeature]/header",
+                        Samples = new RouteSample[]
+                        {
+                            "blocks/tip/header"
+                        }
+                    },
                     new RouteModel
                     {
                         Template = "transactions/[txId]?format=[json|raw]&headeronly=[false|true]",
