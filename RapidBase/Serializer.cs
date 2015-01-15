@@ -1,7 +1,9 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RapidBase.JsonConverters;
+#if !CLIENT
 using System.Net.Http.Formatting;
+#endif
 
 namespace RapidBase
 {
@@ -14,7 +16,9 @@ namespace RapidBase
             settings.Converters.Add(new CoinJsonConverter());
             settings.Converters.Add(new ScriptJsonConverter());
             settings.Converters.Add(new NetworkJsonConverter());
+#if !CLIENT
             settings.Converters.Add(new BalanceLocatorJsonConverter());
+#endif
             settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
         }
 
@@ -37,7 +41,7 @@ namespace RapidBase
             RegisterFrontConverters(settings);
             return JsonConvert.SerializeObject(response, settings);
         }
-
+#if !CLIENT
         public static MediaTypeFormatter JsonMediaTypeFormatter
         {
             get
@@ -48,5 +52,6 @@ namespace RapidBase
                 return mediaFormat;
             }
         }
+#endif
     }
 }

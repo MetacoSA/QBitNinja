@@ -1,9 +1,10 @@
 ﻿using NBitcoin;
-using NBitcoin.Indexer;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
-
+#if !CLIENT
+using NBitcoin.Indexer;
+#endif
 namespace RapidBase.Models
 {
     public class BalanceModel
@@ -12,6 +13,7 @@ namespace RapidBase.Models
         {
 
         }
+#if !CLIENT
         public BalanceModel(IEnumerable<OrderedBalanceChange> balance, ConcurrentChain chain)
         {
             Operations = balance
@@ -25,7 +27,13 @@ namespace RapidBase.Models
             get;
             set;
         }
-
+#else
+        public string Continuation
+        {
+            get;
+            set;
+        }
+#endif
         public List<BalanceOperation> Operations
         {
             get;
@@ -85,7 +93,7 @@ namespace RapidBase.Models
             result.TransactionCount = -c1.TransactionCount;
             return result;
         }
-
+#if !CLIENT
         internal static BalanceSummaryDetails CreateFrom(List<OrderedBalanceChange> changes)
         {
             return new BalanceSummaryDetails()
@@ -95,6 +103,7 @@ namespace RapidBase.Models
                 Received = changes.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
             };
         }
+#endif
     }
 
     public enum CacheHit
@@ -137,14 +146,14 @@ namespace RapidBase.Models
         {
             Spendable = UnConfirmed + (Confirmed - Immature);
         }
-
+#if !CLIENT
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public BalanceLocator Locator
         {
             get;
             set;
         }
-
+#endif
 
         internal void PrepareForSend(BlockFeature at, bool debug)
         {
@@ -153,7 +162,9 @@ namespace RapidBase.Models
                 UnConfirmed = null;
             }
             CalculateSpendable();
+#if !CLIENT
             Locator = null;
+#endif
             if (!debug)
             {
                 CacheHit = null;
@@ -184,7 +195,7 @@ namespace RapidBase.Models
             ReceivedCoins = new List<Coin>();
             SpentCoins = new List<Coin>();
         }
-
+#if !CLIENT
         public BalanceOperation(OrderedBalanceChange balanceChange, ChainBase chain)
         {
             ReceivedCoins = balanceChange.ReceivedCoins.ToList();
@@ -199,6 +210,7 @@ namespace RapidBase.Models
                 Confirmations = (chain.Tip.Height - Height) + 1;
             }
         }
+#endif
         public Money Amount
         {
             get;
