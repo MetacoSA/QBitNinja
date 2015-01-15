@@ -51,5 +51,10 @@ namespace RapidBase.Client
             var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
             return Serializer.ToObject<T>(str);
         }
+
+        public Task<GetTransactionResponse> GetTransaction(uint256 transactionId)
+        {
+            return Get<GetTransactionResponse>("transactions/" + transactionId);
+        }
     }
 }

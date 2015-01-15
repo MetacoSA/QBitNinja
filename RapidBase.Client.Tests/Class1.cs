@@ -18,6 +18,13 @@ namespace RapidBase.Client.Tests
             Assert.NotNull(balances);
             Assert.True(balances.Operations.Any(o => o.Amount == Money.Coins(0.02m)));
         }
+        [Fact]
+        public void CanGetTransaction()
+        {
+            var client = CreateClient();
+            var tx = client.GetTransaction(new uint256("ce530f95b2b7f559292c60cefa340eaf7c83cde3e063c59bc43c108a3bd24360")).Result;
+            Assert.NotNull(tx);
+        }
 
         private RapidBaseClient CreateClient()
         {
