@@ -210,6 +210,7 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\web.config" />
     <Content Include="Views\Help\Index.cshtml" />
+    <None Include="Properties\PublishProfiles\rapidbase-test.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
