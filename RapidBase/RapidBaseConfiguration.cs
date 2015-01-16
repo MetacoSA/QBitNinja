@@ -8,7 +8,7 @@ namespace RapidBase
     {
         public RapidBaseConfiguration()
         {
-            CoinbaseMaturity = 100;
+            CoinbaseMaturity = 101;
         }
         public static RapidBaseConfiguration FromConfiguration()
         {
