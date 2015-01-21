@@ -114,6 +114,15 @@ namespace RapidBase.Controllers
         }
 
 
+        [HttpPost]
+        [Route("wallets/{walletName}/keysets")]
+        public KeySet CreateKeyset(string walletName, [FromBody]KeySet keyset)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            //repo.AddKeySet(keyset);
+            return null;
+        }
+
         [HttpGet]
         [Route("wallets/{walletName}/summary")]
         public BalanceSummary AddressBalanceSummary(

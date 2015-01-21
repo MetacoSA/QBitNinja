@@ -7,6 +7,31 @@ using System.Text;
 
 namespace RapidBase
 {
+    public class CrudTableFactory
+    {
+        public CrudTableFactory(Func<CloudTable> createTable)
+        {
+            if (createTable == null)
+                throw new ArgumentNullException("createTable");
+            _CreateTable = createTable;
+        }
+
+        Func<CloudTable> _CreateTable;
+        public string Scope
+        {
+            get;
+            set;
+        }
+
+        public CrudTable<T> GetTable<T>(string tableName)
+        {
+            var table = _CreateTable();
+            return new CrudTable<T>(table)
+            {
+                Scope = tableName + "-" + Scope
+            };
+        }
+    }
     public class CrudTable<T>
     {
         public CrudTable(CloudTable table)

@@ -9,17 +9,14 @@ namespace RapidBase
     public class WalletRepository
     {
         public WalletRepository(IndexerClient indexer,
-                                CrudTable<WalletModel> walletTable,
-                                CrudTable<WalletAddress> addressTable)
+                                CrudTableFactory tableFactory)
         {
             if (indexer == null)
                 throw new ArgumentNullException("indexer");
-            if (walletTable == null)
-                throw new ArgumentNullException("table");
-            if (addressTable == null)
-                throw new ArgumentNullException("addressTable");
-            _walletAddressesTable = addressTable;
-            _walletTable = walletTable;
+            if (tableFactory == null)
+                throw new ArgumentNullException("tableFactory");
+            _walletAddressesTable = tableFactory.GetTable<WalletAddress>("wa");
+            _walletTable = tableFactory.GetTable<WalletModel>("wm");
             _indexer = indexer;
         }
 
@@ -85,5 +82,10 @@ namespace RapidBase
             return WalletAddressesTable.Read(walletName.ToLowerInvariant());
         }
 
+
+        //public void AddKeySet(KeySet keyset)
+        //{
+        //    throw new NotImplementedException();
+        //}
     }
 }

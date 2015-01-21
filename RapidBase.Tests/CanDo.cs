@@ -1056,6 +1056,18 @@ namespace RapidBase.Tests
         }
 
         [Fact]
+        public void CanManageKeyGeneration()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
+                {
+                    Name = "Alice"
+                });
+            }
+        }
+
+        [Fact]
         public void CanRegisterCallback()
         {
             using (var tester = ServerTester.Create())

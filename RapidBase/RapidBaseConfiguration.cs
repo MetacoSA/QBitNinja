@@ -34,11 +34,8 @@ namespace RapidBase
             var tasks = new CloudTable[]
             {
             GetCallbackTable(),
-            GetRapidWalletTable(),
-            GetCacheCloudTable(),
             GetChainCacheCloudTable(),
-            GetRapidWalletTable(),
-            GetRapidWalletAddressTable()
+            GetCrudTable()
             }.Select(t => t.CreateIfNotExistsAsync()).ToArray();
             Task.WaitAll(tasks);
         }
@@ -48,17 +45,9 @@ namespace RapidBase
             return Indexer.GetTable("rapidcallbacks");
         }
 
-        private CloudTable GetRapidWalletTable()
+        private CloudTable GetCrudTable()
         {
-            return Indexer.GetTable("rapidwallets");
-        }
-        public CloudTable GetRapidWalletAddressTable()
-        {
-            return Indexer.GetTable("rapidwalletaddresses");
-        }
-        private CloudTable GetCacheCloudTable()
-        {
-            return Indexer.GetTable("rapidcache");
+            return Indexer.GetTable("crudtable");
         }
 
         private CloudTable GetChainCacheCloudTable()
@@ -73,17 +62,24 @@ namespace RapidBase
             return new CallbackRepository(new CrudTable<CallbackRegistration>(GetCallbackTable()));
         }
 
-        public CrudTable<T> GetCacheTable<T>()
+        public CrudTable<T> GetCacheTable<T>(string scope = null)
         {
-            return new CrudTable<T>(GetCacheCloudTable());
+            return GetCrudTableFactory(scope).GetTable<T>("cache");
         }
 
-        public WalletRepository CreateWalletRepository()
+        public CrudTableFactory GetCrudTableFactory(string scope = null)
+        {
+            return new CrudTableFactory(() => GetCrudTable())
+            {
+                Scope = scope
+            };
+        }
+
+        public WalletRepository CreateWalletRepository(string scope = null)
         {
             return new WalletRepository(
                     Indexer.CreateIndexerClient(),
-                    new CrudTable<WalletModel>(GetRapidWalletTable()),
-                    new CrudTable<WalletAddress>(GetRapidWalletAddressTable()));
+                    GetCrudTableFactory(scope));
         }
 
         public ChainTable<T> GetChainCacheTable<T>(string purpose)
