@@ -1,6 +1,9 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin.Indexer;
 using RapidBase.Models;
+using System.Collections;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -28,10 +31,16 @@ namespace RapidBase
         public void EnsureSetup()
         {
             Indexer.EnsureSetup();
-            GetCallbackTable().CreateIfNotExists();
-            GetRapidWalletTable().CreateIfNotExists();
-            GetCacheCloudTable().CreateIfNotExists();
-            GetChainCacheCloudTable().CreateIfNotExists();
+            var tasks = new CloudTable[]
+            {
+            GetCallbackTable(),
+            GetRapidWalletTable(),
+            GetCacheCloudTable(),
+            GetChainCacheCloudTable(),
+            GetRapidWalletTable(),
+            GetRapidWalletAddressTable()
+            }.Select(t => t.CreateIfNotExistsAsync()).ToArray();
+            Task.WaitAll(tasks);
         }
 
         public CloudTable GetCallbackTable()

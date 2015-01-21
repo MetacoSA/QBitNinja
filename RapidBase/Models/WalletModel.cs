@@ -4,6 +4,19 @@ using Newtonsoft.Json.Linq;
 
 namespace RapidBase.Models
 {
+    public class InsertWalletAddress
+    {
+        public bool MergePast
+        {
+            get;
+            set;
+        }
+        public WalletAddress Address
+        {
+            get;
+            set;
+        }
+    }
     public class WalletAddress
     {
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -18,7 +31,7 @@ namespace RapidBase.Models
             get;
             set;
         }
-        public JObject CustomData
+        public JToken CustomData
         {
             get;
             set;

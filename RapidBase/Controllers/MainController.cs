@@ -62,12 +62,30 @@ namespace RapidBase.Controllers
             return wallet;
         }
 
+        [HttpGet]
+        [Route("wallets/{walletName}/balance")]
+        public BalanceModel WalletBalance(
+            string walletName,
+            [ModelBinder(typeof(BalanceLocatorModelBinder))]
+            BalanceLocator continuation = null,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature until = null,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature from = null,
+            bool includeImmature = false,
+            bool unspentOnly = false)
+        {
+            var balanceId = new BalanceId(walletName);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly);
+        }
+
         [HttpPost]
         [Route("wallets/{walletName}/addresses")]
         public WalletAddress AddWalletAddresses(
             string walletName,
-            [FromBody]WalletAddress address)
+            [FromBody]InsertWalletAddress insertAddress)
         {
+            var address = insertAddress.Address;
             if (address.RedeemScript != null && address.Address == null)
             {
                 address.Address = address.RedeemScript.GetScriptAddress(Network);
@@ -75,7 +93,15 @@ namespace RapidBase.Controllers
             if (address.Address == null)
                 throw new FormatException("Address is missing");
             var repo = Configuration.CreateWalletRepository();
-            repo.AddAddress(walletName, address);
+            var rule = repo.AddAddress(walletName, address);
+
+            if (insertAddress.MergePast)
+            {
+                var index = Configuration.Indexer.CreateIndexerClient();
+                CancellationTokenSource cancel = new CancellationTokenSource();
+                cancel.CancelAfter(10000);
+                index.MergeIntoWallet(walletName, address.Address, rule, cancel.Token);
+            }
             return address;
         }
 
@@ -85,6 +111,19 @@ namespace RapidBase.Controllers
         {
             var repo = Configuration.CreateWalletRepository();
             return repo.GetAddresses(walletName);
+        }
+
+
+        [HttpGet]
+        [Route("wallets/{walletName}/summary")]
+        public BalanceSummary AddressBalanceSummary(
+            string walletName,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature at = null,
+            bool debug = false)
+        {
+            BalanceId id = new BalanceId(walletName);
+            return BalanceSummary(id, at, debug);
         }
 
         [HttpGet]
@@ -211,14 +250,23 @@ namespace RapidBase.Controllers
 
         [HttpGet]
         [Route("balances/{address}/summary")]
-        public BalanceSummary BalanceSummary(
+        public BalanceSummary AddressBalanceSummary(
             [ModelBinder(typeof(Base58ModelBinder))]
             BitcoinAddress address,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature at = null,
             bool debug = false)
         {
+            BalanceId id = new BalanceId(address);
+            return BalanceSummary(id, at, debug);
+        }
 
+        public BalanceSummary BalanceSummary(
+            BalanceId balanceId,
+            BlockFeature at,
+            bool debug
+            )
+        {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
 
@@ -230,7 +278,7 @@ namespace RapidBase.Controllers
 
             query.PageSizes = new[] { 1, 10, 100 };
 
-            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + address);
+            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + balanceId);
             var cachedSummary = cacheTable.Query(Chain, query)
                                           .Where(c =>
                                               (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
@@ -260,7 +308,7 @@ namespace RapidBase.Controllers
             var client = Configuration.Indexer.CreateIndexerClient();
             var diff =
                 client
-                .GetOrderedBalance(address, query)
+                .GetOrderedBalance(balanceId, query)
                 .WhereNotExpired(TimeSpan.FromHours(1.0))
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
                 .TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight)
@@ -351,7 +399,7 @@ namespace RapidBase.Controllers
 
         [HttpGet]
         [Route("balances/{address}")]
-        public BalanceModel Balance(
+        public BalanceModel AddressBalance(
             [ModelBinder(typeof(Base58ModelBinder))]
             BitcoinAddress address,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
@@ -362,6 +410,17 @@ namespace RapidBase.Controllers
             BlockFeature from = null,
             bool includeImmature = false,
             bool unspentOnly = false)
+        {
+            var balanceId = new BalanceId(address);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly);
+        }
+
+        BalanceModel Balance(BalanceId balanceId,
+            BalanceLocator continuation,
+            BlockFeature until,
+            BlockFeature from,
+            bool includeImmature,
+            bool unspentOnly)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
@@ -396,7 +455,7 @@ namespace RapidBase.Controllers
             var client = Configuration.Indexer.CreateIndexerClient();
             var balance =
                 client
-                .GetOrderedBalance(address, query)
+                .GetOrderedBalance(balanceId, query)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
                 .WhereNotExpired()
                 .Where(o => includeImmature || IsMature(o, Chain.Tip))

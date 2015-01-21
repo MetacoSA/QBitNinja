@@ -56,7 +56,8 @@ namespace RapidBase.Tests
             {
                 if (!coinbase)
                     Broadcast(funding);
-                _ongoingTransactions.Add(funding);
+                else
+                    _ongoingTransactions.Add(funding);
             }
 
             return funding;
@@ -91,14 +92,12 @@ namespace RapidBase.Tests
                 block.Header.BlockTime = DateTime.UtcNow;
             var indexer = CreateIndexer();
             var blockHash = block.GetHash();
-            foreach (var tx in block.Transactions)
-            {
-                indexer.Index(new TransactionEntry.Entity(null, tx, blockHash));
-                foreach (var entity in OrderedBalanceChange.ExtractScriptBalances(null, tx, blockHash, block.Header, Chain.Tip.Height + 1))
-                {
-                    indexer.Index(new[] { entity });
-                }
-            }
+
+            var clientIndexer = indexer.Configuration.CreateIndexerClient();
+            var height = Chain.Tip.Height + 1;
+            indexer.IndexOrderedBalance(height, block);
+            indexer.IndexWalletOrderedBalance(height, block, clientIndexer.GetAllWalletRules());
+            indexer.IndexTransactions(height, block);
             if (UploadBlock)
             {
                 indexer.Index(block);

@@ -61,6 +61,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\RapidBase\JsonConverters\Base58JsonConverter.cs">
+      <Link>JsonConverters\Base58JsonConverter.cs</Link>
+    </Compile>
     <Compile Include="..\RapidBase\JsonConverters\BitcoinSerializableJsonConverter.cs">
       <Link>JsonConverters\BitcoinSerializableJsonConverter.cs</Link>
     </Compile>

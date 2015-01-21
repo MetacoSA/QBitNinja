@@ -60,17 +60,19 @@ namespace RapidBase
             return WalletTable.Read("w");
         }
 
-        public void AddAddress(string walletName, WalletAddress address)
+        public ScriptRule AddAddress(string walletName, WalletAddress address)
         {
             if (address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
-            Indexer.AddWalletRule(walletName, new ScriptRule
+            var rule = new ScriptRule
             {
                 CustomData = address.CustomData == null ? null : address.CustomData.ToString(),
                 ScriptPubKey = address.Address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
-            });
+            };
+            Indexer.AddWalletRule(walletName, rule);
             WalletAddressesTable.Create(walletName.ToLowerInvariant(), Hash(address), address);
+            return rule;
         }
 
         private static string Hash(WalletAddress address)

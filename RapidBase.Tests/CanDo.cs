@@ -989,13 +989,71 @@ namespace RapidBase.Tests
             }
         }
 
-        //[Fact]
-        //public void CanManageWallet()
-        //{
-        //    using (var tester = ServerTester.Create())
-        //    {
-        //    }
-        //}
+        [Fact]
+        public void CanManageWallet()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var alice1 = new Key().GetBitcoinSecret(Network.TestNet);
+                var alice2 = new Key().GetBitcoinSecret(Network.TestNet);
+
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), alice1);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.5m), alice2);
+                tester.ChainBuilder.EmitBlock();
+                tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
+                {
+                    Name = "Alice"
+                });
+
+                tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = false,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice1.GetAddress()
+                    }
+                });
+                tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = false,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice2.GetAddress()
+                    }
+                });
+
+                var balance = tester.SendGet<BalanceModel>("wallets/Alice/balance");
+                Assert.True(balance.Operations.Count == 0);
+
+                tester.ChainBuilder.EmitMoney(Money.Coins(0.1m), alice1);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.52m), alice2);
+                tester.ChainBuilder.EmitBlock();
+
+                tester.UpdateServerChain();
+                balance = tester.SendGet<BalanceModel>("wallets/Alice/balance");
+                Assert.True(balance.Operations.Count == 2);
+
+                var alice3 = new Key().GetBitcoinSecret(Network.TestNet);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1m), alice3);
+                tester.ChainBuilder.EmitBlock();
+
+                tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = true,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice3.GetAddress(),
+                        CustomData = new JValue("hello")
+                    }
+                });
+
+                balance = tester.SendGet<BalanceModel>("wallets/Alice/balance");
+                Assert.True(balance.Operations.Count == 3);
+
+                var summary = tester.SendGet<BalanceSummary>("wallets/Alice/summary");
+                Assert.True(summary.Spendable.TransactionCount == 3);
+            }
+        }
 
         [Fact]
         public void CanRegisterCallback()

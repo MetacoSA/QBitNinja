@@ -58,19 +58,19 @@
     </Reference>
     <Reference Include="Mono.Nat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.1.0.7.14\lib\net45\Mono.Nat.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.1.0.7.18\lib\net45\Mono.Nat.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin, Version=1.0.7.14, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin, Version=1.0.7.18, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.1.0.7.14\lib\net45\NBitcoin.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.1.0.7.18\lib\net45\NBitcoin.dll</HintPath>
     </Reference>
     <Reference Include="NBitcoin.BouncyCastle, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.1.0.7.14\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.1.0.7.18\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.Indexer">
-      <HintPath>..\packages\NBitcoin.Indexer.2.0.3.28\lib\net45\NBitcoin.Indexer.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NBitcoin.Indexer, Version=2.0.4.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NBitcoin.Indexer.2.0.4.1\lib\net45\NBitcoin.Indexer.dll</HintPath>
     </Reference>
     <Reference Include="Owin">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
