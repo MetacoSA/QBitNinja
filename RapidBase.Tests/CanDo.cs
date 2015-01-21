@@ -27,11 +27,11 @@ namespace RapidBase.Tests
                 //Not found should return 404 (Not found)
                 var txId = new uint256(Encoders.Hex.EncodeData(RandomUtils.GetBytes(32)));
                 uint256 id = txId;
-                AssetEx.HttpError(404, () => tester.SendGet<GetTransactionResponse>("transactions/" + id));     // todo: there's a risk that Dispose() will be called for tester when the lambda executes
+                AssertEx.HttpError(404, () => tester.SendGet<GetTransactionResponse>("transactions/" + id));     // todo: there's a risk that Dispose() will be called for tester when the lambda executes
                 ////
 
                 //Not correctly formatted should return 400 (Bad request)
-                AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("transactions/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
+                AssertEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("transactions/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
                 ////
 
                 //Found should return the correct transaction
@@ -114,7 +114,7 @@ namespace RapidBase.Tests
                 Assert.True(response.SequenceEqual(block.ToBytes()));
 
                 //404 if not found
-                AssetEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/18179931ea977cc0030c7c3e3e4d457f384b9e00aee9d86e39fbff0c5d3f4c40?format=raw")); // todo: there's a risk that Dispose() will be called for tester when the lambda executes
+                AssertEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/18179931ea977cc0030c7c3e3e4d457f384b9e00aee9d86e39fbff0c5d3f4c40?format=raw")); // todo: there's a risk that Dispose() will be called for tester when the lambda executes
                 /////
 
                 //Can get Block with additional data
@@ -155,7 +155,7 @@ namespace RapidBase.Tests
                 response2 = tester.SendGet<GetBlockResponse>("blocks/tip-10?headerOnly=true");
                 Assert.True(response2.AdditionalInformation.BlockHeader.ToBytes().SequenceEqual(Network.TestNet.GetGenesis().Header.ToBytes()));
 
-                AssetEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/tip+1?format=raw"));
+                AssertEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/tip+1?format=raw"));
 
                 response2 = tester.SendGet<GetBlockResponse>("blocks/" + block.Header.GetHash() + "+1");
                 Assert.True(response2.Block.ToBytes().SequenceEqual(block2.ToBytes()));
@@ -1010,7 +1010,7 @@ namespace RapidBase.Tests
                 var results = tester.SendGet<CallbackRegistration[]>("blocks/onnew");
                 Assert.True(results.Length == 2);
                 tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id);
-                AssetEx.HttpError(404, () => tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
+                AssertEx.HttpError(404, () => tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
             }
         }
 
@@ -1086,7 +1086,7 @@ namespace RapidBase.Tests
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=2&until=1&includeimmature=true");
                 Assert.True(balance.Operations.Count == 2); //Should only have the 2 operations
 
-                AssetEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
+                AssertEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
             }
         }
 
