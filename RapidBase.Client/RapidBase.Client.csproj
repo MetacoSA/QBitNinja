@@ -70,6 +70,9 @@
     <Compile Include="..\RapidBase\JsonConverters\CoinJsonConverter.cs">
       <Link>JsonConverters\CoinJsonConverter.cs</Link>
     </Compile>
+    <Compile Include="..\RapidBase\JsonConverters\KeyPathJsonConverter.cs">
+      <Link>JsonConverters\KeyPathJsonConverter.cs</Link>
+    </Compile>
     <Compile Include="..\RapidBase\JsonConverters\MoneyJsonConverter.cs">
       <Link>JsonConverters\MoneyJsonConverter.cs</Link>
     </Compile>

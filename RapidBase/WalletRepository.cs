@@ -71,12 +71,12 @@ namespace RapidBase
 
         public void Create(WalletModel wallet)
         {
-            WalletTable.Create("w", wallet.Name.ToLowerInvariant(), wallet);
+            WalletTable.Create(wallet.Name, wallet);
         }
 
         public WalletModel[] Get()
         {
-            return WalletTable.Read("w");
+            return WalletTable.Read();
         }
 
         public ScriptRule AddAddress(string walletName, WalletAddress address)
@@ -90,7 +90,7 @@ namespace RapidBase
                 RedeemScript = address.RedeemScript
             };
             Indexer.AddWalletRule(walletName, rule);
-            WalletAddressesTable.Create(walletName.ToLowerInvariant(), Hash(address), address);
+            WalletAddressesTable.GetChild(walletName).Create(Hash(address), address);
             return rule;
         }
 
@@ -101,7 +101,7 @@ namespace RapidBase
 
         public WalletAddress[] GetAddresses(string walletName)
         {
-            return WalletAddressesTable.Read(walletName.ToLowerInvariant());
+            return WalletAddressesTable.GetChild(walletName).Read();
         }
 
         public void AddKeySet(string walletName, HDKeySet keyset)
@@ -109,14 +109,12 @@ namespace RapidBase
             KeySetData data = new KeySetData();
             data.KeySet = keyset;
             data.State = new HDKeyState();
-            KeySetTable.Create(walletName, keyset.Name, data);
-            KeySetTable.Read(walletName);
-            KeySetTable.ReadOne(walletName, keyset.Name);
+            KeySetTable.GetChild(walletName).Create(keyset.Name, data);
         }
 
         public HDKeyData NewKey(string walletName, string keysetName)
         {
-            var keySetData = KeySetTable.ReadOne(walletName, keysetName);
+            var keySetData = KeySetTable.GetChild(walletName).ReadOne(keysetName);
             KeyPath next = null;
             if (keySetData.State.CurrentPath == null)
             {
@@ -132,16 +130,11 @@ namespace RapidBase
             keyData.Path = next;
             keyData.Address = keyData.ExtPubKey.ExtPubKey.PubKey.GetAddress(Network);
 
-            KeyDataTable.Create(Concat(walletName, keysetName), keyData.Address.ToString(), keyData);
+            KeyDataTable.GetChild(walletName,keysetName).Create(keyData.Address.ToString(), keyData);
 
             keySetData.State.CurrentPath = next;
-            KeySetTable.Create(walletName, keysetName, keySetData);
+            KeySetTable.GetChild(walletName).Create(keysetName, keySetData);
             return keyData;
-        }
-
-        private string Concat(string walletName, string keysetName)
-        {
-            return walletName + "µ" + keysetName;
         }
 
         public Network Network

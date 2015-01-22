@@ -10,18 +10,18 @@ namespace RapidBase
 {
     public class CrudTableFactory
     {
-        public CrudTableFactory(Func<CloudTable> createTable, string scope = null)
+        public CrudTableFactory(Func<CloudTable> createTable, Scope scope = null)
         {
             if (createTable == null)
                 throw new ArgumentNullException("createTable");
+            if (scope == null)
+                scope = new Scope();
             _CreateTable = createTable;
-            if (scope != null && scope.Contains("µ"))
-                throw new ArgumentException("µ is an invalid character for a scope", "scope");
             Scope = scope;
         }
 
         Func<CloudTable> _CreateTable;
-        public string Scope
+        public Scope Scope
         {
             get;
             private set;
@@ -32,7 +32,7 @@ namespace RapidBase
             var table = _CreateTable();
             return new CrudTable<T>(table)
             {
-                Scope = tableName + "µ" + Scope
+                Scope = Scope.GetChild(tableName)
             };
         }
     }
@@ -43,14 +43,14 @@ namespace RapidBase
             if (table == null)
                 throw new ArgumentNullException("table");
             _table = table;
+            Scope = new Scope();
         }
 
-        public string Scope
+        public Scope Scope
         {
             get;
             set;
         }
-
         private readonly CloudTable _table;
         public CloudTable Table
         {
@@ -60,10 +60,10 @@ namespace RapidBase
             }
         }
 
-        public void Create(string collection, string itemId, T item)
+        public void Create(string itemId, T item)
         {
             var callbackStr = Serializer.ToString(item);
-            Table.Execute(TableOperation.InsertOrReplace(new DynamicTableEntity(Escape(collection), Escape(itemId))
+            Table.Execute(TableOperation.InsertOrReplace(new DynamicTableEntity(Escape(Scope), Escape(itemId))
             {
                 Properties =
                 {
@@ -72,21 +72,24 @@ namespace RapidBase
             }));
         }
 
-        public T[] Read(string collection)
+        public T[] Read()
         {
             return Table.ExecuteQuery(new TableQuery
             {
-                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(collection))
+                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
             })
             .Select(e => Serializer.ToObject<T>(e.Properties["data"].StringValue))
             .ToArray();
         }
 
-        private string Escape(string collection, bool scoped = true)
+        private string Escape(Scope scope)
         {
-            var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(collection));
-            if (Scope != null && scoped)
-                result = Escape(Scope, false) + result;
+            return Escape(scope.ToString());
+        }
+
+        private string Escape(string key)
+        {
+            var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(key));
             return result;
         }
 
@@ -98,15 +101,23 @@ namespace RapidBase
             }));
         }
 
-        public T ReadOne(string collection, string item)
+        public T ReadOne(string item)
         {
-            var e = Table.Execute(TableOperation.Retrieve(Escape(collection), Escape(item))).Result as DynamicTableEntity;
+            var e = Table.Execute(TableOperation.Retrieve(Escape(Scope), Escape(item))).Result as DynamicTableEntity;
             if (e == null)
                 throw new StorageException(new RequestResult()
                 {
                     HttpStatusCode = 404
                 }, "Item not found", null);
             return Serializer.ToObject<T>(e.Properties["data"].StringValue);
+        }
+
+        public CrudTable<T> GetChild(params string[] children)
+        {
+            return new CrudTable<T>(Table)
+            {
+                Scope = Scope.GetChild(children)
+            };
         }
     }
 }

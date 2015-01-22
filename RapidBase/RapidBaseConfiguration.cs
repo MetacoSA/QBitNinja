@@ -62,17 +62,17 @@ namespace RapidBase
             return new CallbackRepository(new CrudTable<CallbackRegistration>(GetCallbackTable()));
         }
 
-        public CrudTable<T> GetCacheTable<T>(string scope = null)
+        public CrudTable<T> GetCacheTable<T>(Scope scope = null)
         {
             return GetCrudTableFactory(scope).GetTable<T>("cache");
         }
 
-        public CrudTableFactory GetCrudTableFactory(string scope = null)
+        public CrudTableFactory GetCrudTableFactory(Scope scope = null)
         {
             return new CrudTableFactory(() => GetCrudTable(), scope);
         }
 
-        public WalletRepository CreateWalletRepository(string scope = null)
+        public WalletRepository CreateWalletRepository(Scope scope = null)
         {
             return new WalletRepository(
                     Indexer.CreateIndexerClient(),

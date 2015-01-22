@@ -21,7 +21,7 @@ namespace RapidBase
             var callbackStr = Serializer.ToString(callback);
             var id = Hash(callbackStr);
             callback.Id = id;
-            _table.Create(eventName, id, callback);
+            _table.GetChild(eventName).Create(id, callback);
             return callback;
         }
 
@@ -32,7 +32,7 @@ namespace RapidBase
 
         public CallbackRegistration[] GetCallbacks(string eventName)
         {
-            return _table.Read(eventName);
+            return _table.GetChild(eventName).Read();
         }
 
         public void Delete(string eventName, string id)
