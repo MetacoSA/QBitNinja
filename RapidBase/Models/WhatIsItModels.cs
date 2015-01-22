@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using System.Globalization;
+using NBitcoin;
 using NBitcoin.DataEncoders;
 using System;
 using System.Linq;
@@ -118,7 +119,7 @@ namespace RapidBase.Models
             Time = blockHeader.BlockTime;
             Nonce = blockHeader.Nonce;
             HashMerkelRoot = blockHeader.HashMerkleRoot;
-            Version = blockHeader.Version.ToString();
+            Version = blockHeader.Version.ToString(CultureInfo.InvariantCulture);
             Bits = blockHeader.Bits.ToString();
             Difficulty = blockHeader.Bits.Difficulty;
         }

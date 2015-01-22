@@ -71,7 +71,7 @@ namespace RapidBase.Models
                 return c2;
             if (c2 == null)
                 return c1;
-            return new BalanceSummaryDetails()
+            return new BalanceSummaryDetails
             {
                 Amount = c1.Amount + c2.Amount,
                 TransactionCount = c1.TransactionCount + c2.TransactionCount,
@@ -87,16 +87,18 @@ namespace RapidBase.Models
         {
             if (c1 == null)
                 return null;
-            BalanceSummaryDetails result = new BalanceSummaryDetails();
-            result.Amount = -c1.Amount;
-            result.Received = -c1.Received;
-            result.TransactionCount = -c1.TransactionCount;
+            BalanceSummaryDetails result = new BalanceSummaryDetails
+            {
+                Amount = -c1.Amount, 
+                Received = -c1.Received, 
+                TransactionCount = -c1.TransactionCount
+            };
             return result;
         }
 #if !CLIENT
         internal static BalanceSummaryDetails CreateFrom(List<OrderedBalanceChange> changes)
         {
-            return new BalanceSummaryDetails()
+            return new BalanceSummaryDetails
             {
                 Amount = changes.Select(_ => _.Amount).Sum(),
                 TransactionCount = changes.Count,

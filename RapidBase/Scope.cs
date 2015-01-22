@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RapidBase
 {
@@ -10,38 +7,38 @@ namespace RapidBase
     {
         public Scope()
         {
-            _Parents = new string[0];
+            _parents = new string[0];
         }
         public Scope(string[] parents)
         {
             if (parents == null)
                 parents = new string[0];
-            foreach (var parent in parents)
-                if (parent.Contains("/"))
-                    throw new ArgumentException("'/' is not authorized for naming a scope");
-            _Parents = parents;
+            if (parents.Any(parent => parent.Contains("/")))
+            {
+                throw new ArgumentException("'/' is not authorized for naming a scope");
+            }
+            _parents = parents;
         }
 
-        private readonly string[] _Parents;
+        private readonly string[] _parents;
         public string[] Parents
         {
             get
             {
-                return _Parents;
+                return _parents;
             }
         }
 
         public Scope GetChild(params string[] names)
         {
-            var parents = _Parents.ToList();
-            foreach(var name in names)
-                parents.Add(name);
+            var parents = _parents.ToList();
+            parents.AddRange(names);
             return new Scope(parents.ToArray());
         }
 
         public override string ToString()
         {
-            return String.Join("/", _Parents);
+            return String.Join("/", _parents);
         }
     }
 }

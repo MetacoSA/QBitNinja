@@ -1,16 +1,12 @@
 ﻿using NBitcoin;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
 using Newtonsoft.Json;
 
 
 namespace RapidBase.JsonConverters
 {
-    public class KeyPathJsonConverter : Newtonsoft.Json.JsonConverter
+    public class KeyPathJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

@@ -4,7 +4,6 @@ using System;
 
 namespace RapidBase.JsonConverters
 {
-
     public class MoneyJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)

@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using System.Collections.Generic;
+using NBitcoin;
 using System.Linq;
 using NBitcoin.Crypto;
 using NBitcoin.Indexer;
@@ -20,8 +21,8 @@ namespace RapidBase
                 throw new ArgumentNullException("tableFactory");
             _walletAddressesTable = tableFactory.GetTable<WalletAddress>("wa");
             _walletTable = tableFactory.GetTable<WalletModel>("wm");
-            _KeySetTable = tableFactory.GetTable<KeySetData>("ks");
-            _KeyDataTable = tableFactory.GetTable<HDKeyData>("kd");
+            _keySetTable = tableFactory.GetTable<KeySetData>("ks");
+            _keyDataTable = tableFactory.GetTable<HDKeyData>("kd");
             Scope = tableFactory.Scope;
             _indexer = indexer;
         }
@@ -41,21 +42,21 @@ namespace RapidBase
             }
         }
 
-        private readonly CrudTable<HDKeyData> _KeyDataTable;
+        private readonly CrudTable<HDKeyData> _keyDataTable;
         public CrudTable<HDKeyData> KeyDataTable
         {
             get
             {
-                return _KeyDataTable;
+                return _keyDataTable;
             }
         }
 
-        private readonly CrudTable<KeySetData> _KeySetTable;
+        private readonly CrudTable<KeySetData> _keySetTable;
         public CrudTable<KeySetData> KeySetTable
         {
             get
             {
-                return _KeySetTable;
+                return _keySetTable;
             }
         }
 
@@ -114,20 +115,18 @@ namespace RapidBase
 
         public void AddKeySet(string walletName, HDKeySet keyset)
         {
-            KeySetData data = new KeySetData();
-            data.KeySet = keyset;
-            data.State = new HDKeyState();
+            KeySetData data = new KeySetData {KeySet = keyset, State = new HDKeyState()};
             KeySetTable.GetChild(walletName).Create(keyset.Name, data);
         }
 
         public HDKeyData NewKey(string walletName, string keysetName)
         {
-            HDKeyData keyData = null;
+            HDKeyData keyData;
             while (true)
             {
 
                 var keySetData = KeySetTable.GetChild(walletName).ReadOne(keysetName);
-                KeyPath next = null;
+                KeyPath next;
                 if (keySetData.State.CurrentPath == null)
                 {
                     var root = keySetData.KeySet.Path ?? new KeyPath();
@@ -163,7 +162,7 @@ namespace RapidBase
                     break;
                 }
             }
-            var entry = Indexer.AddWalletRule(walletName, new ScriptRule()
+            var entry = Indexer.AddWalletRule(walletName, new ScriptRule
             {
                 RedeemScript = keyData.RedeemScript,
                 ScriptPubKey = keyData.ScriptPubKey
@@ -173,18 +172,16 @@ namespace RapidBase
             return keyData;
         }
 
-        private string Encode(Script script)
+        private static string Encode(Script script)
         {
             return Encoders.Hex.EncodeData(script.ToBytes(true));
         }
 
-        private Script CreateScriptPubKey(BitcoinExtPubKey[] bitcoinExtPubKey, int sigCount, bool p2sh)
+        private static Script CreateScriptPubKey(IList<BitcoinExtPubKey> bitcoinExtPubKey, int sigCount, bool p2sh)
         {
-            if (bitcoinExtPubKey.Length == 1)
+            if (bitcoinExtPubKey.Count == 1)
             {
-                if (p2sh)
-                    return bitcoinExtPubKey[0].ExtPubKey.PubKey.ScriptPubKey;
-                return bitcoinExtPubKey[0].ExtPubKey.PubKey.Hash.ScriptPubKey;
+                return p2sh ? bitcoinExtPubKey[0].ExtPubKey.PubKey.ScriptPubKey : bitcoinExtPubKey[0].ExtPubKey.PubKey.Hash.ScriptPubKey;
             }
             return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(sigCount, bitcoinExtPubKey.Select(k => k.ExtPubKey.PubKey).ToArray());
         }
@@ -197,7 +194,7 @@ namespace RapidBase
             }
         }
 
-        private KeyPath Inc(KeyPath keyPath)
+        private static KeyPath Inc(KeyPath keyPath)
         {
             var indexes = keyPath.Indexes.ToArray();
             indexes[indexes.Length - 1] = indexes[indexes.Length - 1] + 1;
