@@ -2,6 +2,7 @@
 using NBitcoin.DataEncoders;
 using System;
 using System.Linq;
+using System.Text;
 
 namespace RapidBase.Models
 {
@@ -14,6 +15,20 @@ namespace RapidBase.Models
         public BlockFeature()
         {
             Height = -1;
+        }
+        public BlockFeature(int height)
+        {
+            Height = height;
+        }
+        public BlockFeature(uint256 blockId)
+        {
+            Height = -1;
+            BlockId = blockId;
+        }
+        public BlockFeature(SpecialFeature special)
+        {
+            Height = -1;
+            Special = special;
         }
         public int Height
         {
@@ -114,6 +129,31 @@ namespace RapidBase.Models
         {
             get;
             set;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (Special != null)
+            {
+                if (Special.Value == SpecialFeature.Last)
+                    builder.Append("tip");
+            }
+            if (BlockId != null)
+            {
+                builder.Append(BlockId.ToString());
+            }
+            if (Height != -1)
+            {
+                builder.Append(Height);
+            }
+            if (Offset != 0)
+            {
+                if (Offset > 0)
+                    builder.Append("+");
+                builder.Append(Offset);
+            }
+            return builder.ToString();
         }
     }
 }

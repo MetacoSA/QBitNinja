@@ -30,6 +30,11 @@ namespace RapidBase.Client
             return Get<BalanceModel>("balances/" + address);
         }
 
+        public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false)
+        {
+            return Get<GetBlockResponse>("blocks/" + blockFeature.ToString() + "?headerOnly=" + headerOnly);
+        }
+
         private string GetFullUri(string relativePath, params object[] parameters)
         {
             relativePath = String.Format(relativePath, parameters);

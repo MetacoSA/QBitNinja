@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using RapidBase.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,30 @@ namespace RapidBase.Client.Tests
             Assert.NotNull(balances);
             Assert.True(balances.Operations.Any(o => o.Amount == Money.Coins(0.02m)));
         }
+
+
+        [Fact]
+        public void CanGetBlock()
+        {
+            var client = CreateClient();
+            var block = client.GetBlock(new BlockFeature(SpecialFeature.Last), true).Result;
+            Assert.NotNull(block);
+            Assert.Null(block.Block);
+            var height = block.AdditionalInformation.Height;
+            block = client.GetBlock(new BlockFeature(SpecialFeature.Last)
+            {
+                Offset = -1
+            }, true).Result;
+            Assert.NotNull(block);
+            Assert.Null(block.Block);
+            Assert.True(block.AdditionalInformation.Height < height);
+            block = client.GetBlock(new BlockFeature(SpecialFeature.Last)
+            {
+                Offset = 1
+            }, true).Result;
+            Assert.Null(block);
+        }
+
         [Fact]
         public void CanGetTransaction()
         {
