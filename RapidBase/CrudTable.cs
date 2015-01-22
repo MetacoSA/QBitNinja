@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage.Table;
+﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin.Indexer;
 using System;
 using System.Collections.Generic;
@@ -9,18 +10,21 @@ namespace RapidBase
 {
     public class CrudTableFactory
     {
-        public CrudTableFactory(Func<CloudTable> createTable)
+        public CrudTableFactory(Func<CloudTable> createTable, string scope = null)
         {
             if (createTable == null)
                 throw new ArgumentNullException("createTable");
             _CreateTable = createTable;
+            if (scope != null && scope.Contains("µ"))
+                throw new ArgumentException("µ is an invalid character for a scope", "scope");
+            Scope = scope;
         }
 
         Func<CloudTable> _CreateTable;
         public string Scope
         {
             get;
-            set;
+            private set;
         }
 
         public CrudTable<T> GetTable<T>(string tableName)
@@ -28,7 +32,7 @@ namespace RapidBase
             var table = _CreateTable();
             return new CrudTable<T>(table)
             {
-                Scope = tableName + "-" + Scope
+                Scope = tableName + "µ" + Scope
             };
         }
     }
@@ -96,7 +100,12 @@ namespace RapidBase
 
         public T ReadOne(string collection, string item)
         {
-            var e = Table.Execute(TableOperation.Retrieve(collection, item)).Result as DynamicTableEntity;
+            var e = Table.Execute(TableOperation.Retrieve(Escape(collection), Escape(item))).Result as DynamicTableEntity;
+            if (e == null)
+                throw new StorageException(new RequestResult()
+                {
+                    HttpStatusCode = 404
+                }, "Item not found", null);
             return Serializer.ToObject<T>(e.Properties["data"].StringValue);
         }
     }

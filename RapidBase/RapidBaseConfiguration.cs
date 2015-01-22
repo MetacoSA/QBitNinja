@@ -69,10 +69,7 @@ namespace RapidBase
 
         public CrudTableFactory GetCrudTableFactory(string scope = null)
         {
-            return new CrudTableFactory(() => GetCrudTable())
-            {
-                Scope = scope
-            };
+            return new CrudTableFactory(() => GetCrudTable(), scope);
         }
 
         public WalletRepository CreateWalletRepository(string scope = null)

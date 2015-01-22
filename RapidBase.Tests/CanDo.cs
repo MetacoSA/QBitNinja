@@ -1060,10 +1060,20 @@ namespace RapidBase.Tests
         {
             using (var tester = ServerTester.Create())
             {
+                var alice = new ExtKey().GetWif(Network.TestNet);
+                var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+
                 tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
                 {
-                    Name = "Alice"
+                    Name = "alice"
                 });
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "main",
+                    Path = new KeyPath("1/2/3"),
+                    ExtPubKey = pubkeyAlice
+                });
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets/main/keys");
             }
         }
 

@@ -17,6 +17,7 @@ namespace RapidBase
             settings.Converters.Add(new CoinJsonConverter());
             settings.Converters.Add(new ScriptJsonConverter());
             settings.Converters.Add(new NetworkJsonConverter());
+            settings.Converters.Add(new KeyPathJsonConverter());
             settings.Converters.Add(new Base58DataJsonConverter()
             {
                 Network = network

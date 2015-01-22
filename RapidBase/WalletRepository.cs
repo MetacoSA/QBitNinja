@@ -1,4 +1,6 @@
-﻿using NBitcoin.Crypto;
+﻿using NBitcoin;
+using System.Linq;
+using NBitcoin.Crypto;
 using NBitcoin.Indexer;
 using RapidBase.Models;
 using System;
@@ -17,6 +19,8 @@ namespace RapidBase
                 throw new ArgumentNullException("tableFactory");
             _walletAddressesTable = tableFactory.GetTable<WalletAddress>("wa");
             _walletTable = tableFactory.GetTable<WalletModel>("wm");
+            _KeySetTable = tableFactory.GetTable<KeySetData>("ks");
+            _KeyDataTable = tableFactory.GetTable<HDKeyData>("kd");
             _indexer = indexer;
         }
 
@@ -26,6 +30,24 @@ namespace RapidBase
             get
             {
                 return _walletAddressesTable;
+            }
+        }
+
+        private readonly CrudTable<HDKeyData> _KeyDataTable;
+        public CrudTable<HDKeyData> KeyDataTable
+        {
+            get
+            {
+                return _KeyDataTable;
+            }
+        }
+
+        private readonly CrudTable<KeySetData> _KeySetTable;
+        public CrudTable<KeySetData> KeySetTable
+        {
+            get
+            {
+                return _KeySetTable;
             }
         }
 
@@ -82,10 +104,59 @@ namespace RapidBase
             return WalletAddressesTable.Read(walletName.ToLowerInvariant());
         }
 
+        public void AddKeySet(string walletName, HDKeySet keyset)
+        {
+            KeySetData data = new KeySetData();
+            data.KeySet = keyset;
+            data.State = new HDKeyState();
+            KeySetTable.Create(walletName, keyset.Name, data);
+            KeySetTable.Read(walletName);
+            KeySetTable.ReadOne(walletName, keyset.Name);
+        }
 
-        //public void AddKeySet(KeySet keyset)
-        //{
-        //    throw new NotImplementedException();
-        //}
+        public HDKeyData NewKey(string walletName, string keysetName)
+        {
+            var keySetData = KeySetTable.ReadOne(walletName, keysetName);
+            KeyPath next = null;
+            if (keySetData.State.CurrentPath == null)
+            {
+                var root = keySetData.KeySet.Path ?? new KeyPath();
+                next = root.Derive(0);
+            }
+            else
+            {
+                next = Inc(keySetData.State.CurrentPath);
+            }
+            HDKeyData keyData = new HDKeyData();
+            keyData.ExtPubKey = keySetData.KeySet.ExtPubKey.ExtPubKey.Derive(next).GetWif(Network);
+            keyData.Path = next;
+            keyData.Address = keyData.ExtPubKey.ExtPubKey.PubKey.GetAddress(Network);
+
+            KeyDataTable.Create(Concat(walletName, keysetName), keyData.Address.ToString(), keyData);
+
+            keySetData.State.CurrentPath = next;
+            KeySetTable.Create(walletName, keysetName, keySetData);
+            return keyData;
+        }
+
+        private string Concat(string walletName, string keysetName)
+        {
+            return walletName + "µ" + keysetName;
+        }
+
+        public Network Network
+        {
+            get
+            {
+                return Indexer.Configuration.Network;
+            }
+        }
+
+        private KeyPath Inc(KeyPath keyPath)
+        {
+            var indexes = keyPath.Indexes.ToArray();
+            indexes[indexes.Length - 1] = indexes[indexes.Length - 1] + 1;
+            return new KeyPath(indexes);
+        }
     }
 }
