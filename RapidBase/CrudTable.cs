@@ -60,16 +60,28 @@ namespace RapidBase
             }
         }
 
-        public void Create(string itemId, T item)
+        public bool Create(string itemId, T item, bool orReplace = true)
         {
-            var callbackStr = Serializer.ToString(item);
-            Table.Execute(TableOperation.InsertOrReplace(new DynamicTableEntity(Escape(Scope), Escape(itemId))
+            try
             {
-                Properties =
+
+                var callbackStr = Serializer.ToString(item);
+                var entity = new DynamicTableEntity(Escape(Scope), Escape(itemId))
+                {
+                    Properties =
                 {
                     new KeyValuePair<string,EntityProperty>("data",new EntityProperty(callbackStr))
                 }
-            }));
+                };
+                Table.Execute(orReplace ? TableOperation.InsertOrReplace(entity) : TableOperation.Insert(entity));
+            }
+            catch (StorageException ex)
+            {
+                if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 409 && !orReplace)
+                    return false;
+                throw;
+            }
+            return true;
         }
 
         public T[] Read()

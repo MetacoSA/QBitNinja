@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace RapidBase.Tests
@@ -1056,6 +1057,32 @@ namespace RapidBase.Tests
         }
 
         [Fact]
+        public void GenerateKeysIsThreadSafe()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var alice = new ExtKey().GetWif(Network.TestNet);
+                var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+
+                tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
+                {
+                    Name = "alice"
+                });
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+               {
+                   Name = "Single",
+                   ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
+               });
+                var tasks = Enumerable.Range(0, 10)
+                    .Select(_ => Task.Run(() => tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Single/keys")))
+                    .ToArray();
+
+                Task.WaitAll(tasks);
+                var data = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Single/keys");
+                Assert.Equal(new KeyPath("10"), data.Path);
+            }
+        }
+        [Fact]
         public void CanManageKeyGeneration()
         {
             using (var tester = ServerTester.Create())
@@ -1140,6 +1167,12 @@ namespace RapidBase.Tests
                 var scriptCoins = balance.Operations.SelectMany(o => o.ReceivedCoins).OfType<ScriptCoin>();
                 Assert.True(scriptCoins.Count() == 2);
                 Assert.True(scriptCoins.First().Redeem == redeem);
+
+                var sets = tester.SendGet<KeySetData[]>("wallets/alice/keysets");
+                Assert.Equal(3, sets.Length);
+
+                var keys = tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys");
+                Assert.Equal(2, keys.Length);
             }
         }
 

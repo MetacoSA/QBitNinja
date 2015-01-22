@@ -123,12 +123,27 @@ namespace RapidBase.Controllers
             return keyset;
         }
 
+        [HttpGet]
+        [Route("wallets/{walletName}/keysets")]
+        public KeySetData[] CreateKeyset(string walletName)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            return repo.GetKeysets(walletName);
+        }
+
         [HttpPost]
         [Route("wallets/{walletName}/keysets/{keysetName}/keys")]
         public HDKeyData Generate(string walletName, string keysetName)
         {
             var repo = Configuration.CreateWalletRepository();
             return repo.NewKey(walletName, keysetName);
+        }
+        [HttpGet]
+        [Route("wallets/{walletName}/keysets/{keysetName}/keys")]
+        public HDKeyData[] GetKeys(string walletName, string keysetName)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            return repo.GetKeys(walletName, keysetName);
         }
 
         [HttpGet]

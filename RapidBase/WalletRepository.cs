@@ -122,40 +122,47 @@ namespace RapidBase
 
         public HDKeyData NewKey(string walletName, string keysetName)
         {
-            var keySetData = KeySetTable.GetChild(walletName).ReadOne(keysetName);
-            KeyPath next = null;
-            if (keySetData.State.CurrentPath == null)
+            HDKeyData keyData = null;
+            while (true)
             {
-                var root = keySetData.KeySet.Path ?? new KeyPath();
-                next = root.Derive(0);
-            }
-            else
-            {
-                next = Inc(keySetData.State.CurrentPath);
-            }
-            HDKeyData keyData = new HDKeyData();
-            keyData.ExtPubKeys = keySetData
-                                  .KeySet
-                                  .ExtPubKeys
-                                  .Select(k => k.ExtPubKey.Derive(next).GetWif(Network)).ToArray();
-            keyData.Path = next;
-            keyData.RedeemScript = CreateScriptPubKey(keyData.ExtPubKeys, keySetData.KeySet.SignatureCount, !keySetData.KeySet.NoP2SH);
-            if (keySetData.KeySet.NoP2SH)
-            {
-                keyData.ScriptPubKey = keyData.RedeemScript;
-                keyData.RedeemScript = null;
-                keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
-            }
-            else
-            {
-                keyData.ScriptPubKey = keyData.RedeemScript.Hash.ScriptPubKey;
-                keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
-            }
 
-            KeyDataTable.GetChild(walletName, keysetName).Create(Encode(keyData.ScriptPubKey), keyData);
+                var keySetData = KeySetTable.GetChild(walletName).ReadOne(keysetName);
+                KeyPath next = null;
+                if (keySetData.State.CurrentPath == null)
+                {
+                    var root = keySetData.KeySet.Path ?? new KeyPath();
+                    next = root.Derive(0);
+                }
+                else
+                {
+                    next = Inc(keySetData.State.CurrentPath);
+                }
+                keyData = new HDKeyData();
+                keyData.ExtPubKeys = keySetData
+                                      .KeySet
+                                      .ExtPubKeys
+                                      .Select(k => k.ExtPubKey.Derive(next).GetWif(Network)).ToArray();
+                keyData.Path = next;
+                keyData.RedeemScript = CreateScriptPubKey(keyData.ExtPubKeys, keySetData.KeySet.SignatureCount, !keySetData.KeySet.NoP2SH);
+                if (keySetData.KeySet.NoP2SH)
+                {
+                    keyData.ScriptPubKey = keyData.RedeemScript;
+                    keyData.RedeemScript = null;
+                    keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
+                }
+                else
+                {
+                    keyData.ScriptPubKey = keyData.RedeemScript.Hash.ScriptPubKey;
+                    keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
+                }
 
-            keySetData.State.CurrentPath = next;
-            KeySetTable.GetChild(walletName).Create(keysetName, keySetData);
+                if (KeyDataTable.GetChild(walletName, keysetName).Create(Encode(keyData.ScriptPubKey), keyData, false))
+                {
+                    keySetData.State.CurrentPath = next;
+                    KeySetTable.GetChild(walletName).Create(keysetName, keySetData);
+                    break;
+                }
+            }
             var entry = Indexer.AddWalletRule(walletName, new ScriptRule()
             {
                 RedeemScript = keyData.RedeemScript,
@@ -195,6 +202,16 @@ namespace RapidBase
             var indexes = keyPath.Indexes.ToArray();
             indexes[indexes.Length - 1] = indexes[indexes.Length - 1] + 1;
             return new KeyPath(indexes);
+        }
+
+        public KeySetData[] GetKeysets(string walletName)
+        {
+            return KeySetTable.GetChild(walletName).Read();
+        }
+
+        internal HDKeyData[] GetKeys(string walletName, string keysetName)
+        {
+            return KeyDataTable.GetChild(walletName, keysetName).Read();
         }
     }
 }
