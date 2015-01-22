@@ -5,6 +5,7 @@ using NBitcoin.Indexer;
 using RapidBase.Models;
 using System;
 using System.Text;
+using NBitcoin.DataEncoders;
 
 namespace RapidBase
 {
@@ -21,7 +22,14 @@ namespace RapidBase
             _walletTable = tableFactory.GetTable<WalletModel>("wm");
             _KeySetTable = tableFactory.GetTable<KeySetData>("ks");
             _KeyDataTable = tableFactory.GetTable<HDKeyData>("kd");
+            Scope = tableFactory.Scope;
             _indexer = indexer;
+        }
+
+        public Scope Scope
+        {
+            get;
+            set;
         }
 
         private readonly CrudTable<WalletAddress> _walletAddressesTable;
@@ -126,15 +134,52 @@ namespace RapidBase
                 next = Inc(keySetData.State.CurrentPath);
             }
             HDKeyData keyData = new HDKeyData();
-            keyData.ExtPubKey = keySetData.KeySet.ExtPubKey.ExtPubKey.Derive(next).GetWif(Network);
+            keyData.ExtPubKeys = keySetData
+                                  .KeySet
+                                  .ExtPubKeys
+                                  .Select(k => k.ExtPubKey.Derive(next).GetWif(Network)).ToArray();
             keyData.Path = next;
-            keyData.Address = keyData.ExtPubKey.ExtPubKey.PubKey.GetAddress(Network);
+            keyData.RedeemScript = CreateScriptPubKey(keyData.ExtPubKeys, keySetData.KeySet.SignatureCount, !keySetData.KeySet.NoP2SH);
+            if (keySetData.KeySet.NoP2SH)
+            {
+                keyData.ScriptPubKey = keyData.RedeemScript;
+                keyData.RedeemScript = null;
+                keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
+            }
+            else
+            {
+                keyData.ScriptPubKey = keyData.RedeemScript.Hash.ScriptPubKey;
+                keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
+            }
 
-            KeyDataTable.GetChild(walletName,keysetName).Create(keyData.Address.ToString(), keyData);
+            KeyDataTable.GetChild(walletName, keysetName).Create(Encode(keyData.ScriptPubKey), keyData);
 
             keySetData.State.CurrentPath = next;
             KeySetTable.GetChild(walletName).Create(keysetName, keySetData);
+            var entry = Indexer.AddWalletRule(walletName, new ScriptRule()
+            {
+                RedeemScript = keyData.RedeemScript,
+                ScriptPubKey = keyData.ScriptPubKey
+            });
+            var clientIndexer = Indexer.Configuration.CreateIndexerClient();
+            clientIndexer.MergeIntoWallet(walletName, keyData.ScriptPubKey, entry.Rule);
             return keyData;
+        }
+
+        private string Encode(Script script)
+        {
+            return Encoders.Hex.EncodeData(script.ToBytes(true));
+        }
+
+        private Script CreateScriptPubKey(BitcoinExtPubKey[] bitcoinExtPubKey, int sigCount, bool p2sh)
+        {
+            if (bitcoinExtPubKey.Length == 1)
+            {
+                if (p2sh)
+                    return bitcoinExtPubKey[0].ExtPubKey.PubKey.ScriptPubKey;
+                return bitcoinExtPubKey[0].ExtPubKey.PubKey.Hash.ScriptPubKey;
+            }
+            return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(sigCount, bitcoinExtPubKey.Select(k => k.ExtPubKey.PubKey).ToArray());
         }
 
         public Network Network

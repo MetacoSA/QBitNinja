@@ -1069,11 +1069,77 @@ namespace RapidBase.Tests
                 });
                 tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
                 {
-                    Name = "main",
+                    Name = "SingleNoP2SH",
                     Path = new KeyPath("1/2/3"),
-                    ExtPubKey = pubkeyAlice
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
+                    NoP2SH = true
                 });
-                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets/main/keys");
+                var result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/SingleNoP2SH/keys");
+                Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(new KeyPath("1/2/3/0")).PubKey.GetAddress(Network.TestNet));
+                result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/SingleNoP2SH/keys");
+                Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(new KeyPath("1/2/3/1")).PubKey.GetAddress(Network.TestNet));
+                Assert.Equal(result.Path, new KeyPath("1/2/3/1"));
+                Assert.Null(result.RedeemScript);
+
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "Single",
+                    Path = new KeyPath("1/2/3"),
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
+                });
+                result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Single/keys");
+                var redeem = pubkeyAlice.ExtPubKey.Derive(new KeyPath("1/2/3/0")).PubKey.ScriptPubKey;
+                Assert.Equal(result.Address, redeem.Hash.GetAddress(Network.TestNet));
+                Assert.Equal(result.RedeemScript, redeem);
+                Assert.Equal(result.ScriptPubKey, redeem.Hash.ScriptPubKey);
+
+                var bob = new ExtKey().GetWif(Network.TestNet);
+                var pubkeyBob = bob.ExtKey.Neuter().GetWif(Network.TestNet);
+
+                //Can generate key on multi sig
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "Multi",
+                    Path = new KeyPath("1/2/3"),
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice, pubkeyBob },
+                    SignatureCount = 1
+                });
+
+                result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys");
+                redeem = PayToMultiSigTemplate
+                            .Instance
+                            .GenerateScriptPubKey(1,
+                            pubkeyAlice.ExtPubKey.Derive(new KeyPath("1/2/3/0")).PubKey,
+                            pubkeyBob.ExtPubKey.Derive(new KeyPath("1/2/3/0")).PubKey);
+                Assert.Equal(result.Address, redeem.Hash.GetAddress(Network.TestNet));
+                Assert.Equal(result.RedeemScript, redeem);
+                Assert.Equal(result.ScriptPubKey, redeem.Hash.ScriptPubKey);
+
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), result.Address);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                var balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
+                Assert.True(balance.Operations.Count == 1);
+
+                //Emit first, generate after
+                redeem = PayToMultiSigTemplate
+                            .Instance
+                            .GenerateScriptPubKey(1,
+                            pubkeyAlice.ExtPubKey.Derive(new KeyPath("1/2/3/1")).PubKey,
+                            pubkeyBob.ExtPubKey.Derive(new KeyPath("1/2/3/1")).PubKey);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), redeem.Hash);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
+                Assert.True(balance.Operations.Count == 1);
+                tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys");
+                balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
+                Assert.True(balance.Operations.Count == 2);
+                var scriptCoins = balance.Operations.SelectMany(o => o.ReceivedCoins).OfType<ScriptCoin>();
+                Assert.True(scriptCoins.Count() == 2);
+                Assert.True(scriptCoins.First().Redeem == redeem);
             }
         }
 

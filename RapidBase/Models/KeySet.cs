@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,19 @@ namespace RapidBase.Models
             get;
             set;
         }
-        public BitcoinExtPubKey ExtPubKey
+        public BitcoinExtPubKey[] ExtPubKeys
+        {
+            get;
+            set;
+        }
+
+        public Script RedeemScript
+        {
+            get;
+            set;
+        }
+
+        public Script ScriptPubKey
         {
             get;
             set;
@@ -55,7 +68,13 @@ namespace RapidBase.Models
             get;
             set;
         }
-        public BitcoinExtPubKey ExtPubKey
+        public BitcoinExtPubKey[] ExtPubKeys
+        {
+            get;
+            set;
+        }
+
+        public int SignatureCount
         {
             get;
             set;
@@ -66,5 +85,13 @@ namespace RapidBase.Models
             get;
             set;
         }
+#if !CLIENT
+        [JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)]
+        public bool NoP2SH
+        {
+            get;
+            set;
+        }
+#endif
     }
 }
