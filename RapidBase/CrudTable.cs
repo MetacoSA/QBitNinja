@@ -16,11 +16,11 @@ namespace RapidBase
                 throw new ArgumentNullException("createTable");
             if (scope == null)
                 scope = new Scope();
-            _CreateTable = createTable;
+            _createTable = createTable;
             Scope = scope;
         }
 
-        Func<CloudTable> _CreateTable;
+        readonly Func<CloudTable> _createTable;
         public Scope Scope
         {
             get;
@@ -29,7 +29,7 @@ namespace RapidBase
 
         public CrudTable<T> GetTable<T>(string tableName)
         {
-            var table = _CreateTable();
+            var table = _createTable();
             return new CrudTable<T>(table)
             {
                 Scope = Scope.GetChild(tableName)
@@ -94,12 +94,12 @@ namespace RapidBase
             .ToArray();
         }
 
-        private string Escape(Scope scope)
+        private static string Escape(Scope scope)
         {
             return Escape(scope.ToString());
         }
 
-        private string Escape(string key)
+        private static string Escape(string key)
         {
             var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(key));
             return result;
