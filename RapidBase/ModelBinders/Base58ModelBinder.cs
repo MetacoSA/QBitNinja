@@ -26,7 +26,7 @@ namespace RapidBase.ModelBinders
             string key = val.RawValue as string;
 
             var data = Base58Data.GetFromBase58Data(key);
-            if (!data.GetType().IsAssignableFrom(bindingContext.ModelType))
+            if (!bindingContext.ModelType.IsAssignableFrom(data.GetType()))
             {
                 throw new FormatException("Invalid base58 type");
             }

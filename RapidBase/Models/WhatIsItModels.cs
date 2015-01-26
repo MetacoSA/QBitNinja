@@ -54,7 +54,10 @@ namespace RapidBase.Models
         {
             Hex = pubkey.ToHex();
             Address = new WhatIsAddress(pubkey.GetAddress(network));
-            P2SHAddress = new WhatIsAddress(pubkey.ScriptPubKey.GetScriptAddress(network)) {RedeemScript = new WhatIsScript(pubkey.ScriptPubKey, network)};
+            P2SHAddress = new WhatIsAddress(pubkey.ScriptPubKey.GetScriptAddress(network))
+            {
+                RedeemScript = new WhatIsScript(pubkey.ScriptPubKey, network)
+            };
             ScriptPubKey = new WhatIsScript(pubkey.ScriptPubKey, network);
             IsCompressed = pubkey.IsCompressed;
         }
@@ -84,6 +87,26 @@ namespace RapidBase.Models
         }
 
         public WhatIsScript ScriptPubKey
+        {
+            get;
+            set;
+        }
+    }
+
+    public class WhatIsColoredAddress : WhatIsBase58
+    {
+        public WhatIsColoredAddress()
+        {
+
+        }
+
+        public WhatIsColoredAddress(BitcoinColoredAddress colored)
+            : base(colored)
+        {
+            UncoloredAddress = colored.Address;
+        }
+
+        public BitcoinAddress UncoloredAddress
         {
             get;
             set;
@@ -182,7 +205,7 @@ namespace RapidBase.Models
         {
             Raw = Encoders.Hex.EncodeData(signature.ToBytes());
             AnyoneCanPay = ((int)signature.SigHash & (int)NBitcoin.SigHash.AnyoneCanPay) != 0;
-            
+
             switch (((int)signature.SigHash & 31))
             {
                 case (int)NBitcoin.SigHash.Single:
@@ -241,6 +264,7 @@ namespace RapidBase.Models
             IsP2SH = address is BitcoinScriptAddress;
             ScriptPubKey = new WhatIsScript(address.ScriptPubKey, address.Network);
             Hash = new uint160(address.Hash.ToBytes(true), false);
+            ColoredAddress = address.ToColoredAddress().ToString();
         }
 
         public bool IsP2SH
@@ -250,6 +274,11 @@ namespace RapidBase.Models
         }
 
         public uint160 Hash
+        {
+            get;
+            set;
+        }
+        public string ColoredAddress
         {
             get;
             set;
@@ -317,6 +346,8 @@ namespace RapidBase.Models
                         return new WhatIsAddress((BitcoinAddress)b58);
                     case Base58Type.SECRET_KEY:
                         return new WhatIsPrivateKey((BitcoinSecret)b58);
+                    case Base58Type.COLORED_ADDRESS:
+                        return new WhatIsColoredAddress((BitcoinColoredAddress)b58);
                     default:
                         return new WhatIsBase58(b58);
                 }
