@@ -769,7 +769,8 @@ namespace RapidBase.Tests
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 var alice = new Key().GetBitcoinSecret(Network.TestNet);
-                tester.SendGet<BalanceSummary>("balances/3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH"); //check p2sh correctly parsed
+                AssertEx.HttpError(400, () => tester.SendGet<BalanceSummary>("balances/3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH")); //Do not accept mainnet
+                tester.SendGet<BalanceSummary>("balances/" + BitcoinAddress.Create("3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH").ToNetwork(Network.TestNet));
                 var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
