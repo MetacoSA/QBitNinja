@@ -123,7 +123,7 @@ namespace RapidBase.Models
         public WhatIsPrivateKey(BitcoinSecret secret)
             : base(secret)
         {
-            PublicKey = new WhatIsPublicKey(secret.Key.PubKey, secret.Network);
+            PublicKey = new WhatIsPublicKey(secret.PrivateKey.PubKey, secret.Network);
         }
 
         public WhatIsPublicKey PublicKey
