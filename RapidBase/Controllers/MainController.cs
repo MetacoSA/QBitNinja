@@ -283,26 +283,13 @@ namespace RapidBase.Controllers
         [Route("balances/{address}/summary")]
         public BalanceSummary AddressBalanceSummary(
             [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinAddress address,
+            IDestination address,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature at = null,
             bool debug = false)
         {
             BalanceId id = new BalanceId(address);
-            return BalanceSummary(id, at, debug, false);
-        }
-
-        [HttpGet]
-        [Route("coloredbalances/{address}/summary")]
-        public BalanceSummary AddressColoredBalanceSummary(
-            [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinColoredAddress address,
-            [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature at = null,
-            bool debug = false)
-        {
-            BalanceId id = new BalanceId(address);
-            return BalanceSummary(id, at, debug, true);
+            return BalanceSummary(id, at, debug, address is BitcoinColoredAddress);
         }
 
         public BalanceSummary BalanceSummary(
@@ -447,7 +434,7 @@ namespace RapidBase.Controllers
         [Route("balances/{address}")]
         public BalanceModel AddressBalance(
             [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinAddress address,
+            IDestination address,
             [ModelBinder(typeof(BalanceLocatorModelBinder))]
             BalanceLocator continuation = null,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
@@ -458,27 +445,9 @@ namespace RapidBase.Controllers
             bool unspentOnly = false)
         {
             var balanceId = new BalanceId(address);
-            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, false);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, address is BitcoinColoredAddress);
         }
 
-
-        [HttpGet]
-        [Route("coloredbalances/{address}")]
-        public BalanceModel AddressColoredBalanceSummary(
-            [ModelBinder(typeof(Base58ModelBinder))]
-            BitcoinColoredAddress address,
-            [ModelBinder(typeof(BalanceLocatorModelBinder))]
-            BalanceLocator continuation = null,
-            [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature until = null,
-            [ModelBinder(typeof(BlockFeatureModelBinder))]
-            BlockFeature from = null,
-            bool includeImmature = false,
-            bool unspentOnly = false)
-        {
-            var balanceId = new BalanceId(address);
-            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, true);
-        }
 
         BalanceModel Balance(BalanceId balanceId,
             BalanceLocator continuation,

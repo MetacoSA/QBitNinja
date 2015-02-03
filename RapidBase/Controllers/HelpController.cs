@@ -59,13 +59,13 @@ namespace RapidBase.Controllers
                     },
                      new RouteModel
                     {
-                        Template = "coloredbalances/[coloredaddress]?unspentOnly=[false|true]&from=[blockFeature]&to=[blockFeature]&continuation=[continuation]",
+                        Template = "balances/[coloredaddress]?unspentOnly=[false|true]&from=[blockFeature]&to=[blockFeature]&continuation=[continuation]",
                         Samples = new RouteSample[]
                         {
-                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi",
-                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?unspentonly=true",
-                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?from=336410&until=336000",
-                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?from=tip&until=336000"
+                            "balances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi",
+                            "balances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?unspentonly=true",
+                            "balances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?from=336410&until=336000",
+                            "balances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?from=tip&until=336000"
                         }
                     },
                     new RouteModel
@@ -79,11 +79,11 @@ namespace RapidBase.Controllers
                     },
                      new RouteModel
                     {
-                        Template = "coloredbalances/[address]/summary?at=[blockFeature]",
+                        Template = "balances/[coloredaddress]/summary?at=[blockFeature]",
                         Samples = new RouteSample[]
                         {
-                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi/summary",
-                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi/summary?at=318331",
+                            "balances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi/summary",
+                            "balances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi/summary?at=318331",
                         }
                     },
                     new RouteModel

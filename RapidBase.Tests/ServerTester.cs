@@ -192,10 +192,10 @@ namespace RapidBase.Tests
         public void AssertTotal(IDestination dest, Money total, AssetId asset)
         {
             var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
-            var summary = SendGet<BalanceSummary>("coloredbalances/" + address + "/summary");
+            var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
             Assert.Equal(total, SelectAmount(asset, summary.UnConfirmed) + SelectAmount(asset, summary.Confirmed) - SelectAmount(asset, summary.Immature));
 
-            var balances = SendGet<BalanceModel>("coloredbalances/" + address);
+            var balances = SendGet<BalanceModel>("balances/" + address);
             var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).Select(c => SelectAmount(asset, c)).Sum()
                         -
                         balances.Operations.SelectMany(o => o.SpentCoins).Select(c => SelectAmount(asset, c)).Sum();
@@ -239,7 +239,7 @@ namespace RapidBase.Tests
 
         public ICoin[] GetUnspentCoins(Script dest)
         {
-            var balances = SendGet<BalanceModel>("coloredbalances/" + dest.GetDestinationAddress(Network.TestNet).ToColoredAddress());
+            var balances = SendGet<BalanceModel>("balances/" + dest.GetDestinationAddress(Network.TestNet).ToColoredAddress());
 
             var spent = balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Outpoint).ToDictionary(c=>c);
             var received = balances.Operations.SelectMany(o => o.ReceivedCoins);

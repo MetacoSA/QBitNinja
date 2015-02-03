@@ -9,7 +9,9 @@ namespace RapidBase.JsonConverters
     {
         public override bool CanConvert(Type objectType)
         {
-            return typeof(Base58Data).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo());
+            return
+                typeof(Base58Data).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo()) ||
+                typeof(IDestination).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo());
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)

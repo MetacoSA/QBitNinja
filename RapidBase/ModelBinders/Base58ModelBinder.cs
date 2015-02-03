@@ -11,7 +11,9 @@ namespace RapidBase.ModelBinders
 
         public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
         {
-            if (!typeof(Base58Data).IsAssignableFrom(bindingContext.ModelType))
+            if (!
+                (typeof(Base58Data).IsAssignableFrom(bindingContext.ModelType) ||
+                typeof(IDestination).IsAssignableFrom(bindingContext.ModelType)))
             {
                 return false;
             }
