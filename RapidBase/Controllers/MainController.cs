@@ -76,7 +76,7 @@ namespace RapidBase.Controllers
             bool unspentOnly = false)
         {
             var balanceId = new BalanceId(walletName);
-            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, false);
         }
 
         [HttpPost]
@@ -279,7 +279,6 @@ namespace RapidBase.Controllers
             return new WhatIsBlockHeader(block.Header);
         }
 
-
         [HttpGet]
         [Route("balances/{address}/summary")]
         public BalanceSummary AddressBalanceSummary(
@@ -444,7 +443,26 @@ namespace RapidBase.Controllers
             bool unspentOnly = false)
         {
             var balanceId = new BalanceId(address);
-            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, false);
+        }
+
+
+        [HttpGet]
+        [Route("coloredbalances/{address}")]
+        public BalanceModel AddressColoredBalanceSummary(
+            [ModelBinder(typeof(Base58ModelBinder))]
+            BitcoinColoredAddress address,
+            [ModelBinder(typeof(BalanceLocatorModelBinder))]
+            BalanceLocator continuation = null,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature until = null,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature from = null,
+            bool includeImmature = false,
+            bool unspentOnly = false)
+        {
+            var balanceId = new BalanceId(address);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, true);
         }
 
         BalanceModel Balance(BalanceId balanceId,
@@ -452,7 +470,8 @@ namespace RapidBase.Controllers
             BlockFeature until,
             BlockFeature from,
             bool includeImmature,
-            bool unspentOnly)
+            bool unspentOnly,
+            bool colored)
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
@@ -485,6 +504,7 @@ namespace RapidBase.Controllers
             }
 
             var client = Configuration.Indexer.CreateIndexerClient();
+            client.ColoredBalance = colored;
             var balance =
                 client
                 .GetOrderedBalance(balanceId, query)

@@ -57,6 +57,17 @@ namespace RapidBase.Controllers
                             "balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=tip&until=336000"
                         }
                     },
+                     new RouteModel
+                    {
+                        Template = "coloredbalances/[coloredaddress]?unspentOnly=[false|true]&from=[blockFeature]&to=[blockFeature]&continuation=[continuation]",
+                        Samples = new RouteSample[]
+                        {
+                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi",
+                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?unspentonly=true",
+                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?from=336410&until=336000",
+                            "coloredbalances/akEBcY5k1dn2yeEdFnTMwdhVbHxtgHb6GGi?from=tip&until=336000"
+                        }
+                    },
                     new RouteModel
                     {
                         Template = "balances/[address]/summary?at=[blockFeature]",

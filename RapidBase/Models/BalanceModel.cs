@@ -194,8 +194,8 @@ namespace RapidBase.Models
 
         public BalanceOperation()
         {
-            ReceivedCoins = new List<Coin>();
-            SpentCoins = new List<Coin>();
+            ReceivedCoins = new List<ICoin>();
+            SpentCoins = new List<ICoin>();
         }
 #if !CLIENT
         public BalanceOperation(OrderedBalanceChange balanceChange, ChainBase chain)
@@ -241,12 +241,12 @@ namespace RapidBase.Models
             set;
         }
 
-        public List<Coin> ReceivedCoins
+        public List<ICoin> ReceivedCoins
         {
             get;
             set;
         }
-        public List<Coin> SpentCoins
+        public List<ICoin> SpentCoins
         {
             get;
             set;

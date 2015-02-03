@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using NBitcoin.OpenAsset;
 using Newtonsoft.Json;
 using System;
 
@@ -12,20 +13,37 @@ namespace RapidBase.JsonConverters
             {
 
             }
-            public CoinJson(ICoin coin)
+            public CoinJson(ICoin coin, Network network)
             {
+                if (network == null)
+                    network = Network.Main;
                 TransactionId = coin.Outpoint.Hash;
                 Index = coin.Outpoint.N;
-                ScriptPubKey = coin.ScriptPubKey;
+                ScriptPubKey = coin.TxOut.ScriptPubKey;
                 Value = coin.Amount;
                 if (coin is ScriptCoin)
                 {
                     RedeemScript = ((ScriptCoin)coin).Redeem;
                 }
+                if (coin is ColoredCoin)
+                {
+                    var cc = (ColoredCoin)coin;
+                    AssetId = cc.AssetId.GetWif(network);
+                    Quantity = cc.Asset.Quantity;
+                    Value = cc.Bearer.Amount;
+                    var scc = cc.Bearer as ScriptCoin;
+                    if (scc != null)
+                    {
+                        RedeemScript = scc.Redeem;
+                    }
+                }
             }
-            public Coin ToCoin()
+            public ICoin ToCoin()
             {
-                return RedeemScript == null ? new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey)) : new ScriptCoin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey), RedeemScript);
+                var coin = RedeemScript == null ? new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey)) : new ScriptCoin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey), RedeemScript);
+                if (AssetId != null)
+                    return coin.ToColoredCoin(new Asset(AssetId.AssetId, Quantity));
+                return coin;
             }
 
             public uint256 TransactionId
@@ -55,11 +73,33 @@ namespace RapidBase.JsonConverters
                 get;
                 set;
             }
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public BitcoinAssetId AssetId
+            {
+                get;
+                set;
+            }
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public ulong Quantity
+            {
+                get;
+                set;
+            }
         }
 
+        public CoinJsonConverter(Network network)
+        {
+            Network = network;
+        }
+
+        public Network Network
+        {
+            get;
+            set;
+        }
         public override bool CanConvert(Type objectType)
         {
-            return typeof(Coin).IsAssignableFrom(objectType);
+            return typeof(ICoin).IsAssignableFrom(objectType);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -69,7 +109,7 @@ namespace RapidBase.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            serializer.Serialize(writer, new CoinJson((Coin)value));
+            serializer.Serialize(writer, new CoinJson((ICoin)value, Network));
         }
     }
 }
