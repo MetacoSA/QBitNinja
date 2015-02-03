@@ -155,7 +155,7 @@ namespace RapidBase.Controllers
             bool debug = false)
         {
             BalanceId id = new BalanceId(walletName);
-            return BalanceSummary(id, at, debug);
+            return BalanceSummary(id, at, debug, false);
         }
 
         [HttpGet]
@@ -289,13 +289,27 @@ namespace RapidBase.Controllers
             bool debug = false)
         {
             BalanceId id = new BalanceId(address);
-            return BalanceSummary(id, at, debug);
+            return BalanceSummary(id, at, debug, false);
+        }
+
+        [HttpGet]
+        [Route("coloredbalances/{address}/summary")]
+        public BalanceSummary AddressColoredBalanceSummary(
+            [ModelBinder(typeof(Base58ModelBinder))]
+            BitcoinColoredAddress address,
+            [ModelBinder(typeof(BlockFeatureModelBinder))]
+            BlockFeature at = null,
+            bool debug = false)
+        {
+            BalanceId id = new BalanceId(address);
+            return BalanceSummary(id, at, debug, true);
         }
 
         public BalanceSummary BalanceSummary(
             BalanceId balanceId,
             BlockFeature at,
-            bool debug
+            bool debug,
+            bool colored
             )
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
@@ -309,7 +323,7 @@ namespace RapidBase.Controllers
 
             query.PageSizes = new[] { 1, 10, 100 };
 
-            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>("balsum-" + balanceId);
+            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>((colored ? "colsum-" : "balsum-") + balanceId);
             var cachedSummary = cacheTable.Query(Chain, query)
                                           .Where(c =>
                                               (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
@@ -337,6 +351,7 @@ namespace RapidBase.Controllers
                 stopAtHeight = stopAtHeight - 12;
 
             var client = Configuration.Indexer.CreateIndexerClient();
+            client.ColoredBalance = colored;
             var diff =
                 client
                 .GetOrderedBalance(balanceId, query)
@@ -364,9 +379,9 @@ namespace RapidBase.Controllers
 
             var summary = new BalanceSummary()
             {
-                Confirmed = BalanceSummaryDetails.CreateFrom(confs),
-                Immature = BalanceSummaryDetails.CreateFrom(immature),
-                UnConfirmed = BalanceSummaryDetails.CreateFrom(unconfs),
+                Confirmed = BalanceSummaryDetails.CreateFrom(confs, Network, colored),
+                Immature = BalanceSummaryDetails.CreateFrom(immature, Network, colored),
+                UnConfirmed = BalanceSummaryDetails.CreateFrom(unconfs, Network, colored),
             };
             summary.Confirmed += cachedSummary.Confirmed;
             summary.Immature += cachedSummary.Immature;

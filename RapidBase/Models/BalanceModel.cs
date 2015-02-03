@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 #if !CLIENT
 using NBitcoin.Indexer;
+using NBitcoin.OpenAsset;
+using System;
 #endif
 namespace RapidBase.Models
 {
@@ -41,6 +43,24 @@ namespace RapidBase.Models
         }
     }
 
+    public class AssetBalanceSummaryDetails
+    {
+        public BitcoinAssetId Asset
+        {
+            get;
+            set;
+        }
+        public long Quantity
+        {
+            get;
+            set;
+        }
+        public long Received
+        {
+            get;
+            set;
+        }
+    }
 
     public class BalanceSummaryDetails
     {
@@ -65,6 +85,13 @@ namespace RapidBase.Models
             set;
         }
 
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public AssetBalanceSummaryDetails[] Assets
+        {
+            get;
+            set;
+        }
+
         public static BalanceSummaryDetails operator +(BalanceSummaryDetails c1, BalanceSummaryDetails c2)
         {
             if (c1 == null)
@@ -75,8 +102,29 @@ namespace RapidBase.Models
             {
                 Amount = c1.Amount + c2.Amount,
                 TransactionCount = c1.TransactionCount + c2.TransactionCount,
-                Received = c1.Received + c2.Received
+                Received = c1.Received + c2.Received,
+                Assets = Add(c1.Assets, c2.Assets)
             };
+        }
+
+        private static AssetBalanceSummaryDetails[] Add(AssetBalanceSummaryDetails[] a, AssetBalanceSummaryDetails[] b)
+        {
+            if (a == null && b == null)
+                return null;
+            if (a != null && b == null)
+                return a;
+            if (a == null && b != null)
+                return b;
+            List<AssetBalanceSummaryDetails> result = new List<AssetBalanceSummaryDetails>();
+            foreach (var group in a.GroupBy(_ => _.Asset))
+            {
+                AssetBalanceSummaryDetails details = new AssetBalanceSummaryDetails();
+                details.Quantity = group.Sum(o => o.Quantity);
+                details.Received = group.Sum(o => o.Received);
+                details.Asset = group.Key;
+                result.Add(details);
+            }
+            return result.ToArray();
         }
         public static BalanceSummaryDetails operator -(BalanceSummaryDetails c1, BalanceSummaryDetails c2)
         {
@@ -89,21 +137,77 @@ namespace RapidBase.Models
                 return null;
             BalanceSummaryDetails result = new BalanceSummaryDetails
             {
-                Amount = -c1.Amount, 
-                Received = -c1.Received, 
-                TransactionCount = -c1.TransactionCount
+                Amount = -c1.Amount,
+                Received = -c1.Received,
+                TransactionCount = -c1.TransactionCount,
+                Assets = Minus(c1.Assets)
             };
             return result;
         }
-#if !CLIENT
-        internal static BalanceSummaryDetails CreateFrom(List<OrderedBalanceChange> changes)
+
+        private static AssetBalanceSummaryDetails[] Minus(AssetBalanceSummaryDetails[] a)
         {
-            return new BalanceSummaryDetails
+            if (a == null)
+                return null;
+            List<AssetBalanceSummaryDetails> result = new List<AssetBalanceSummaryDetails>();
+            foreach (var detail in a)
             {
-                Amount = changes.Select(_ => _.Amount).Sum(),
+                var balance = new AssetBalanceSummaryDetails();
+                balance.Quantity = -detail.Quantity;
+                balance.Received = -detail.Received;
+                result.Add(balance);
+            }
+            return result.ToArray();
+        }
+#if !CLIENT
+        internal static BalanceSummaryDetails CreateFrom(List<OrderedBalanceChange> changes, Network network, bool colored)
+        {
+            var details = new BalanceSummaryDetails
+            {
+                Amount = CalculateAmount(changes, c => c is Coin),
                 TransactionCount = changes.Count,
                 Received = changes.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
             };
+
+            if (colored)
+            {
+                Dictionary<AssetId, AssetBalanceSummaryDetails> coloredDetails = new Dictionary<AssetId, AssetBalanceSummaryDetails>();
+                foreach (var change in changes)
+                {
+                    foreach (var coin in change.ReceivedCoins.OfType<ColoredCoin>())
+                    {
+                        AssetBalanceSummaryDetails coloredDetail = null;
+                        if (!coloredDetails.TryGetValue(coin.AssetId, out coloredDetail))
+                        {
+                            coloredDetail = new AssetBalanceSummaryDetails();
+                            coloredDetail.Asset = coin.AssetId.GetWif(network);
+                            coloredDetails.Add(coin.AssetId, coloredDetail);
+                        }
+                        coloredDetail.Quantity += (long)coin.Asset.Quantity;
+                        coloredDetail.Received += (long)coin.Asset.Quantity;
+                    }
+                    foreach (var coin in change.SpentCoins.OfType<ColoredCoin>())
+                    {
+                        AssetBalanceSummaryDetails coloredDetail = null;
+                        if (!coloredDetails.TryGetValue(coin.AssetId, out coloredDetail))
+                        {
+                            coloredDetail = new AssetBalanceSummaryDetails();
+                            coloredDetail.Asset = coin.AssetId.GetWif(network);
+                            coloredDetails.Add(coin.AssetId, coloredDetail);
+                        }
+                        coloredDetail.Quantity -= (long)coin.Asset.Quantity;
+                    }
+                }
+                details.Assets = coloredDetails.Values.ToArray();
+            }
+            return details;
+        }
+
+        static Money CalculateAmount(IEnumerable<OrderedBalanceChange> changes, Func<ICoin, bool> predicate)
+        {
+            return changes.SelectMany(c => c.ReceivedCoins.Where(predicate)).Select(c => c.Amount).Sum()
+                -
+                changes.SelectMany(c => c.SpentCoins.Where(predicate)).Select(c => c.Amount).Sum();
         }
 #endif
     }

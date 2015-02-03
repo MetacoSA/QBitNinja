@@ -15,6 +15,7 @@ using Microsoft.WindowsAzure.Storage;
 using RapidBase.Models;
 using Xunit;
 using System.Threading;
+using NBitcoin.OpenAsset;
 
 namespace RapidBase.Tests
 {
@@ -166,8 +167,9 @@ namespace RapidBase.Tests
                 Assert.True(false, "Chain should have updated");
         }
 
-        public void AssertTotal(BitcoinAddress address, Money total)
+        public void AssertTotal(IDestination dest, Money total)
         {
+            var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet);
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
             Assert.Equal(total, summary.UnConfirmed.Amount + summary.Confirmed.Amount - summary.Immature.Amount);
 
@@ -176,6 +178,65 @@ namespace RapidBase.Tests
                         -
                         balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Amount).Sum();
             Assert.Equal(total, actual);
+        }
+
+        public void AssertTotal(IDestination dest, Money total, AssetId asset)
+        {
+            var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
+            var summary = SendGet<BalanceSummary>("coloredbalances/" + address + "/summary");
+            Assert.Equal(total, SelectAmount(asset, summary.UnConfirmed) + SelectAmount(asset, summary.Confirmed) - SelectAmount(asset, summary.Immature));
+
+            var balances = SendGet<BalanceModel>("coloredbalances/" + address);
+            var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).Select(c => SelectAmount(asset, c)).Sum()
+                        -
+                        balances.Operations.SelectMany(o => o.SpentCoins).Select(c => SelectAmount(asset, c)).Sum();
+            Assert.Equal(total, actual);
+        }
+
+        private Money SelectAmount(AssetId asset, ICoin coin)
+        {
+            if (asset == null)
+            {
+                var c = coin as Coin;
+                if (c == null)
+                    return Money.Zero;
+                return c.Amount;
+            }
+            else
+            {
+                var cc = coin as ColoredCoin;
+                if (cc == null)
+                    return Money.Zero;
+                if (cc.AssetId != asset)
+                    return Money.Zero;
+                return cc.Amount;
+            }
+        }
+
+        private Money SelectAmount(AssetId asset, BalanceSummaryDetails balanceSummaryDetails)
+        {
+            if (asset == null)
+                return balanceSummaryDetails.Amount;
+            var assetDetails = balanceSummaryDetails.Assets.FirstOrDefault(a => a.Asset.AssetId == asset);
+            if (assetDetails == null)
+                return Money.Zero;
+            return assetDetails.Quantity;
+        }
+
+        public ICoin[] GetUnspentCoins(IDestination dest)
+        {
+            return GetUnspentCoins(dest.ScriptPubKey);
+        }
+
+        public ICoin[] GetUnspentCoins(Script dest)
+        {
+            var balances = SendGet<BalanceModel>("coloredbalances/" + dest.GetDestinationAddress(Network.TestNet).ToColoredAddress());
+
+            var spent = balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Outpoint).ToDictionary(c=>c);
+            var received = balances.Operations.SelectMany(o => o.ReceivedCoins);
+
+            var unspent = received.Where(c => !spent.ContainsKey(c.Outpoint)).ToArray();
+            return unspent;
         }
     }
 }

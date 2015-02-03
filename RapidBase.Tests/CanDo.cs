@@ -2,6 +2,7 @@
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
+using NBitcoin.OpenAsset;
 using Newtonsoft.Json.Linq;
 using RapidBase.Controllers;
 using RapidBase.Models;
@@ -1191,6 +1192,101 @@ namespace RapidBase.Tests
                 Assert.True(results.Length == 2);
                 tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id);
                 AssertEx.HttpError(404, () => tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
+            }
+        }
+
+        [Fact]
+        public void CanGetColoredBalance()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var goldGuy = new Key();
+                var silverGuy = new Key();
+                var gold = new AssetId(goldGuy);
+                var silver = new AssetId(silverGuy);
+
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                var alice = new Key().GetBitcoinSecret(Network.TestNet);
+
+                tester.AssertTotal(bob.GetAddress(), 0, null);
+                tester.AssertTotal(bob.GetAddress(), 0, gold);
+                tester.AssertTotal(bob.GetAddress(), 0, silver);
+
+                var tx = tester.ChainBuilder.EmitMoney(Money.Coins(100), goldGuy);
+                var goldIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
+                tx = tester.ChainBuilder.EmitMoney(Money.Coins(95), silverGuy);
+                var silverIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
+                tester.ChainBuilder.EmitMoney(Money.Coins(90), bob);
+                tester.ChainBuilder.EmitMoney(Money.Coins(50), alice);
+
+                tester.AssertTotal(bob.GetAddress(), Money.Coins(90), null);
+                tester.AssertTotal(bob.GetAddress(), 0, gold);
+                tester.AssertTotal(bob.GetAddress(), 0, silver);
+
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                //Send gold to bob
+                tx = new TransactionBuilder()
+                     .AddKeys(goldGuy)
+                     .AddCoins(goldIssuance)
+                     .IssueAsset(bob, new Asset(gold, 1000))
+                     .SetChange(goldGuy)
+                     .Then()
+                     .AddKeys(bob)
+                     .AddCoins(tester.GetUnspentCoins(bob))
+                     .Send(goldGuy, Money.Coins(5.0m))
+                     .SetChange(bob)
+                     .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+
+                tester.AssertTotal(bob, Money.Coins(85), null);
+                tester.AssertTotal(bob, 1000, gold);
+                tester.AssertTotal(bob, 0, silver);
+
+                //Send silver to Alice
+                tx = new TransactionBuilder()
+                     .AddKeys(silverGuy)
+                     .AddCoins(silverIssuance)
+                     .IssueAsset(alice, new Asset(silver, 100))
+                     .SetChange(silverGuy)
+                     .Then()
+                     .AddKeys(alice)
+                     .AddCoins(tester.GetUnspentCoins(alice))
+                     .Send(silverGuy, Money.Coins(2.5m))
+                     .SetChange(alice)
+                     .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+
+                tester.AssertTotal(alice, Money.Coins(47.5m), null);
+                tester.AssertTotal(alice, 0, gold);
+                tester.AssertTotal(alice, 100, silver);
+
+                tester.ChainBuilder.EmitBlock();
+
+                //Bob and alice swap
+                tx = new TransactionBuilder()
+                     .AddKeys(alice)
+                     .AddCoins(tester.GetUnspentCoins(alice))
+                     .SendAsset(bob, new Asset(silver, 9))
+                     .Send(bob, Money.Coins(1.0m))
+                     .SetChange(alice)
+                     .Then()
+                     .AddKeys(bob)
+                     .AddCoins(tester.GetUnspentCoins(bob))
+                     .SendAsset(alice, new Asset(gold, 10))
+                     .Send(alice, Money.Coins(1.5m))
+                     .SetChange(bob)
+                     .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+
+                tester.AssertTotal(alice, Money.Coins(48m) - Money.Dust, null);
+                tester.AssertTotal(alice, 10, gold);
+                tester.AssertTotal(alice, 91, silver);
+
+                tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust, null);
+                tester.AssertTotal(bob, 990, gold);
+                tester.AssertTotal(bob, 9, silver);
             }
         }
 
