@@ -43,6 +43,7 @@ namespace RapidBase.Tests
 
         public ServerTester(string ns)
         {
+            CleanTable = true;
             Address = "http://localhost:" + (ushort)RandomUtils.GetUInt32() + "/";
             Configuration = RapidBaseConfiguration.FromConfiguration();
             Configuration.Indexer.StorageNamespace = ns;
@@ -60,6 +61,11 @@ namespace RapidBase.Tests
             ChainBuilder = new ChainBuilder(this);
             _resolver.Get<ConcurrentChain>(); //So ConcurrentChain load
         }
+        public bool CleanTable
+        {
+            get;
+            set;
+        }
 
         public CallbackTester CreateCallbackTester()
         {
@@ -74,8 +80,11 @@ namespace RapidBase.Tests
 
         public void Dispose()
         {
-            Clean(Configuration.Indexer.GetBlocksContainer());
-            Clean(Configuration.Indexer.CreateTableClient());
+            if (CleanTable)
+            {
+                Clean(Configuration.Indexer.GetBlocksContainer());
+                Clean(Configuration.Indexer.CreateTableClient());
+            }
             foreach (var dispo in _disposables)
                 dispo.Dispose();
         }

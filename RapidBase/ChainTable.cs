@@ -48,6 +48,23 @@ namespace RapidBase
             Table.Execute(TableOperation.InsertOrReplace(entity));
         }
 
+        public void Delete(ConfirmedBalanceLocator locator)
+        {
+            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
+            entity.ETag = "*";
+            Table.Execute(TableOperation.Delete(entity));
+        }
+        public void Delete()
+        {
+            foreach (var entity in Table.ExecuteQuery(new TableQuery()
+            {
+                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
+            }))
+            {
+                Table.Execute(TableOperation.Delete(entity));
+            }
+        }
+
         public IEnumerable<T> Query(ChainBase chain, BalanceQuery query = null)
         {
             if (query == null)

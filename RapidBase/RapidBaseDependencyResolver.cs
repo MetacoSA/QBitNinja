@@ -6,6 +6,7 @@ using System.Web.Http.Dependencies;
 using Autofac.Integration.WebApi;
 using NBitcoin;
 using NBitcoin.Indexer;
+using System.IO;
 
 namespace RapidBase
 {
@@ -63,14 +64,47 @@ namespace RapidBase
             {
                 var client = ctx.Resolve<IndexerClient>();
                 ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
+                LoadCache(chain, configuration.LocalChain);
                 var changes = client.GetChainChangesUntilFork(chain.Tip, false);
                 changes.UpdateChain(chain);
+                SaveChainCache(chain, configuration.LocalChain);
                 return chain;
             }).SingleInstance();
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
             _container = builder.Build();
         }
 
+        private void LoadCache(ConcurrentChain chain, string cacheLocation)
+        {
+            if (string.IsNullOrEmpty(cacheLocation))
+                return;
+            try
+            {
+                var bytes = File.ReadAllBytes(cacheLocation);
+                chain.Load(bytes);
+            }
+            catch //We don't care if it don't succeed
+            {
+            }
+        }
+
+        private void SaveChainCache(ConcurrentChain chain, string cacheLocation)
+        {
+            if (string.IsNullOrEmpty(cacheLocation))
+                return;
+            try
+            {
+                var file = new FileInfo(cacheLocation);
+                if (!file.Exists || (DateTime.UtcNow - file.LastWriteTimeUtc) > TimeSpan.FromDays(1))
+                    using (var fs = File.Open(cacheLocation, FileMode.Create))
+                    {
+                        chain.WriteTo(fs);
+                    }
+            }
+            catch //Don't care if fail
+            {
+            }
+        }
 
         #region IDependencyResolver Members
 
@@ -105,9 +139,12 @@ namespace RapidBase
 
         #region IDisposable Members
 
+        const string LocalChainLocation = "LocalChain.dat";
         public void Dispose()
         {
+            SaveChainCache(Get<ConcurrentChain>(), this.Get<RapidBaseConfiguration>().LocalChain);
             _container.Dispose();
+
         }
 
         #endregion

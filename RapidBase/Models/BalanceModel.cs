@@ -116,7 +116,7 @@ namespace RapidBase.Models
             if (a == null && b != null)
                 return b;
             List<AssetBalanceSummaryDetails> result = new List<AssetBalanceSummaryDetails>();
-            foreach (var group in a.GroupBy(_ => _.Asset))
+            foreach (var group in a.Concat(b).GroupBy(_ => _.Asset))
             {
                 AssetBalanceSummaryDetails details = new AssetBalanceSummaryDetails();
                 details.Quantity = group.Sum(o => o.Quantity);

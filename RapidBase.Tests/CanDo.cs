@@ -1287,6 +1287,16 @@ namespace RapidBase.Tests
                 tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust, null);
                 tester.AssertTotal(bob, 990, gold);
                 tester.AssertTotal(bob, 9, silver);
+
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                for (int i = 0 ; i < 2 ; i++)
+                {
+                    tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust, null);
+                    tester.AssertTotal(bob, 990, gold);
+                    tester.AssertTotal(bob, 9, silver);
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin.Indexer;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -17,10 +18,17 @@ namespace RapidBase
             {
                 Indexer = IndexerConfiguration.FromConfiguration()
             };
+            conf.LocalChain = ConfigurationManager.AppSettings["LocalChain"];
             return conf;
         }
 
         public IndexerConfiguration Indexer
+        {
+            get;
+            set;
+        }
+
+        public string LocalChain
         {
             get;
             set;
