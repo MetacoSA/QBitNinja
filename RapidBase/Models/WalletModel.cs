@@ -36,6 +36,20 @@ namespace RapidBase.Models
             get;
             set;
         }
+
+        public bool IsCoherent()
+        {
+            BitcoinScriptAddress scriptAddress = Address as BitcoinScriptAddress;
+            if (scriptAddress != null && RedeemScript != null)
+            {
+                return scriptAddress.Hash == RedeemScript.Hash;
+            }
+            if (scriptAddress == null && RedeemScript != null)
+            {
+                return false;
+            }
+            return true;
+        }
     }
     public class WalletModel
     {

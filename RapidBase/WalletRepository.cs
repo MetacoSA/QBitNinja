@@ -78,9 +78,9 @@ namespace RapidBase
             }
         }
 
-        public void Create(WalletModel wallet)
+        public bool Create(WalletModel wallet)
         {
-            WalletTable.Create(wallet.Name, wallet);
+            return WalletTable.Create(wallet.Name, wallet, false);
         }
 
         public WalletModel[] Get()
@@ -98,8 +98,9 @@ namespace RapidBase
                 ScriptPubKey = address.Address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
             };
+            if (!WalletAddressesTable.GetChild(walletName).Create(address.Address.ToString(), address, false))
+                return null;
             Indexer.AddWalletRule(walletName, rule);
-            WalletAddressesTable.GetChild(walletName).Create(Hash(address), address);
             return rule;
         }
 
@@ -115,7 +116,11 @@ namespace RapidBase
 
         public void AddKeySet(string walletName, HDKeySet keyset)
         {
-            KeySetData data = new KeySetData {KeySet = keyset, State = new HDKeyState()};
+            KeySetData data = new KeySetData
+            {
+                KeySet = keyset,
+                State = new HDKeyState()
+            };
             KeySetTable.GetChild(walletName).Create(keyset.Name, data);
         }
 

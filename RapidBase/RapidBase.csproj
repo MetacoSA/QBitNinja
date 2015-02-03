@@ -195,6 +195,7 @@
     <Compile Include="Models\GetTransactionResponse.cs" />
     <Compile Include="Models\HelpModel.cs" />
     <Compile Include="Models\KeySet.cs" />
+    <Compile Include="Models\RapidBaseException.cs" />
     <Compile Include="Models\WalletModel.cs" />
     <Compile Include="Models\WhatIsItModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

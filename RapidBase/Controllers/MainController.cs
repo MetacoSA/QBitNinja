@@ -58,8 +58,14 @@ namespace RapidBase.Controllers
             if (string.IsNullOrEmpty(wallet.Name))
                 throw new FormatException("Invalid wallet name");
             var repo = Configuration.CreateWalletRepository();
-            repo.Create(wallet);
+            if (!repo.Create(wallet))
+                throw Error(409, "wallet already exist");
             return wallet;
+        }
+
+        private Exception Error(int httpCode, string reason)
+        {
+            return new RapidBaseException(httpCode, reason);
         }
 
         [HttpGet]
@@ -73,14 +79,15 @@ namespace RapidBase.Controllers
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature from = null,
             bool includeImmature = false,
-            bool unspentOnly = false)
+            bool unspentOnly = false,
+            bool colored = false)
         {
             var balanceId = new BalanceId(walletName);
-            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, false);
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
         }
 
         [HttpPost]
-        [Route("wallets/{walletName}/addresses")]
+        [Route("wallets/{walletname}/addresses")]
         public WalletAddress AddWalletAddresses(
             string walletName,
             [FromBody]InsertWalletAddress insertAddress)
@@ -91,9 +98,15 @@ namespace RapidBase.Controllers
                 address.Address = address.RedeemScript.GetScriptAddress(Network);
             }
             if (address.Address == null)
-                throw new FormatException("Address is missing");
+                throw Error(400, "Address is missing");
+
+            if (!address.IsCoherent())
+                throw Error(400, "The provided redeem script does not correspond to the given address");
+
             var repo = Configuration.CreateWalletRepository();
             var rule = repo.AddAddress(walletName, address);
+            if (rule == null)
+                throw Error(409, "This address already exist in the wallet");
 
             if (insertAddress.MergePast)
             {
@@ -152,10 +165,11 @@ namespace RapidBase.Controllers
             string walletName,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature at = null,
-            bool debug = false)
+            bool debug = false,
+            bool colored = false)
         {
             BalanceId id = new BalanceId(walletName);
-            return BalanceSummary(id, at, debug, false);
+            return BalanceSummary(id, at, debug, colored);
         }
 
         [HttpGet]
@@ -286,10 +300,12 @@ namespace RapidBase.Controllers
             IDestination address,
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature at = null,
-            bool debug = false)
+            bool debug = false,
+            bool colored = false)
         {
             BalanceId id = new BalanceId(address);
-            return BalanceSummary(id, at, debug, address is BitcoinColoredAddress);
+            colored = address is BitcoinColoredAddress || colored;
+            return BalanceSummary(id, at, debug, colored);
         }
 
         public BalanceSummary BalanceSummary(
@@ -442,10 +458,12 @@ namespace RapidBase.Controllers
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature from = null,
             bool includeImmature = false,
-            bool unspentOnly = false)
+            bool unspentOnly = false,
+            bool colored = false)
         {
             var balanceId = new BalanceId(address);
-            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, address is BitcoinColoredAddress);
+            colored = address is BitcoinColoredAddress || colored;
+            return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
         }
 
 

@@ -1008,6 +1008,11 @@ namespace RapidBase.Tests
                     Name = "Alice"
                 });
 
+                AssertEx.HttpError(409, () => tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
+                {
+                    Name = "Alice"
+                }));
+
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
@@ -1016,6 +1021,16 @@ namespace RapidBase.Tests
                         Address = alice1.GetAddress()
                     }
                 });
+
+                AssertEx.HttpError(409, () => tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = false,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice1.GetAddress()
+                    }
+                }));
+
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
@@ -1297,6 +1312,8 @@ namespace RapidBase.Tests
                     tester.AssertTotal(bob, 990, gold);
                     tester.AssertTotal(bob, 9, silver);
                 }
+                var summary = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?colored=true");
+                Assert.NotNull(summary.Confirmed.Assets);
             }
         }
 

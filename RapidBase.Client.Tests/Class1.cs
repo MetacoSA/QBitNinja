@@ -23,6 +23,18 @@ namespace RapidBase.Client.Tests
             Assert.True(balanceSummary.Confirmed.TransactionCount > 60);
         }
 
+        [Fact]
+        public void CanManageWallet()
+        {
+            var client = CreateClient();
+            var walletName = "temp-Nicolas Dorier";
+            client.CreateWalletIfNotExists(walletName).Wait();
+            client.AddAddressIfNotExists(walletName, BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
+            client.AddAddressIfNotExists(walletName, BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB ")).Wait();
+
+            var balance = client.GetBalance(walletName).Result;
+            Assert.True(balance.Operations.Count > 70);
+        }
 
         [Fact]
         public void CanGetBlock()
