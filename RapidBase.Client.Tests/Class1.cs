@@ -15,9 +15,12 @@ namespace RapidBase.Client.Tests
         public void CanGetBalance()
         {
             var client = CreateClient();
-            var balances = client.GetBalance(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
-            Assert.NotNull(balances);
-            Assert.True(balances.Operations.Any(o => o.Amount == Money.Coins(0.02m)));
+            var balance = client.GetBalance(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
+            Assert.NotNull(balance);
+            Assert.True(balance.Operations.Any(o => o.Amount == Money.Coins(0.02m)));
+
+            var balanceSummary = client.GetBalanceSummary(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
+            Assert.True(balanceSummary.Confirmed.TransactionCount > 60);
         }
 
 

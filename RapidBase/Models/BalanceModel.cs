@@ -2,10 +2,11 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
-#if !CLIENT
-using NBitcoin.Indexer;
 using NBitcoin.OpenAsset;
 using System;
+
+#if !CLIENT
+using NBitcoin.Indexer;
 #endif
 namespace RapidBase.Models
 {
