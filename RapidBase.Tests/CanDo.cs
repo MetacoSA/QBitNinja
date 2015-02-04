@@ -1099,6 +1099,40 @@ namespace RapidBase.Tests
                 Assert.Equal(new KeyPath("10"), data.Path);
             }
         }
+
+        [Fact]
+        public void CanManageKeyGenerationErrorCheck()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var alice = new ExtKey().GetWif(Network.TestNet);
+                var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "a",
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice }
+                });
+                AssertEx.HttpError(409, () => tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "a",
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice }
+                }));
+
+                AssertEx.HttpError(400, () => tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "b",
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
+                    SignatureCount = 2
+                }));
+
+                AssertEx.HttpError(400, () => tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "b"
+                }));
+            }
+        }
+
         [Fact]
         public void CanManageKeyGeneration()
         {

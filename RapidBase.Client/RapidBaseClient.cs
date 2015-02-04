@@ -64,14 +64,16 @@ namespace RapidBase.Client
             });
         }
 
-        private BitcoinAddress AssertAddress(IDestination dest)
+        private string AssertAddress(IDestination dest)
         {
             if (dest == null)
                 throw new ArgumentNullException("address");
             var address = dest.ScriptPubKey.GetDestinationAddress(Network);
             if (address == null)
                 throw new ArgumentException("address does not represent a valid bitcoin address", "address");
-            return address;
+            if (dest is BitcoinColoredAddress)
+                return dest.ToString();
+            return address.ToString();
         }
 
         public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false)
@@ -197,6 +199,26 @@ namespace RapidBase.Client
             try
             {
                 await AddAddress(walletName, address).ConfigureAwait(false);
+                return true;
+            }
+            catch (RapidBaseException ex)
+            {
+                if (ex.StatusCode == 409)
+                    return false;
+                throw;
+            }
+        }
+
+        public Task<HDKeySet> AddKeySet(string walletName, HDKeySet keyset)
+        {
+            return Post<HDKeySet>("wallets/" + walletName + "/keysets", keyset);
+        }
+
+        public async Task<bool> AddKeySetIfNotExists(string walletName, HDKeySet keyset)
+        {
+            try
+            {
+                await Post<HDKeySet>("wallets/" + walletName + "/keysets", keyset).ConfigureAwait(false);
                 return true;
             }
             catch (RapidBaseException ex)

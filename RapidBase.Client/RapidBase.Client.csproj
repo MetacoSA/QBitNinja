@@ -103,6 +103,9 @@
     <Compile Include="..\RapidBase\Models\HelpModel.cs">
       <Link>Models\HelpModel.cs</Link>
     </Compile>
+    <Compile Include="..\RapidBase\Models\KeySet.cs">
+      <Link>Models\KeySet.cs</Link>
+    </Compile>
     <Compile Include="..\RapidBase\Models\RapidBaseException.cs">
       <Link>Models\RapidBaseException.cs</Link>
     </Compile>

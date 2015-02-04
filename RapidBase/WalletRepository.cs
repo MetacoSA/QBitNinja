@@ -114,14 +114,14 @@ namespace RapidBase
             return WalletAddressesTable.GetChild(walletName).Read();
         }
 
-        public void AddKeySet(string walletName, HDKeySet keyset)
+        public bool AddKeySet(string walletName, HDKeySet keyset)
         {
             KeySetData data = new KeySetData
             {
                 KeySet = keyset,
                 State = new HDKeyState()
             };
-            KeySetTable.GetChild(walletName).Create(keyset.Name, data);
+            return KeySetTable.GetChild(walletName).Create(keyset.Name, data, false);
         }
 
         public HDKeyData NewKey(string walletName, string keysetName)

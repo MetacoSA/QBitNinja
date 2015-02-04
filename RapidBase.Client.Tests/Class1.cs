@@ -34,6 +34,15 @@ namespace RapidBase.Client.Tests
 
             var balance = client.GetBalance(walletName).Result;
             Assert.True(balance.Operations.Count > 70);
+
+            client.AddKeySetIfNotExists(walletName, new HDKeySet()
+            {
+                Name = "main",
+                ExtPubKeys = new BitcoinExtPubKey[] { new ExtKey().Neuter().GetWif(Network.Main) },
+                Path = new KeyPath("44'/0'/0'"),
+                SignatureCount = 1
+            }).Wait();
+
         }
 
         [Fact]

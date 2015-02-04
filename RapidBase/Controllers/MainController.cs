@@ -131,8 +131,13 @@ namespace RapidBase.Controllers
         [Route("wallets/{walletName}/keysets")]
         public HDKeySet CreateKeyset(string walletName, [FromBody]HDKeySet keyset)
         {
+            if (keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
+                throw Error(400, "ExtPubKeys not specified");
+            if(keyset.ExtPubKeys.Length < keyset.SignatureCount)
+                throw Error(400, "SignatureCount should not be higher than the number of HD Keys");
             var repo = Configuration.CreateWalletRepository();
-            repo.AddKeySet(walletName, keyset);
+            if (!repo.AddKeySet(walletName, keyset))
+                throw Error(409, "Keyset already exists");
             return keyset;
         }
 
