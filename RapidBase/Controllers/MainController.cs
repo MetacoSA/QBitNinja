@@ -149,6 +149,8 @@ namespace RapidBase.Controllers
             var repo = Configuration.CreateWalletRepository();
             if (!repo.AddKeySet(walletName, keyset))
                 throw Error(409, "Keyset already exists");
+            if (keyset.Path != null && keyset.Path.ToString().Contains("'"))
+                throw Error(400, "The keypath should not contains hardened children");
             return keyset;
         }
 
