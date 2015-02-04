@@ -73,6 +73,9 @@
     <Compile Include="..\RapidBase\JsonConverters\CoinJsonConverter.cs">
       <Link>JsonConverters\CoinJsonConverter.cs</Link>
     </Compile>
+    <Compile Include="..\RapidBase\JsonConverters\JsonObjectException.cs">
+      <Link>JsonConverters\JsonObjectException.cs</Link>
+    </Compile>
     <Compile Include="..\RapidBase\JsonConverters\KeyPathJsonConverter.cs">
       <Link>JsonConverters\KeyPathJsonConverter.cs</Link>
     </Compile>
