@@ -27,15 +27,15 @@ namespace RapidBase.Client.Tests
         public void CanManageWallet()
         {
             var client = CreateClient();
-            var walletName = "temp-Nicolas Dorier";
-            client.CreateWalletIfNotExists(walletName).Wait();
-            client.AddAddressIfNotExists(walletName, BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
-            client.AddAddressIfNotExists(walletName, BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB ")).Wait();
+            var wallet = client.GetWalletClient("temp-Nicolas Dorier");
+            wallet.CreateIfNotExists().Wait();
+            wallet.AddAddressIfNotExists(BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
+            wallet.AddAddressIfNotExists(BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB ")).Wait();
 
-            var balance = client.GetBalance(walletName).Result;
+            var balance = wallet.GetBalance().Result;
             Assert.True(balance.Operations.Count > 70);
 
-            client.AddKeySetIfNotExists(walletName, new HDKeySet()
+            wallet.AddKeySetIfNotExists(new HDKeySet()
             {
                 Name = "main",
                 ExtPubKeys = new BitcoinExtPubKey[] { new ExtKey().Neuter().GetWif(Network.Main) },

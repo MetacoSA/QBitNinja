@@ -9,6 +9,82 @@ using System.Threading.Tasks;
 
 namespace RapidBase.Client
 {
+    public class WalletClient
+    {
+        public WalletClient(RapidBaseClient client, string walletName)
+        {
+            if (walletName == null)
+                throw new ArgumentNullException("walletName");
+            if (client == null)
+                throw new ArgumentNullException("client");
+            Client = client;
+            WalletName = walletName;
+        }
+
+        public string WalletName
+        {
+            get;
+            private set;
+        }
+        public RapidBaseClient Client
+        {
+            get;
+            private set;
+        }
+
+        public Task<WalletModel> Create()
+        {
+            return Client.CreateWallet(WalletName);
+        }
+        public Task<bool> CreateIfNotExists()
+        {
+            return Client.CreateWalletIfNotExists(WalletName);
+        }
+        public Task<BalanceModel> GetBalance()
+        {
+            return Client.GetBalance(WalletName);
+        }
+
+        public Task<BalanceSummary> GetBalanceSummary()
+        {
+            return Client.GetBalanceSummary(WalletName);
+        }
+
+        public Task<bool> AddAddressIfNotExists(Script redeemScript, bool mergePast = true)
+        {
+            return Client.AddAddressIfNotExists(WalletName, redeemScript, mergePast);
+        }
+        public Task<bool> AddAddressIfNotExists(IDestination dest, Script redeem = null, bool mergePast = true)
+        {
+            return Client.AddAddressIfNotExists(WalletName, dest, redeem, mergePast);
+        }
+        public Task<bool> AddAddressIfNotExists(InsertWalletAddress address)
+        {
+            return Client.AddAddressIfNotExists(WalletName, address);
+        }
+
+        public Task<WalletAddress> AddAddress(Script redeemScript, bool mergePast = true)
+        {
+            return Client.AddAddress(WalletName, redeemScript, mergePast);
+        }
+        public Task<WalletAddress> AddAddress(IDestination dest, Script redeem = null, bool mergePast = true)
+        {
+            return Client.AddAddress(WalletName, dest, redeem, mergePast);
+        }
+        public Task<WalletAddress> AddAddress(InsertWalletAddress address)
+        {
+            return Client.AddAddress(WalletName, address);
+        }
+
+        public Task<bool> AddKeySetIfNotExists(HDKeySet keyset)
+        {
+            return Client.AddKeySetIfNotExists(WalletName, keyset);
+        }
+        public Task<HDKeySet> AddKeySet(HDKeySet keyset)
+        {
+            return Client.AddKeySet(WalletName, keyset);
+        }
+    }
     public class RapidBaseClient
     {
         public RapidBaseClient(Uri baseAddress, Network network = null)
@@ -24,34 +100,44 @@ namespace RapidBase.Client
             set;
         }
 
+        public bool Colored
+        {
+            get;
+            set;
+        }
+
         public Uri BaseAddress
         {
             get;
             private set;
         }
 
+        public WalletClient GetWalletClient(string wallet)
+        {
+            return new WalletClient(this, wallet);
+        }
 
         public Task<BalanceModel> GetBalance(IDestination dest)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceModel>("balances/" + address);
+            return Get<BalanceModel>("balances/" + address + "?colored=" + Colored);
         }
         public Task<BalanceSummary> GetBalanceSummary(IDestination dest)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceSummary>("balances/" + address + "/summary");
+            return Get<BalanceSummary>("balances/" + address + "/summary?colored=" + Colored);
         }
-        public Task<BalanceModel> GetBalance(string wallet, bool colored = false)
+        public Task<BalanceModel> GetBalance(string wallet)
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceModel>("wallets/" + wallet + "/balance?colored=" + colored);
+            return Get<BalanceModel>("wallets/" + wallet + "/balance?colored=" + Colored);
         }
         public Task<BalanceSummary> GetBalanceSummary(string wallet)
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceSummary>("wallets/" + wallet + "/summary");
+            return Get<BalanceSummary>("wallets/" + wallet + "/summary?colored=" + Colored);
         }
 
         public Task<WalletModel> CreateWallet(string wallet)
@@ -64,16 +150,14 @@ namespace RapidBase.Client
             });
         }
 
-        private string AssertAddress(IDestination dest)
+        private BitcoinAddress AssertAddress(IDestination dest)
         {
             if (dest == null)
                 throw new ArgumentNullException("address");
             var address = dest.ScriptPubKey.GetDestinationAddress(Network);
             if (address == null)
                 throw new ArgumentException("address does not represent a valid bitcoin address", "address");
-            if (dest is BitcoinColoredAddress)
-                return dest.ToString();
-            return address.ToString();
+            return address;
         }
 
         public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false)
@@ -158,22 +242,27 @@ namespace RapidBase.Client
         }
 
 
-        public Task<WalletAddress> AddAddress(string walletName, BitcoinAddress address, Script redeem = null, bool mergePast = true)
+        public Task<WalletAddress> AddAddress(string walletName, InsertWalletAddress address)
+        {
+            return Post<WalletAddress>("wallets/" + walletName + "/addresses", address);
+        }
+
+        public Task<WalletAddress> AddAddress(string walletName, IDestination dest, Script redeem, bool mergePast = false)
         {
             return AddAddress(walletName, new InsertWalletAddress()
             {
                 Address = new WalletAddress()
                 {
-                    Address = address,
+                    Address = AssertAddress(dest),
                     RedeemScript = redeem
                 },
                 MergePast = mergePast
             });
         }
 
-        public Task<WalletAddress> AddAddress(string walletName, InsertWalletAddress address)
+        public Task<WalletAddress> AddAddress(string walletName, Script redeemScript, bool mergePast = false)
         {
-            return Post<WalletAddress>("wallets/" + walletName + "/addresses", address);
+            return AddAddress(walletName, redeemScript.Hash, redeemScript, mergePast);
         }
 
         public Task<bool> AddAddressIfNotExists(string walletName, Script redeemScript, bool mergePast = true)
