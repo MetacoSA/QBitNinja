@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+	<metadata>
+		<id>RapidBase.Client</id>
+		<version>$version$</version>
+		<title>RapidBase Client</title>
+		<authors>RapidBase</authors>
+		<owners>RapidBase</owners>
+		<iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>Client library for RapidBase server</description>
+		<summary>
+		</summary>
+		<projectUrl>https://github.com/OS-RapidBase/RapidBase</projectUrl>
+		<copyright>Copyright 2015</copyright>
+		<tags>bitcoin</tags>
+	</metadata>
+</package>
