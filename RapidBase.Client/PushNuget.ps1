@@ -1,7 +1,6 @@
 del *.nupkg
-C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe "RapidBase.Client.csproj" -p:Configuration=Release
 
-nuGet pack RapidBase.Client.nuspec
+nuGet pack RapidBase.Client.csproj -Build -Properties Configuration=Release
 
 forfiles /m *.nupkg /c "cmd /c NuGet.exe push @FILE"
 (((dir *.nupkg).Name) -match "[0-9]+?\.[0-9]+?\.[0-9]+?\.[0-9]+")
