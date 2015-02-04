@@ -41,7 +41,7 @@ namespace RapidBase
                 actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage()
                 {
                     StatusCode = (HttpStatusCode)rapidEx.StatusCode,
-                    ReasonPhrase = rapidEx.Message,
+                    ReasonPhrase = rapidEx.Message + (rapidEx.Location == null ? "" : " at " + rapidEx.Location),
                     Content = new ObjectContent<RapidBaseError>(rapidEx.ToError(), actionExecutedContext.ActionContext.ControllerContext.Configuration.Formatters.JsonFormatter, "application/json")
                 });
             }
