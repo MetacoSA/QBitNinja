@@ -183,6 +183,47 @@ namespace RapidBase.Tests
             }
         }
 
+        public class TestData
+        {
+            public string Name
+            {
+                get;
+                set;
+            }
+        }
+
+        [Fact]
+        public void CanUseCrudTable()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var facto = tester.Configuration.GetCrudTableFactory(new Scope(new[] { "test" }));
+                var table = facto.GetTable<TestData>("testdata");
+
+                table.Create("child1", new TestData());
+
+                var childTable = table.GetChild("child1");
+                childTable.Create("test", new TestData());
+
+                Assert.NotNull(table.ReadOne("child1"));
+                Assert.True(table.Read().Length == 1);
+
+                table.Delete("child1");             
+                Assert.True(table.Read().Length == 0);
+
+                Assert.True(childTable.Read().Length == 1);
+
+                table.Create("child1", new TestData());
+                table.Delete("child1", true);
+                Assert.True(childTable.Read().Length == 0);
+
+                childTable.Create("test", new TestData());
+                childTable.Create("test2", new TestData());
+                Assert.True(childTable.Read().Length == 2);
+                childTable.Delete();
+                Assert.True(childTable.Read().Length == 0);
+            }
+        }
 
         [Fact]
         public void CanUseCacheTable()
@@ -1228,6 +1269,7 @@ namespace RapidBase.Tests
                 Assert.True(tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys"));
+                AssertEx.HttpError(404, () => tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys"));
             }
         }
 

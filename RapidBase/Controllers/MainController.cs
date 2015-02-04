@@ -144,20 +144,23 @@ namespace RapidBase.Controllers
                 throw Error(400, "ExtPubKeys not specified");
             if (keyset.ExtPubKeys.Length < keyset.SignatureCount)
                 throw Error(400, "SignatureCount should not be higher than the number of HD Keys");
+            if (keyset.Path != null && keyset.Path.ToString().Contains("'"))
+                throw Error(400, "The keypath should not contains hardened children");
             var repo = Configuration.CreateWalletRepository();
             if (!repo.AddKeySet(walletName, keyset))
                 throw Error(409, "Keyset already exists");
-            if (keyset.Path != null && keyset.Path.ToString().Contains("'"))
-                throw Error(400, "The keypath should not contains hardened children");
             return keyset;
         }
 
         [HttpGet]
         [Route("wallets/{walletName}/keysets")]
-        public KeySetData[] CreateKeyset(string walletName)
+        public KeySetData[] GetKeysets(string walletName)
         {
             var repo = Configuration.CreateWalletRepository();
-            return repo.GetKeysets(walletName);
+            var sets = repo.GetKeysets(walletName);
+            if (sets.Length == 0)
+                AssetWalletAndKeysetExists(walletName, null);
+            return sets;
         }
 
         [HttpPost]
@@ -165,14 +168,39 @@ namespace RapidBase.Controllers
         public HDKeyData Generate(string walletName, string keysetName)
         {
             var repo = Configuration.CreateWalletRepository();
-            return repo.NewKey(walletName, keysetName);
+            var key = repo.NewKey(walletName, keysetName);
+            if (key != null)
+                return key;
+            AssetWalletAndKeysetExists(walletName, keysetName);
+            throw Error(500, "Unknown error about the keyset");
+        }
+
+        private void AssetWalletAndKeysetExists(string walletName, string keysetName)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            var wallet = repo.GetWallet(walletName);
+            if (wallet == null)
+                throw Error(404, "wallet does not exists");
+            if (keysetName != null)
+            {
+                var keyset = repo.GetKeySetData(walletName, keysetName);
+                if (keyset == null)
+                {
+                    throw Error(404, "keyset does not exists");
+                }
+            }
         }
         [HttpGet]
         [Route("wallets/{walletName}/keysets/{keysetName}/keys")]
         public HDKeyData[] GetKeys(string walletName, string keysetName)
         {
             var repo = Configuration.CreateWalletRepository();
-            return repo.GetKeys(walletName, keysetName);
+            var keys = repo.GetKeys(walletName, keysetName);
+            if (keys.Length == 0)
+            {
+                AssetWalletAndKeysetExists(walletName, keysetName);
+            }
+            return keys;
         }
 
         [HttpGet]
@@ -420,7 +448,7 @@ namespace RapidBase.Controllers
                 };
                 cacheTable.Create(newCachedLocator, newCachedSummary);
             }
-            
+
             summary.PrepareForSend(at, debug);
             return summary;
         }
@@ -491,12 +519,12 @@ namespace RapidBase.Controllers
             cancel.CancelAfter(30000);
 
             BalanceQuery query = new BalanceQuery();
-            
+
             if (continuation != null)
             {
                 query = new BalanceQuery
                 {
-                    From = continuation, 
+                    From = continuation,
                     FromIncluded = false
                 };
             }
@@ -525,7 +553,7 @@ namespace RapidBase.Controllers
                 .WhereNotExpired()
                 .Where(o => includeImmature || IsMature(o, Chain.Tip))
                 .AsBalanceSheet(Chain);
-            
+
             var balanceChanges = balance.All;
             if (until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
             {

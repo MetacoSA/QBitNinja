@@ -83,6 +83,11 @@ namespace RapidBase
             return WalletTable.Create(wallet.Name, wallet, false);
         }
 
+        public WalletModel GetWallet(string walletName)
+        {
+            return WalletTable.ReadOne(walletName);
+        }
+
         public WalletModel[] Get()
         {
             return WalletTable.Read();
@@ -126,7 +131,11 @@ namespace RapidBase
 
         public bool DeleteKeySet(string walletName, string keyset)
         {
-            return KeySetTable.GetChild(walletName).Delete(keyset, true);
+            if (!KeySetTable.GetChild(walletName).Delete(keyset, true))
+                return false;
+
+            KeyDataTable.GetChild(walletName, keyset).Delete();
+            return true;
         }
 
         public HDKeyData NewKey(string walletName, string keysetName)
@@ -134,8 +143,9 @@ namespace RapidBase
             HDKeyData keyData;
             while (true)
             {
-
-                var keySetData = KeySetTable.GetChild(walletName).ReadOne(keysetName);
+                var keySetData = GetKeySetData(walletName, keysetName);
+                if (keySetData == null)
+                    return null;
                 KeyPath next;
                 if (keySetData.State.CurrentPath == null)
                 {
@@ -182,6 +192,11 @@ namespace RapidBase
             return keyData;
         }
 
+        public KeySetData GetKeySetData(string walletName, string keysetName)
+        {
+            return KeySetTable.GetChild(walletName).ReadOne(keysetName);
+        }
+
         private static string Encode(Script script)
         {
             return Encoders.Hex.EncodeData(script.ToBytes(true));
@@ -220,6 +235,5 @@ namespace RapidBase
         {
             return KeyDataTable.GetChild(walletName, keysetName).Read();
         }
-
     }
 }

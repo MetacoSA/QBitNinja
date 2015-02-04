@@ -64,7 +64,6 @@ namespace RapidBase
         {
             try
             {
-
                 var callbackStr = Serializer.ToString(item);
                 var entity = new DynamicTableEntity(Escape(Scope), Escape(itemId))
                 {
@@ -84,6 +83,26 @@ namespace RapidBase
             return true;
         }
 
+        public void Delete()
+        {
+            foreach (var child in Table.ExecuteQuery(AllInScope(Scope)))
+            {
+                Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
+            }
+        }
+
+        void Ignore(int errorCode, Action act)
+        {
+            try
+            {
+                act();
+            }
+            catch (StorageException ex)
+            {
+                if (ex.RequestInformation == null || ex.RequestInformation.HttpStatusCode != errorCode)
+                    throw;
+            }
+        }
         public bool Delete(string itemId, bool includeChildren = false)
         {
             try
@@ -92,13 +111,13 @@ namespace RapidBase
                 {
                     ETag = "*"
                 }));
-                var children = Scope.GetChild(itemId);
-                foreach (var child in Table.ExecuteQuery(new TableQuery()
+                if (includeChildren)
                 {
-                    FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(children))
-                }))
-                {
-                    Table.Execute(TableOperation.Delete(child));
+                    var children = Scope.GetChild(itemId);
+                    foreach (var child in Table.ExecuteQuery(AllInScope(children)))
+                    {
+                        Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
+                    }
                 }
             }
             catch (StorageException ex)
@@ -108,6 +127,14 @@ namespace RapidBase
                 throw;
             }
             return true;
+        }
+
+        private static TableQuery AllInScope(RapidBase.Scope children)
+        {
+            return new TableQuery()
+            {
+                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(children))
+            };
         }
 
         public T[] Read()
@@ -136,10 +163,7 @@ namespace RapidBase
         {
             var e = Table.Execute(TableOperation.Retrieve(Escape(Scope), Escape(item))).Result as DynamicTableEntity;
             if (e == null)
-                throw new StorageException(new RequestResult()
-                {
-                    HttpStatusCode = 404
-                }, "Item not found", null);
+                return default(T);
             return Serializer.ToObject<T>(e.Properties["data"].StringValue);
         }
 
