@@ -25,6 +25,12 @@ namespace RapidBase
             return callback;
         }
 
+        public void Delete(string eventName, string id)
+        {
+            _table.GetChild(eventName).Delete(id);
+        }
+
+
         private static string Hash(string data)
         {
             return Hashes.Hash256(Encoding.UTF8.GetBytes(data)).ToString();
@@ -33,11 +39,6 @@ namespace RapidBase
         public CallbackRegistration[] GetCallbacks(string eventName)
         {
             return _table.GetChild(eventName).Read();
-        }
-
-        public void Delete(string eventName, string id)
-        {
-            _table.Delete(eventName, id);
         }
     }
 }

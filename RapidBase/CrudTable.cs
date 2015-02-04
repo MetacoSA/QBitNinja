@@ -84,6 +84,32 @@ namespace RapidBase
             return true;
         }
 
+        public bool Delete(string itemId, bool includeChildren = false)
+        {
+            try
+            {
+                Table.Execute(TableOperation.Delete(new DynamicTableEntity(Escape(Scope), Escape(itemId))
+                {
+                    ETag = "*"
+                }));
+                var children = Scope.GetChild(itemId);
+                foreach (var child in Table.ExecuteQuery(new TableQuery()
+                {
+                    FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(children))
+                }))
+                {
+                    Table.Execute(TableOperation.Delete(child));
+                }
+            }
+            catch (StorageException ex)
+            {
+                if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 404)
+                    return false;
+                throw;
+            }
+            return true;
+        }
+
         public T[] Read()
         {
             return Table.ExecuteQuery(new TableQuery
@@ -105,13 +131,6 @@ namespace RapidBase
             return result;
         }
 
-        public void Delete(string collection, string item)
-        {
-            Table.Execute(TableOperation.Delete(new DynamicTableEntity(Escape(collection), Escape(item))
-            {
-                ETag = "*"
-            }));
-        }
 
         public T ReadOne(string item)
         {

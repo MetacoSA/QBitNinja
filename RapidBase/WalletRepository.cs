@@ -124,6 +124,11 @@ namespace RapidBase
             return KeySetTable.GetChild(walletName).Create(keyset.Name, data, false);
         }
 
+        public bool DeleteKeySet(string walletName, string keyset)
+        {
+            return KeySetTable.GetChild(walletName).Delete(keyset, true);
+        }
+
         public HDKeyData NewKey(string walletName, string keysetName)
         {
             HDKeyData keyData;
@@ -215,5 +220,6 @@ namespace RapidBase
         {
             return KeyDataTable.GetChild(walletName, keysetName).Read();
         }
+
     }
 }

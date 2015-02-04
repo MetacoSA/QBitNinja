@@ -126,6 +126,17 @@ namespace RapidBase.Controllers
             return repo.GetAddresses(walletName);
         }
 
+        [HttpDelete]
+        [Route("wallets/{walletName}/keysets/{keyset}")]
+        public bool DeleteKeyset(string walletName, string keyset)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            if (!repo.DeleteKeySet(walletName, keyset))
+            {
+                throw Error(404, "keyset not found");
+            }
+            return true;
+        }
 
         [HttpPost]
         [Route("wallets/{walletName}/keysets")]
@@ -133,7 +144,7 @@ namespace RapidBase.Controllers
         {
             if (keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
                 throw Error(400, "ExtPubKeys not specified");
-            if(keyset.ExtPubKeys.Length < keyset.SignatureCount)
+            if (keyset.ExtPubKeys.Length < keyset.SignatureCount)
                 throw Error(400, "SignatureCount should not be higher than the number of HD Keys");
             var repo = Configuration.CreateWalletRepository();
             if (!repo.AddKeySet(walletName, keyset))

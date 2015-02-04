@@ -27,22 +27,21 @@ namespace RapidBase.Client.Tests
         public void CanManageWallet()
         {
             var client = CreateClient();
-            var wallet = client.GetWalletClient("temp-Nicolas Dorier");
+            var wallet = client.GetWalletClient("temp-1Nicolas Dorier");
             wallet.CreateIfNotExists().Wait();
-            wallet.AddAddressIfNotExists(BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
-            wallet.AddAddressIfNotExists(BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB ")).Wait();
+            wallet.CreateAddressIfNotExists(BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
+            wallet.CreateAddressIfNotExists(BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB ")).Wait();
 
             var balance = wallet.GetBalance().Result;
             Assert.True(balance.Operations.Count > 70);
 
-            wallet.AddKeySetIfNotExists(new HDKeySet()
-            {
-                Name = "main",
-                ExtPubKeys = new BitcoinExtPubKey[] { new ExtKey().Neuter().GetWif(Network.Main) },
-                Path = new KeyPath("44'/0'/0'"),
-                SignatureCount = 1
-            }).Wait();
-
+            var keyset = wallet.GetKeySetClient("main");
+            
+            keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: new KeyPath("1/2/3")).Wait();
+            Assert.True(keyset.Delete().Result);
+            Assert.False(keyset.Delete().Result);
+            keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: new KeyPath("1/2/3")).Wait();
+            var key = keyset.GenerateKey().Result;
         }
 
         [Fact]

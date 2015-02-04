@@ -1224,6 +1224,10 @@ namespace RapidBase.Tests
 
                 var keys = tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys");
                 Assert.Equal(2, keys.Length);
+
+                Assert.True(tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
+                AssertEx.HttpError(404, () => tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
+                AssertEx.HttpError(404, () => tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys"));
             }
         }
 
@@ -1444,7 +1448,7 @@ namespace RapidBase.Tests
                     "{  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"akJE6ZGzCRGueyTwZdD8beZZ7rvH2oRDzGP\",      \"scriptPubKey\": {        \"hash\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"address\": \"35Dwzds797NcNuP21oL2c2yqB62yM7TBrf\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"18GDK7Arwo1y7DnCab2QzheYXK6rqW8zzM\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"MainNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"anYvNDD3eJVQ5G17C4d99fB5hzVzP3hARES\",      \"scriptPubKey\": {        \"hash\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"address\": \"36tbbjetMDKRFuvFb6CkXrfiymNhceuw5H\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"address\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"MainNet\"    },    \"scriptPubKey\": {      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"address\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"KxMVn7SRNkWTfVa78UXCmsc6Kyp3aQZydnyzGzNBrRg2T9X1u4er\",  \"type\": \"SECRET_KEY\",  \"network\": \"MainNet\"}"
                     );
                 //Can parse address (depends on TestNet)
-                bob = bob.Key.GetBitcoinSecret(Network.TestNet);
+                bob = bob.PrivateKey.GetBitcoinSecret(Network.TestNet);
                 AssertWhatIsIt(
                     tester,
                     bob.GetAddress().ToString(),
@@ -1497,7 +1501,7 @@ namespace RapidBase.Tests
                 //Can find public key
                 AssertWhatIsIt(
                     tester,
-                    bob.Key.PubKey.ToHex(),
+                    bob.PrivateKey.PubKey.ToHex(),
                     "{  \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",  \"isCompressed\": true,  \"address\": {    \"isP2SH\": false,    \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",    \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",    \"scriptPubKey\": {      \"hash\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",      \"address\": \"2MvnA4No8kZsxah1ZgvwuDyy6PSF9DzErie\",      \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"    },    \"redeemScript\": null,    \"publicKey\": null,    \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"type\": \"PUBKEY_ADDRESS\",    \"network\": \"TestNet\"  },  \"p2shAddress\": {    \"isP2SH\": true,    \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",    \"scriptPubKey\": {      \"hash\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",      \"address\": \"2MxSofUauxfpmThYoGDpd9oezC7asSEiNy5\",      \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",      \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"    },    \"redeemScript\": {      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    },    \"publicKey\": null,    \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"type\": \"SCRIPT_ADDRESS\",    \"network\": \"TestNet\"  },  \"scriptPubKey\": {    \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  }}"
                     );
                 ////
@@ -1524,18 +1528,18 @@ namespace RapidBase.Tests
                 /////
 
                 //Can find redeem script if divulged
-                tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob.Key.PubKey.ScriptPubKey.Hash);
+                tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob.PrivateKey.PubKey.ScriptPubKey.Hash);
                 tx = new TransactionBuilder()
                         .AddKeys(bob)
                         .AddCoins(new Coin(tx, 0U))
-                        .AddKnownRedeems(bob.Key.PubKey.ScriptPubKey)
+                        .AddKnownRedeems(bob.PrivateKey.PubKey.ScriptPubKey)
                         .SendFees(Money.Coins(0.05m))
                         .SetChange(bob)
                         .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
                 AssertWhatIsIt(
                    tester,
-                   bob.Key.PubKey.ScriptPubKey.GetScriptAddress(Network.TestNet).ToString(),
+                   bob.PrivateKey.PubKey.ScriptPubKey.GetScriptAddress(Network.TestNet).ToString(),
                    "{  \"isP2SH\": true,  \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",  \"scriptPubKey\": {    \"hash\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",    \"address\": \"2MxSofUauxfpmThYoGDpd9oezC7asSEiNy5\",    \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",    \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"  },  \"redeemScript\": {    \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  },  \"publicKey\": null,  \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",  \"type\": \"SCRIPT_ADDRESS\",  \"network\": \"TestNet\"}"
                    );
                 //Should also find with the script hash

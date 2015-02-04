@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using System.Linq;
 using Newtonsoft.Json;
 using RapidBase.Models;
 using System;
@@ -6,9 +7,83 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace RapidBase.Client
 {
+    public class KeySetClient
+    {
+        private readonly RapidBaseClient _Client;
+        public RapidBaseClient Client
+        {
+            get
+            {
+                return _Client;
+            }
+        }
+
+        private readonly WalletClient _Wallet;
+        public WalletClient Wallet
+        {
+            get
+            {
+                return _Wallet;
+            }
+        }
+
+        private readonly string _Name;
+        public string Name
+        {
+            get
+            {
+                return _Name;
+            }
+        }
+        public KeySetClient(WalletClient walletClient, string keySet)
+        {
+            if (keySet == null)
+                throw new ArgumentNullException("keySet");
+            if (walletClient == null)
+                throw new ArgumentNullException("walletClient");
+            _Name = keySet;
+            _Wallet = walletClient;
+            _Client = _Wallet.Client;
+        }
+
+        public Task<HDKeySet> Create(ExtPubKey[] keys, int signatureCount = 1, KeyPath path = null)
+        {
+            return Client.CreateKeySet(Wallet.Name, Name, keys, signatureCount, path);
+        }
+
+        public Task<HDKeySet> Create(HDKeySet keyset)
+        {
+            keyset.Name = Name;
+            return Client.CreateKeySet(Wallet.Name, keyset);
+        }
+
+        public Task<bool> CreateIfNotExists(ExtPubKey[] keys, int signatureCount = 1, KeyPath path = null)
+        {
+            return Client.CreateKeySetIfNotExists(Wallet.Name, Name, keys, signatureCount, path);
+        }
+
+        public Task<bool> CreateIfNotExists(HDKeySet keyset)
+        {
+            keyset.Name = Name;
+            return Client.CreateKeySetIfNotExists(Wallet.Name, keyset);
+        }
+
+
+
+        public Task<HDKeyData> GenerateKey()
+        {
+            return Client.GenerateKey(Wallet.Name, Name);
+        }
+
+        public Task<bool> Delete()
+        {
+            return Client.DeleteKeySet(Wallet.Name, Name);
+        }
+    }
     public class WalletClient
     {
         public WalletClient(RapidBaseClient client, string walletName)
@@ -18,10 +93,10 @@ namespace RapidBase.Client
             if (client == null)
                 throw new ArgumentNullException("client");
             Client = client;
-            WalletName = walletName;
+            Name = walletName;
         }
 
-        public string WalletName
+        public string Name
         {
             get;
             private set;
@@ -34,55 +109,51 @@ namespace RapidBase.Client
 
         public Task<WalletModel> Create()
         {
-            return Client.CreateWallet(WalletName);
+            return Client.CreateWallet(Name);
         }
         public Task<bool> CreateIfNotExists()
         {
-            return Client.CreateWalletIfNotExists(WalletName);
+            return Client.CreateWalletIfNotExists(Name);
         }
         public Task<BalanceModel> GetBalance()
         {
-            return Client.GetBalance(WalletName);
+            return Client.GetBalance(Name);
         }
 
         public Task<BalanceSummary> GetBalanceSummary()
         {
-            return Client.GetBalanceSummary(WalletName);
+            return Client.GetBalanceSummary(Name);
         }
 
-        public Task<bool> AddAddressIfNotExists(Script redeemScript, bool mergePast = true)
+        public Task<bool> CreateAddressIfNotExists(Script redeemScript, bool mergePast = true)
         {
-            return Client.AddAddressIfNotExists(WalletName, redeemScript, mergePast);
+            return Client.CreateAddressIfNotExists(Name, redeemScript, mergePast);
         }
-        public Task<bool> AddAddressIfNotExists(IDestination dest, Script redeem = null, bool mergePast = true)
+        public Task<bool> CreateAddressIfNotExists(IDestination dest, Script redeem = null, bool mergePast = true)
         {
-            return Client.AddAddressIfNotExists(WalletName, dest, redeem, mergePast);
+            return Client.CreateAddressIfNotExists(Name, dest, redeem, mergePast);
         }
-        public Task<bool> AddAddressIfNotExists(InsertWalletAddress address)
+        public Task<bool> CreateAddressIfNotExists(InsertWalletAddress address)
         {
-            return Client.AddAddressIfNotExists(WalletName, address);
-        }
-
-        public Task<WalletAddress> AddAddress(Script redeemScript, bool mergePast = true)
-        {
-            return Client.AddAddress(WalletName, redeemScript, mergePast);
-        }
-        public Task<WalletAddress> AddAddress(IDestination dest, Script redeem = null, bool mergePast = true)
-        {
-            return Client.AddAddress(WalletName, dest, redeem, mergePast);
-        }
-        public Task<WalletAddress> AddAddress(InsertWalletAddress address)
-        {
-            return Client.AddAddress(WalletName, address);
+            return Client.CreateAddressIfNotExists(Name, address);
         }
 
-        public Task<bool> AddKeySetIfNotExists(HDKeySet keyset)
+        public Task<WalletAddress> CreateAddress(Script redeemScript, bool mergePast = true)
         {
-            return Client.AddKeySetIfNotExists(WalletName, keyset);
+            return Client.CreateAddress(Name, redeemScript, mergePast);
         }
-        public Task<HDKeySet> AddKeySet(HDKeySet keyset)
+        public Task<WalletAddress> CreateAddress(IDestination dest, Script redeem = null, bool mergePast = true)
         {
-            return Client.AddKeySet(WalletName, keyset);
+            return Client.CreateAddress(Name, dest, redeem, mergePast);
+        }
+        public Task<WalletAddress> CreateAddress(InsertWalletAddress address)
+        {
+            return Client.CreateAddress(Name, address);
+        }
+
+        public KeySetClient GetKeySetClient(string keySet)
+        {
+            return new KeySetClient(this, keySet);
         }
     }
     public class RapidBaseClient
@@ -167,7 +238,7 @@ namespace RapidBase.Client
 
         private string GetFullUri(string relativePath, params object[] parameters)
         {
-            relativePath = String.Format(relativePath, parameters);
+            relativePath = String.Format(relativePath, parameters ?? new object[0]);
             var uri = BaseAddress.AbsoluteUri;
             if (!uri.EndsWith("/"))
                 uri += "/";
@@ -200,9 +271,9 @@ namespace RapidBase.Client
                     {
                         try
                         {
-
                             var errorObject = Serializer.ToObject<RapidBaseError>(error);
-                            throw new RapidBaseException(errorObject);
+                            if (errorObject.StatusCode != 0)
+                                throw new RapidBaseException(errorObject);
                         }
                         catch (JsonSerializationException)
                         {
@@ -211,6 +282,8 @@ namespace RapidBase.Client
                 }
                 result.EnsureSuccessStatusCode();
                 var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if (typeof(T) == typeof(string))
+                    return (T)(object)str;
                 return Serializer.ToObject<T>(str);
             }
         }
@@ -242,14 +315,14 @@ namespace RapidBase.Client
         }
 
 
-        public Task<WalletAddress> AddAddress(string walletName, InsertWalletAddress address)
+        public Task<WalletAddress> CreateAddress(string walletName, InsertWalletAddress address)
         {
             return Post<WalletAddress>("wallets/" + walletName + "/addresses", address);
         }
 
-        public Task<WalletAddress> AddAddress(string walletName, IDestination dest, Script redeem, bool mergePast = false)
+        public Task<WalletAddress> CreateAddress(string walletName, IDestination dest, Script redeem, bool mergePast = false)
         {
-            return AddAddress(walletName, new InsertWalletAddress()
+            return CreateAddress(walletName, new InsertWalletAddress()
             {
                 Address = new WalletAddress()
                 {
@@ -260,19 +333,19 @@ namespace RapidBase.Client
             });
         }
 
-        public Task<WalletAddress> AddAddress(string walletName, Script redeemScript, bool mergePast = false)
+        public Task<WalletAddress> CreateAddress(string walletName, Script redeemScript, bool mergePast = false)
         {
-            return AddAddress(walletName, redeemScript.Hash, redeemScript, mergePast);
+            return CreateAddress(walletName, redeemScript.Hash, redeemScript, mergePast);
         }
 
-        public Task<bool> AddAddressIfNotExists(string walletName, Script redeemScript, bool mergePast = true)
+        public Task<bool> CreateAddressIfNotExists(string walletName, Script redeemScript, bool mergePast = true)
         {
-            return AddAddressIfNotExists(walletName, redeemScript.Hash, redeemScript, mergePast);
+            return CreateAddressIfNotExists(walletName, redeemScript.Hash, redeemScript, mergePast);
         }
-        public Task<bool> AddAddressIfNotExists(string walletName, IDestination dest, Script redeem = null, bool mergePast = true)
+        public Task<bool> CreateAddressIfNotExists(string walletName, IDestination dest, Script redeem = null, bool mergePast = true)
         {
             var address = AssertAddress(dest);
-            return AddAddressIfNotExists(walletName, new InsertWalletAddress()
+            return CreateAddressIfNotExists(walletName, new InsertWalletAddress()
             {
                 Address = new WalletAddress()
                 {
@@ -283,11 +356,11 @@ namespace RapidBase.Client
             });
         }
 
-        public async Task<bool> AddAddressIfNotExists(string walletName, InsertWalletAddress address)
+        public async Task<bool> CreateAddressIfNotExists(string walletName, InsertWalletAddress address)
         {
             try
             {
-                await AddAddress(walletName, address).ConfigureAwait(false);
+                await CreateAddress(walletName, address).ConfigureAwait(false);
                 return true;
             }
             catch (RapidBaseException ex)
@@ -298,12 +371,12 @@ namespace RapidBase.Client
             }
         }
 
-        public Task<HDKeySet> AddKeySet(string walletName, HDKeySet keyset)
+        public Task<HDKeySet> CreateKeySet(string walletName, HDKeySet keyset)
         {
             return Post<HDKeySet>("wallets/" + walletName + "/keysets", keyset);
         }
 
-        public async Task<bool> AddKeySetIfNotExists(string walletName, HDKeySet keyset)
+        public async Task<bool> CreateKeySetIfNotExists(string walletName, HDKeySet keyset)
         {
             try
             {
@@ -316,6 +389,44 @@ namespace RapidBase.Client
                     return false;
                 throw;
             }
+        }
+
+        public Task<bool> CreateKeySetIfNotExists(string wallet, string keyset, ExtPubKey[] keys, int signatureCount, KeyPath path)
+        {
+            return CreateKeySetIfNotExists(wallet, new HDKeySet()
+            {
+                Name = keyset,
+                ExtPubKeys = keys.Select(k => k.GetWif(Network)).ToArray(),
+                SignatureCount = signatureCount,
+                Path = path
+            });
+        }
+
+        public Task<HDKeySet> CreateKeySet(string wallet, string keyset, ExtPubKey[] keys, int signatureCount, KeyPath path)
+        {
+            return CreateKeySet(wallet, new HDKeySet()
+            {
+                Name = keyset,
+                ExtPubKeys = keys.Select(k => k.GetWif(Network)).ToArray(),
+                SignatureCount = signatureCount,
+                Path = path
+            });
+        }
+
+        public Task<HDKeyData> GenerateKey(string wallet, string keyset)
+        {
+            return Post<HDKeyData>(BuildPath(wallet, keyset) + "/keys", null);
+        }
+
+        private static string BuildPath(string wallet, string keyset)
+        {
+            return "wallets/" + wallet + "/keysets/" + keyset;
+        }
+
+        public async Task<bool> DeleteKeySet(string wallet, string keyset)
+        {
+            var result = await Send<string>(HttpMethod.Delete, null, BuildPath(wallet, keyset), null).ConfigureAwait(false);
+            return result != null;
         }
     }
 }
