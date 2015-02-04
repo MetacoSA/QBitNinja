@@ -3,7 +3,6 @@ using System;
 using System.Reflection;
 using Newtonsoft.Json;
 
-
 namespace RapidBase.JsonConverters
 {
     public class KeyPathJsonConverter : JsonConverter
@@ -15,9 +14,7 @@ namespace RapidBase.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (reader.TokenType == JsonToken.Null)
-                return null;
-            return new KeyPath(reader.Value.ToString());
+            return reader.TokenType == JsonToken.Null ? null : new KeyPath(reader.Value.ToString());
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

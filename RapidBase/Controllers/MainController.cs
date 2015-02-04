@@ -1,10 +1,8 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using NBitcoin;
+﻿using NBitcoin;
 using NBitcoin.Indexer;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -327,12 +325,9 @@ namespace RapidBase.Controllers
             query.PageSizes = new[] { 1, 10, 100 };
 
             var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>((colored ? "colsum-" : "balsum-") + balanceId);
-            var cachedSummary = cacheTable.Query(Chain, query)
-                                          .Where(c =>
-                                              (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
-                                              c.Immature.TransactionCount == 0 ||
-                                              ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)))
-                                          .FirstOrDefault();
+            var cachedSummary = cacheTable.Query(Chain, query).FirstOrDefault(c => (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
+                                                                                   c.Immature.TransactionCount == 0 ||
+                                                                                   ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)));
 
             var cachedLocator = cachedSummary == null ? null : (ConfirmedBalanceLocator)cachedSummary.Locator;
             if (cachedSummary != null && at != null && cachedLocator.Height == atBlock.Height)
@@ -407,8 +402,7 @@ namespace RapidBase.Controllers
                 };
                 cacheTable.Create(newCachedLocator, newCachedSummary);
             }
-
-
+            
             summary.PrepareForSend(at, debug);
             return summary;
         }
@@ -479,11 +473,14 @@ namespace RapidBase.Controllers
             cancel.CancelAfter(30000);
 
             BalanceQuery query = new BalanceQuery();
+            
             if (continuation != null)
             {
-                query = new BalanceQuery();
-                query.From = continuation;
-                query.FromIncluded = false;
+                query = new BalanceQuery
+                {
+                    From = continuation, 
+                    FromIncluded = false
+                };
             }
 
             if (from != null)
@@ -491,19 +488,15 @@ namespace RapidBase.Controllers
                 query.From = ToBalanceLocator(from);
                 query.FromIncluded = true;
             }
+
             if (until != null)
             {
                 query.To = ToBalanceLocator(until);
                 query.FromIncluded = true;
-
-
             }
 
-            if (query != null)
-            {
-                if (query.To.YoungerThan(query.From))
-                    throw InvalidParameters("Invalid agurment : from < until");
-            }
+            if (query.To.YoungerThan(query.From))
+                throw InvalidParameters("Invalid agurment : from < until");
 
             var client = Configuration.Indexer.CreateIndexerClient();
             client.ColoredBalance = colored;
@@ -514,9 +507,7 @@ namespace RapidBase.Controllers
                 .WhereNotExpired()
                 .Where(o => includeImmature || IsMature(o, Chain.Tip))
                 .AsBalanceSheet(Chain);
-
-
-
+            
             var balanceChanges = balance.All;
             if (until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
             {
