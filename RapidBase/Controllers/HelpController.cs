@@ -106,7 +106,8 @@ namespace RapidBase.Controllers
                             new RouteSample("whatisit/0000000000000000080feeba134552a002aeb08e815aad1c41108f680d7b5f58","Block id"),
                             new RouteSample("whatisit/0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c","Block header"),
                             new RouteSample("whatisit/335598", "Block height"), //Height
-                            new RouteSample("whatisit/3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001","Signature")
+                            new RouteSample("whatisit/3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001","Signature"),
+                             new RouteSample("whatisit/what is my future","Astology")
                         }
                     }
                 }
