@@ -8,7 +8,6 @@ namespace RapidBase
 {
     public class WebApiApplication : HttpApplication
     {
-
         protected void Application_Start()
         {
             GlobalConfiguration.Configure(WebApiConfig.Register);
@@ -27,6 +26,7 @@ namespace RapidBase
             get;
             set;
         }
+
         internal RapidBaseDependencyResolver Resolver
         {
             get;

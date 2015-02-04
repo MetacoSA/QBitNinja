@@ -74,7 +74,7 @@ namespace RapidBase
             _container = builder.Build();
         }
 
-        private void LoadCache(ConcurrentChain chain, string cacheLocation)
+        private static void LoadCache(ConcurrentChain chain, string cacheLocation)
         {
             if (string.IsNullOrEmpty(cacheLocation))
                 return;
@@ -88,7 +88,7 @@ namespace RapidBase
             }
         }
 
-        private void SaveChainCache(ConcurrentChain chain, string cacheLocation)
+        private static void SaveChainCache(ConcurrentChain chain, string cacheLocation)
         {
             if (string.IsNullOrEmpty(cacheLocation))
                 return;
@@ -142,7 +142,7 @@ namespace RapidBase
         const string LocalChainLocation = "LocalChain.dat";
         public void Dispose()
         {
-            SaveChainCache(Get<ConcurrentChain>(), this.Get<RapidBaseConfiguration>().LocalChain);
+            SaveChainCache(Get<ConcurrentChain>(), Get<RapidBaseConfiguration>().LocalChain);
             _container.Dispose();
 
         }

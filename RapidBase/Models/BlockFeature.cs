@@ -141,7 +141,7 @@ namespace RapidBase.Models
             }
             if (BlockId != null)
             {
-                builder.Append(BlockId.ToString());
+                builder.Append(BlockId);
             }
             if (Height != -1)
             {

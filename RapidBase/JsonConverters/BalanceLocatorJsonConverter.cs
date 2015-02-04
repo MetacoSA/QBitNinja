@@ -13,10 +13,7 @@ namespace RapidBase.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (reader.TokenType == JsonToken.Null)
-                return null;
-
-             return BalanceLocator.Parse(reader.Value.ToString());
+            return reader.TokenType == JsonToken.Null ? null : BalanceLocator.Parse(reader.Value.ToString());
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
