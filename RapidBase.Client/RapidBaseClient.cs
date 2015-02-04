@@ -233,7 +233,7 @@ namespace RapidBase.Client
 
         public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false)
         {
-            return Get<GetBlockResponse>("blocks/" + blockFeature.ToString() + "?headerOnly=" + headerOnly);
+            return Get<GetBlockResponse>("blocks/" + blockFeature + "?headerOnly=" + headerOnly);
         }
 
         private string GetFullUri(string relativePath, params object[] parameters)

@@ -28,7 +28,7 @@ namespace RapidBase.ModelBinders
             string key = val.RawValue as string;
 
             var data = Network.CreateFromBase58Data(key, actionContext.RequestContext.GetConfiguration().Indexer.Network);
-            if (!bindingContext.ModelType.IsAssignableFrom(data.GetType()))
+            if (!bindingContext.ModelType.IsInstanceOfType(data))
             {
                 throw new FormatException("Invalid base58 type");
             }

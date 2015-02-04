@@ -16,9 +16,9 @@ namespace RapidBase
         {
             var conf = new RapidBaseConfiguration
             {
-                Indexer = IndexerConfiguration.FromConfiguration()
+                Indexer = IndexerConfiguration.FromConfiguration(), 
+                LocalChain = ConfigurationManager.AppSettings["LocalChain"]
             };
-            conf.LocalChain = ConfigurationManager.AppSettings["LocalChain"];
             return conf;
         }
 

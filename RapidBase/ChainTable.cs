@@ -50,8 +50,10 @@ namespace RapidBase
 
         public void Delete(ConfirmedBalanceLocator locator)
         {
-            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
-            entity.ETag = "*";
+            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
+            {
+                ETag = "*"
+            };
             Table.Execute(TableOperation.Delete(entity));
         }
         public void Delete()
@@ -98,11 +100,11 @@ namespace RapidBase
             locator = Normalize(locator);
             return "-" + locator.ToString(true);
         }
+        
         private static BalanceLocator UnEscapeLocator(string str)
         {
             return BalanceLocator.Parse(str.Substring(1), true);
         }
-
 
         private static ConfirmedBalanceLocator Normalize(ConfirmedBalanceLocator locator)
         {
