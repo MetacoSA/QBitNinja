@@ -305,7 +305,8 @@ namespace RapidBase.Controllers
         public void OnNewBlock(string registrationId)
         {
             var repo = Configuration.CreateCallbackRepository();
-            repo.Delete("onnewblock", registrationId);
+            if (!repo.Delete("onnewblock", registrationId))
+                throw Error(404, "Registation does not exists");
         }
 
         [HttpGet]

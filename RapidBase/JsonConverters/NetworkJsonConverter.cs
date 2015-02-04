@@ -17,11 +17,14 @@ namespace RapidBase.JsonConverters
                 return null;
 
             var network = (string)reader.Value;
-            if (network == "MainNet")
+            if (network == null)
+                return null;
+            if (network.Equals("MainNet", StringComparison.OrdinalIgnoreCase) || network.Equals("main", StringComparison.OrdinalIgnoreCase))
                 return Network.Main;
-            if (network == "TestNet")
+            if (network.Equals("TestNet", StringComparison.OrdinalIgnoreCase) || network.Equals("test", StringComparison.OrdinalIgnoreCase))
                 return Network.TestNet;
-            return network == "RegNet" ? Network.RegTest : null;
+
+            throw new JsonObjectException("Unknown network (valid values : main, test)", reader);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -32,8 +35,6 @@ namespace RapidBase.JsonConverters
                 str = "MainNet";
             if (net == Network.TestNet)
                 str = "TestNet";
-            if (net == Network.RegTest)
-                str = "RegNet";
             if (str != null)
                 writer.WriteValue(str);
         }

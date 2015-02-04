@@ -20,12 +20,18 @@ namespace RapidBase.Models
             private set;
         }
 
+        public string Location
+        {
+            get;
+            set;
+        }
         public RapidBaseError ToError()
         {
             return new RapidBaseError
             {
                 StatusCode = StatusCode,
-                Message = Message
+                Message = Message,
+                Location = Location
             };
         }
     }
@@ -37,6 +43,11 @@ namespace RapidBase.Models
             set;
         }
         public string Message
+        {
+            get;
+            set;
+        }
+        public string Location
         {
             get;
             set;

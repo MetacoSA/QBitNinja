@@ -14,7 +14,14 @@ namespace RapidBase.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            return reader.TokenType == JsonToken.Null ? null : new KeyPath(reader.Value.ToString());
+            try
+            {
+                return reader.TokenType == JsonToken.Null ? null : new KeyPath(reader.Value.ToString());
+            }
+            catch (FormatException)
+            {
+                throw new JsonObjectException("Invalid key path", reader);
+            }
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

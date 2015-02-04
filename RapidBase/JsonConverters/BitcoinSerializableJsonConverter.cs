@@ -2,6 +2,7 @@
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
 using System;
+using System.IO;
 
 namespace RapidBase.JsonConverters
 {
@@ -17,11 +18,22 @@ namespace RapidBase.JsonConverters
             if (reader.TokenType == JsonToken.Null)
                 return null;
 
-            var obj = (IBitcoinSerializable)Activator.CreateInstance(objectType);
-            var bytes = Encoders.Hex.DecodeData((string)reader.Value);
-            InverseIfNeeded(objectType, bytes);
-            obj.ReadWrite(bytes);
-            return obj;
+            try
+            {
+
+                var obj = (IBitcoinSerializable)Activator.CreateInstance(objectType);
+                var bytes = Encoders.Hex.DecodeData((string)reader.Value);
+                InverseIfNeeded(objectType, bytes);
+                obj.ReadWrite(bytes);
+                return obj;
+            }
+            catch (EndOfStreamException)
+            {
+            }
+            catch (FormatException)
+            {
+            }
+            throw new JsonObjectException("Invalid bitcoin object of type " + objectType.Name, reader);
         }
 
         private static void InverseIfNeeded(Type type, byte[] bytes)

@@ -25,9 +25,9 @@ namespace RapidBase
             return callback;
         }
 
-        public void Delete(string eventName, string id)
+        public bool Delete(string eventName, string id)
         {
-            _table.GetChild(eventName).Delete(id);
+            return _table.GetChild(eventName).Delete(id);
         }
 
 

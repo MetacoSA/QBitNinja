@@ -14,7 +14,14 @@ namespace RapidBase.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            return reader.TokenType == JsonToken.Null ? null : Script.FromBytesUnsafe(Encoders.Hex.DecodeData((string)reader.Value));
+            try
+            {
+                return reader.TokenType == JsonToken.Null ? null : Script.FromBytesUnsafe(Encoders.Hex.DecodeData((string)reader.Value));
+            }
+            catch (FormatException)
+            {
+                throw new JsonObjectException("A script should be a byte string", reader);
+            }
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

@@ -22,18 +22,18 @@ namespace RapidBase.JsonConverters
             var result = Base58Data.GetFromBase58Data(reader.Value.ToString());
             if (result == null)
             {
-                throw new FormatException("Invalid base58 data" + reader.Path);
+                throw new JsonObjectException("Invalid Base58Check data", reader);
             }
             if (Network != null)
             {
                 if (result.Network != Network)
                 {
-                    throw new FormatException("Invalid base58 network" + reader.Path);
+                    throw new JsonObjectException("Invalid Base58Check network", reader);
                 }
             }
             if (!objectType.GetTypeInfo().IsAssignableFrom(result.GetType().GetTypeInfo()))
             {
-                throw new FormatException("Invalid base58 data " + reader.Path);
+                throw new JsonObjectException("Invalid Base58Check type expected " + objectType.Name + ", actual " + result.GetType().Name, reader);
             }
             return result;
         }

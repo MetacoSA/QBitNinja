@@ -208,7 +208,7 @@ namespace RapidBase.Tests
                 Assert.NotNull(table.ReadOne("child1"));
                 Assert.True(table.Read().Length == 1);
 
-                table.Delete("child1");             
+                table.Delete("child1");
                 Assert.True(table.Read().Length == 0);
 
                 Assert.True(childTable.Read().Length == 1);
@@ -1170,6 +1170,14 @@ namespace RapidBase.Tests
                 AssertEx.HttpError(400, () => tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
                 {
                     Name = "b"
+                }));
+
+                AssertEx.HttpError(400, () => tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
+                {
+                    Name = "c",
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
+                    Path = new KeyPath("1/2/3'"),
+                    SignatureCount = 1
                 }));
             }
         }

@@ -1,4 +1,6 @@
 ﻿using Microsoft.WindowsAzure.Storage;
+using Newtonsoft.Json;
+using RapidBase.JsonConverters;
 using RapidBase.Models;
 using System;
 using System.Net;
@@ -17,11 +19,21 @@ namespace RapidBase
         {
             if (actionExecutedContext.Exception is FormatException)
             {
-                actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage()
+                actionExecutedContext.Exception = new RapidBaseException(400, actionExecutedContext.Exception.Message);
+            }
+            if (actionExecutedContext.Exception is JsonObjectException)
+            {
+                actionExecutedContext.Exception = new RapidBaseException(400, actionExecutedContext.Exception.Message)
                 {
-                    StatusCode = HttpStatusCode.BadRequest,
-                    ReasonPhrase = actionExecutedContext.Exception.Message
-                });
+                    Location = ((JsonObjectException)actionExecutedContext.Exception).Path
+                };
+            }
+            if (actionExecutedContext.Exception is JsonReaderException)
+            {
+                actionExecutedContext.Exception = new RapidBaseException(400, actionExecutedContext.Exception.Message)
+                {
+                    Location = ((JsonReaderException)actionExecutedContext.Exception).Path
+                };
             }
             if (actionExecutedContext.Exception is RapidBaseException)
             {

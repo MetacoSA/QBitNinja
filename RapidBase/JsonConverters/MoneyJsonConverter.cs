@@ -13,7 +13,14 @@ namespace RapidBase.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            return reader.TokenType == JsonToken.Null ? null : new Money((long)reader.Value);
+            try
+            {
+                return reader.TokenType == JsonToken.Null ? null : new Money((long)reader.Value);
+            }
+            catch (InvalidCastException)
+            {
+                throw new JsonObjectException("Money amount should be in satoshi", reader);
+            }
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

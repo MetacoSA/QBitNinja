@@ -180,6 +180,7 @@
     <Compile Include="JsonConverters\Base58JsonConverter.cs" />
     <Compile Include="JsonConverters\BitcoinSerializableJsonConverter.cs" />
     <Compile Include="JsonConverters\CoinJsonConverter.cs" />
+    <Compile Include="JsonConverters\JsonObjectException.cs" />
     <Compile Include="JsonConverters\KeyPathJsonConverter.cs" />
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
     <Compile Include="JsonConverters\NetworkJsonConverter.cs" />
