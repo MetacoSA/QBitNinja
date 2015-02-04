@@ -106,12 +106,18 @@ namespace RapidBase.Controllers
             if (rule == null)
                 throw Error(409, "This address already exist in the wallet");
 
+            bool merge = false;
             if (insertAddress.MergePast)
             {
                 var index = Configuration.Indexer.CreateIndexerClient();
                 CancellationTokenSource cancel = new CancellationTokenSource();
                 cancel.CancelAfter(10000);
-                index.MergeIntoWallet(walletName, address.Address, rule, cancel.Token);
+                merge = index.MergeIntoWallet(walletName, address.Address, rule, cancel.Token);
+            }
+            if (merge)
+            {
+                GetBalanceSummaryCacheTable(new BalanceId(walletName), true).Delete();
+                GetBalanceSummaryCacheTable(new BalanceId(walletName), false).Delete();
             }
             return address;
         }
@@ -371,7 +377,7 @@ namespace RapidBase.Controllers
 
             query.PageSizes = new[] { 1, 10, 100 };
 
-            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>((colored ? "colsum-" : "balsum-") + balanceId);
+            var cacheTable = GetBalanceSummaryCacheTable(balanceId, colored);
             var cachedSummary = cacheTable.Query(Chain, query).FirstOrDefault(c => (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
                                                                                    c.Immature.TransactionCount == 0 ||
                                                                                    ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)));
@@ -452,6 +458,14 @@ namespace RapidBase.Controllers
 
             summary.PrepareForSend(at, debug);
             return summary;
+        }
+
+        private ChainTable<Models.BalanceSummary> GetBalanceSummaryCacheTable(BalanceId balanceId, bool colored)
+        {
+            Scope scope = new Scope(new[] { balanceId.ToString() });
+            scope = scope.GetChild(colored ? "colsum" : "balsum");
+            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>(scope);
+            return cacheTable;
         }
 
         private ConfirmedBalanceLocator ToBalanceLocator(BlockFeature feature)

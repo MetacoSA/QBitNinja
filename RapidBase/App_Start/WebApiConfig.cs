@@ -31,6 +31,25 @@ namespace RapidBase
             ServicePointManager.DefaultConnectionLimit = 1000;
         }
 
+        /// <summary>
+        /// The purpopse of this class is to prevent serialization error to be silently catched by the web api
+        /// </summary>
+        class CustomJsonMediaTypeFormatter : JsonMediaTypeFormatter
+        {
+            public override object ReadFromStream(Type type, System.IO.Stream readStream, System.Text.Encoding effectiveEncoding, IFormatterLogger formatterLogger)
+            {
+                return base.ReadFromStream(type, readStream, effectiveEncoding, null);
+            }
+            public override System.Threading.Tasks.Task<object> ReadFromStreamAsync(Type type, System.IO.Stream readStream, System.Net.Http.HttpContent content, IFormatterLogger formatterLogger)
+            {
+                return base.ReadFromStreamAsync(type, readStream, content, null);
+            }
+            public override System.Threading.Tasks.Task<object> ReadFromStreamAsync(Type type, System.IO.Stream readStream, System.Net.Http.HttpContent content, IFormatterLogger formatterLogger, System.Threading.CancellationToken cancellationToken)
+            {
+                return base.ReadFromStreamAsync(type, readStream, content, null, cancellationToken);
+            }
+        }
+
         public static void Register(HttpConfiguration config, RapidBaseConfiguration rapidbase)
         {
             SetThrottling();
@@ -39,9 +58,10 @@ namespace RapidBase
             rapidbase.EnsureSetup();
             config.MapHttpAttributeRoutes();
             config.Formatters.Clear();
-            config.Formatters.Add(new JsonMediaTypeFormatter()
+            config.Formatters.Add(new CustomJsonMediaTypeFormatter()
             {
-                Indent = true
+
+                Indent = true,
             });
             config.DependencyResolver = new RapidBaseDependencyResolver(rapidbase, config.DependencyResolver);
             config.Filters.Add(new GlobalExceptionFilter());

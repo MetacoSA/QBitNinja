@@ -87,11 +87,11 @@ namespace RapidBase
                     GetCrudTableFactory(scope));
         }
 
-        public ChainTable<T> GetChainCacheTable<T>(string purpose)
+        public ChainTable<T> GetChainCacheTable<T>(Scope scope)
         {
             return new ChainTable<T>(GetChainCacheCloudTable())
             {
-                Scope = purpose
+                Scope = scope
             };
         }
 

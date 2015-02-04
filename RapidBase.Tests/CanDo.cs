@@ -230,7 +230,7 @@ namespace RapidBase.Tests
         {
             using (var tester = ServerTester.Create())
             {
-                var table = tester.Configuration.GetChainCacheTable<string>("test");
+                var table = tester.Configuration.GetChainCacheTable<string>(new Scope(new[]{"test"}));
                 var a1 = tester.ChainBuilder.AddToChain();
                 table.Create(GetLocator(tester.ChainBuilder), "a1");
                 var a2 = tester.ChainBuilder.AddToChain();
@@ -801,6 +801,72 @@ namespace RapidBase.Tests
                         Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     }
                 }, result);
+            }
+        }
+
+        [Fact]
+        public void CanGetWalletBalanceSummary()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var alice1 = new Key();
+                var alice2 = new Key();
+                var alice3 = new Key();
+
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.5m), alice1);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), alice2);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
+                {
+                    Name = "Alice"
+                });
+
+                tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = true,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice1.GetBitcoinSecret(Network.TestNet).GetAddress()
+                    }
+                });
+
+                var result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true");
+                Assert.True(result.Confirmed.Amount == Money.Coins(1.5m));
+
+                result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true&at=1");
+                Assert.True(result.CacheHit == CacheHit.FullCache);
+
+                tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = true,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice2.GetBitcoinSecret(Network.TestNet).GetAddress()
+                    }
+                });
+
+                //Alice2 recieved money in the past, so cache should be invalidated
+                result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true");
+                Assert.True(result.Confirmed.Amount == Money.Coins(2.5m));
+                Assert.True(result.CacheHit == CacheHit.NoCache);
+
+                result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true&at=1");
+                Assert.True(result.CacheHit == CacheHit.FullCache);
+
+                tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
+                {
+                    MergePast = true,
+                    Address = new WalletAddress()
+                    {
+                        Address = alice3.GetBitcoinSecret(Network.TestNet).GetAddress()
+                    }
+                });
+
+                //Should not invalidate the cache, alice3 never received money
+                result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true&at=1");
+                Assert.True(result.CacheHit == CacheHit.FullCache);
             }
         }
 

@@ -29,7 +29,7 @@ namespace RapidBase
             }
         }
 
-        public string Scope
+        public Scope Scope
         {
             get;
             set;
@@ -116,6 +116,11 @@ namespace RapidBase
         {
             var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(scope));
             return result;
+        }
+
+        private static string Escape(Scope scope)
+        {
+            return Escape(scope.ToString());
         }
     }
 }
