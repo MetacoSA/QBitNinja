@@ -188,21 +188,22 @@ namespace RapidBase.Client
             return new WalletClient(this, wallet);
         }
 
-        public Task<BalanceModel> GetBalance(IDestination dest)
+        public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceModel>("balances/" + address + "?colored=" + Colored);
+            return Get<BalanceModel>("balances/" + address + "?colored=" + Colored + "&unspentOnly=" + unspentOnly);
         }
         public Task<BalanceSummary> GetBalanceSummary(IDestination dest)
         {
             var address = AssertAddress(dest);
             return Get<BalanceSummary>("balances/" + address + "/summary?colored=" + Colored);
         }
-        public Task<BalanceModel> GetBalance(string wallet)
+
+        public Task<BalanceModel> GetBalance(string wallet, bool unspentOnly = false)
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceModel>("wallets/" + wallet + "/balance?colored=" + Colored);
+            return Get<BalanceModel>("wallets/" + wallet + "/balance?colored=" + Colored + "&unspentOnly=" + unspentOnly);
         }
         public Task<BalanceSummary> GetBalanceSummary(string wallet)
         {
