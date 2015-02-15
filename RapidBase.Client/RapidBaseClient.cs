@@ -247,12 +247,12 @@ namespace RapidBase.Client
             return uri;
         }
 
-        private Task<T> Get<T>(string relativePath, params object[] parameters)
+        public Task<T> Get<T>(string relativePath, params object[] parameters)
         {
             return Send<T>(HttpMethod.Get, null, relativePath, parameters);
         }
 
-        private async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
+        public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
         {
             var uri = GetFullUri(relativePath, parameters);
             using (var client = new HttpClient())
@@ -289,7 +289,7 @@ namespace RapidBase.Client
             }
         }
 
-        private Task<T> Post<T>(string relativePath, object content)
+        public Task<T> Post<T>(string relativePath, object content)
         {
             return Send<T>(HttpMethod.Post, content, relativePath);
         }
