@@ -171,7 +171,10 @@ namespace RapidBase.Client
             set;
         }
 
-        public bool Colored
+        /// <summary>
+        /// If true, requested balance will show colored coins. If null, only colored addresses will show colored balances. If false, no colored coin will be shown.
+        /// </summary>
+        public bool? Colored
         {
             get;
             set;
@@ -191,25 +194,43 @@ namespace RapidBase.Client
         public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceModel>("balances/" + address + "?colored=" + Colored + "&unspentOnly=" + unspentOnly);
+            return Get<BalanceModel>("balances/" + address + CreateParameters("unspentOnly", unspentOnly));
         }
         public Task<BalanceSummary> GetBalanceSummary(IDestination dest)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceSummary>("balances/" + address + "/summary?colored=" + Colored);
+            return Get<BalanceSummary>("balances/" + address + "/summary" + CreateParameters());
+        }
+
+        private string CreateParameters(params object[] parameters)
+        {
+            if (Colored != null)
+            {
+                parameters = parameters.Concat(new object[] { "colored", Colored.Value }).ToArray();
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0 ; i < parameters.Length - 1 ; i += 2)
+            {
+                builder.Append(parameters[i].ToString() + "=" + parameters[i + 1].ToString() + "&");
+            }
+            if (builder.Length == 0)
+                return "";
+            var result = builder.ToString();
+            return "?" + result.Substring(0, result.Length - 1);
         }
 
         public Task<BalanceModel> GetBalance(string wallet, bool unspentOnly = false)
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceModel>("wallets/" + wallet + "/balance?colored=" + Colored + "&unspentOnly=" + unspentOnly);
+            return Get<BalanceModel>("wallets/" + wallet + "/balance" + CreateParameters("unspentOnly", unspentOnly));
         }
         public Task<BalanceSummary> GetBalanceSummary(string wallet)
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceSummary>("wallets/" + wallet + "/summary?colored=" + Colored);
+            return Get<BalanceSummary>("wallets/" + wallet + "/summary" + CreateParameters());
         }
 
         public Task<WalletModel> CreateWallet(string wallet)
@@ -277,6 +298,9 @@ namespace RapidBase.Client
                                 throw new RapidBaseException(errorObject);
                         }
                         catch (JsonSerializationException)
+                        {
+                        }
+                        catch (JsonReaderException)
                         {
                         }
                     }
