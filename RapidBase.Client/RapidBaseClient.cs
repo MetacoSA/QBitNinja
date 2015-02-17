@@ -283,7 +283,7 @@ namespace RapidBase.Client
                 var message = new HttpRequestMessage(method, uri);
                 if (body != null)
                 {
-                    message.Content = new StringContent(Serializer.ToString(body), Encoding.UTF8, "application/json");
+                    message.Content = new StringContent(Serializer.ToString(body, Network), Encoding.UTF8, "application/json");
                 }
                 var result = await client.SendAsync(message).ConfigureAwait(false);
                 if (result.StatusCode == HttpStatusCode.NotFound)
@@ -295,7 +295,7 @@ namespace RapidBase.Client
                     {
                         try
                         {
-                            var errorObject = Serializer.ToObject<RapidBaseError>(error);
+                            var errorObject = Serializer.ToObject<RapidBaseError>(error, Network);
                             if (errorObject.StatusCode != 0)
                                 throw new RapidBaseException(errorObject);
                         }
@@ -311,7 +311,7 @@ namespace RapidBase.Client
                 var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (typeof(T) == typeof(string))
                     return (T)(object)str;
-                return Serializer.ToObject<T>(str);
+                return Serializer.ToObject<T>(str, Network);
             }
         }
 

@@ -30,22 +30,30 @@ namespace RapidBase
 
         public static T ToObject<T>(string data)
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented
-            };
-            RegisterFrontConverters(settings);
-            return JsonConvert.DeserializeObject<T>(data, settings);
+            return ToObject<T>(data, null);
         }
-
-        public static string ToString<T>(T response)
+        public static T ToObject<T>(string data, Network network)
         {
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 Formatting = Formatting.Indented
             };
-            RegisterFrontConverters(settings);
+            RegisterFrontConverters(settings, network);
+            return JsonConvert.DeserializeObject<T>(data, settings);
+        }
+
+        public static string ToString<T>(T response, Network network)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented
+            };
+            RegisterFrontConverters(settings, network);
             return JsonConvert.SerializeObject(response, settings);
+        }
+        public static string ToString<T>(T response)
+        {
+            return ToString<T>(response, null);
         }
 #if !CLIENT
         public static MediaTypeFormatter JsonMediaTypeFormatter

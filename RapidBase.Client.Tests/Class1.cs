@@ -21,6 +21,25 @@ namespace RapidBase.Client.Tests
         }
 
         [Fact]
+        public void CanDetectUncoherentNetwork()
+        {
+            try
+            {
+
+                var client = CreateClient(Network.TestNet);
+                var balance = client.GetBalance(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
+                Assert.False(true, "Should have thrown");
+            }
+            catch (AggregateException ex)
+            {
+                var rex = (RapidBaseException)ex.InnerException;
+                if (rex == null)
+                    Assert.False(true, "Should have thrown RapidBaseException");
+                Assert.Equal(400, rex.StatusCode);
+            }
+        }
+
+        [Fact]
         public void CanManageWallet()
         {
             var client = CreateClient();
@@ -33,7 +52,7 @@ namespace RapidBase.Client.Tests
             Assert.True(balance.Operations.Count > 70);
 
             var keyset = wallet.GetKeySetClient("main");
-            
+
             keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: new KeyPath("1/2/3")).Wait();
             Assert.True(keyset.Delete().Result);
             Assert.False(keyset.Delete().Result);
@@ -71,9 +90,9 @@ namespace RapidBase.Client.Tests
             Assert.NotNull(tx);
         }
 
-        private RapidBaseClient CreateClient()
+        private RapidBaseClient CreateClient(Network network = null)
         {
-            return new RapidBaseClient(new Uri("http://rapidbase-test.azurewebsites.net/"));
+            return new RapidBaseClient(new Uri("http://rapidbase-test.azurewebsites.net/"), network);
         }
 
     }
