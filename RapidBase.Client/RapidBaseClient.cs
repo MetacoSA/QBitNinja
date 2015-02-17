@@ -308,6 +308,8 @@ namespace RapidBase.Client
                     }
                 }
                 result.EnsureSuccessStatusCode();
+                if (typeof(T) == typeof(byte[]))
+                    return (T)(object)await result.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (typeof(T) == typeof(string))
                     return (T)(object)str;
