@@ -11,7 +11,7 @@ namespace RapidBase.JsonConverters
         {
             return
                 typeof(Base58Data).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo()) ||
-                typeof(IDestination).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo());
+                (typeof(IDestination).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo()) && objectType.GetTypeInfo().AssemblyQualifiedName.Contains("NBitcoin"));
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)

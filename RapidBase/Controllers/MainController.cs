@@ -112,7 +112,7 @@ namespace RapidBase.Controllers
                 var index = Configuration.Indexer.CreateIndexerClient();
                 CancellationTokenSource cancel = new CancellationTokenSource();
                 cancel.CancelAfter(10000);
-                merge = index.MergeIntoWallet(walletName, address.Address, rule, cancel.Token);
+                merge = index.MergeIntoWallet(walletName, address, rule, cancel.Token);
             }
             if (merge)
             {

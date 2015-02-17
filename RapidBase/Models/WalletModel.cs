@@ -17,10 +17,10 @@ namespace RapidBase.Models
             set;
         }
     }
-    public class WalletAddress
+    public class WalletAddress : IDestination
     {
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public BitcoinAddress Address
+        public Base58Data Address
         {
             get;
             set;
@@ -50,6 +50,26 @@ namespace RapidBase.Models
             }
             return true;
         }
+
+        #region IDestination Members
+
+        [JsonIgnore]
+        public Script ScriptPubKey
+        {
+            get
+            {
+                var dest = Address as IDestination;
+                if (dest == null)
+                {
+                    if (RedeemScript == null)
+                        return null;
+                    return RedeemScript.Hash.ScriptPubKey;
+                }
+                return dest.ScriptPubKey;
+            }
+        }
+
+        #endregion
     }
     public class WalletModel
     {

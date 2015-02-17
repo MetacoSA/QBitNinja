@@ -100,7 +100,7 @@ namespace RapidBase
             var rule = new ScriptRule
             {
                 CustomData = address.CustomData == null ? null : address.CustomData.ToString(),
-                ScriptPubKey = address.Address.ScriptPubKey,
+                ScriptPubKey = address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
             };
             if (!WalletAddressesTable.GetChild(walletName).Create(address.Address.ToString(), address, false))

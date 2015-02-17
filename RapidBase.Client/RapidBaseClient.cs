@@ -243,13 +243,15 @@ namespace RapidBase.Client
             });
         }
 
-        private BitcoinAddress AssertAddress(IDestination dest)
+        private Base58Data AssertAddress(IDestination dest)
         {
             if (dest == null)
                 throw new ArgumentNullException("address");
             var address = dest.ScriptPubKey.GetDestinationAddress(Network);
             if (address == null)
                 throw new ArgumentException("address does not represent a valid bitcoin address", "address");
+            if (dest is BitcoinColoredAddress)
+                return (BitcoinColoredAddress)dest;
             return address;
         }
 
