@@ -155,6 +155,11 @@ namespace RapidBase.Client
         {
             return new KeySetClient(this, keySet);
         }
+
+        public Task<KeySetData[]> GetKeySets()
+        {
+            return Client.GetKeySets(Name);
+        }
     }
     public class RapidBaseClient
     {
@@ -456,6 +461,11 @@ namespace RapidBase.Client
         {
             var result = await Send<string>(HttpMethod.Delete, null, BuildPath(wallet, keyset), null).ConfigureAwait(false);
             return result != null;
+        }
+
+        public Task<KeySetData[]> GetKeySets(string wallet)
+        {
+            return Get<KeySetData[]>("wallets/" + wallet + "/keysets");
         }
     }
 }

@@ -58,6 +58,9 @@ namespace RapidBase.Client.Tests
             Assert.False(keyset.Delete().Result);
             keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: new KeyPath("1/2/3")).Wait();
             var key = keyset.GenerateKey().Result;
+
+            var sets = wallet.GetKeySets().Result;
+            Assert.True(sets.Length > 0);
         }
 
         [Fact]
