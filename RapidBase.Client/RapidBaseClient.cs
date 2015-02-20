@@ -160,6 +160,11 @@ namespace RapidBase.Client
         {
             return Client.GetKeySets(Name);
         }
+
+        public Task<WalletModel> Get()
+        {
+            return Client.GetWallet(Name);
+        }
     }
     public class RapidBaseClient
     {
@@ -466,6 +471,11 @@ namespace RapidBase.Client
         public Task<KeySetData[]> GetKeySets(string wallet)
         {
             return Get<KeySetData[]>("wallets/" + wallet + "/keysets");
+        }
+
+        public Task<WalletModel> GetWallet(string walletName)
+        {
+            return Get<WalletModel>("wallets/" + walletName);
         }
     }
 }

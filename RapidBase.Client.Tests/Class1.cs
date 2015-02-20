@@ -61,6 +61,10 @@ namespace RapidBase.Client.Tests
 
             var sets = wallet.GetKeySets().Result;
             Assert.True(sets.Length > 0);
+
+            var model = client.GetWalletClient("temp-1Nicolas Dorier").Get().Result;
+            Assert.NotNull(model);
+            Assert.Null(client.GetWalletClient("ojkljdjlksj").Get().Result);
         }
 
         [Fact]

@@ -230,6 +230,18 @@ namespace RapidBase.Controllers
             return repo.Get();
         }
 
+
+        [HttpGet]
+        [Route("wallets/{walletName}")]
+        public WalletModel GetWallet(string walletName)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            var result = repo.GetWallet(walletName);
+            if (result == null)
+                throw Error(404, "Wallet not found");
+            return result;
+        }
+
         internal GetTransactionResponse JsonTransaction(uint256 txId)
         {
             var client = Configuration.Indexer.CreateIndexerClient();
