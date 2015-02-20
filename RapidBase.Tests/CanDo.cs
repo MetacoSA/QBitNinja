@@ -99,6 +99,22 @@ namespace RapidBase.Tests
             }
         }
 
+        //[Fact]
+        //public void Play()
+        //{
+        //    using (var tester = ServerTester.Create())
+        //    {
+        //        var walletName = System.Web.NBitcoin.HttpUtility.UrlEncode("@098098.@##.balance?frpoeifpo")
+        //            .Replace("/", "%2F")
+        //            .Replace("?", "%3F");
+
+        //        tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
+        //        {
+        //            Name = "@098098.@##.balance?frpoeifpo"
+        //        });
+        //        tester.SendGet<string>("wallets/" + walletName);
+        //    }
+        //}
 
 
         [Fact]
@@ -230,7 +246,7 @@ namespace RapidBase.Tests
         {
             using (var tester = ServerTester.Create())
             {
-                var table = tester.Configuration.GetChainCacheTable<string>(new Scope(new[]{"test"}));
+                var table = tester.Configuration.GetChainCacheTable<string>(new Scope(new[] { "test" }));
                 var a1 = tester.ChainBuilder.AddToChain();
                 table.Create(GetLocator(tester.ChainBuilder), "a1");
                 var a2 = tester.ChainBuilder.AddToChain();

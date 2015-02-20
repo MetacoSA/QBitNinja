@@ -204,12 +204,12 @@ namespace RapidBase.Client
         public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceModel>("balances/" + address + CreateParameters("unspentOnly", unspentOnly));
+            return Get<BalanceModel>("balances/" + EscapeUrlPart(address.ToString()) + CreateParameters("unspentOnly", unspentOnly));
         }
         public Task<BalanceSummary> GetBalanceSummary(IDestination dest)
         {
             var address = AssertAddress(dest);
-            return Get<BalanceSummary>("balances/" + address + "/summary" + CreateParameters());
+            return Get<BalanceSummary>("balances/" + EscapeUrlPart(address.ToString()) + "/summary" + CreateParameters());
         }
 
         private string CreateParameters(params object[] parameters)
@@ -234,13 +234,13 @@ namespace RapidBase.Client
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceModel>("wallets/" + wallet + "/balance" + CreateParameters("unspentOnly", unspentOnly));
+            return Get<BalanceModel>("wallets/" + EscapeUrlPart(wallet) + "/balance" + CreateParameters("unspentOnly", unspentOnly));
         }
         public Task<BalanceSummary> GetBalanceSummary(string wallet)
         {
             if (wallet == null)
                 throw new ArgumentNullException("wallet");
-            return Get<BalanceSummary>("wallets/" + wallet + "/summary" + CreateParameters());
+            return Get<BalanceSummary>("wallets/" + EscapeUrlPart(wallet) + "/summary" + CreateParameters());
         }
 
         public Task<WalletModel> CreateWallet(string wallet)
@@ -267,7 +267,7 @@ namespace RapidBase.Client
 
         public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false)
         {
-            return Get<GetBlockResponse>("blocks/" + blockFeature + "?headerOnly=" + headerOnly);
+            return Get<GetBlockResponse>("blocks/" + EscapeUrlPart(blockFeature.ToString()) + "?headerOnly=" + headerOnly);
         }
 
         private string GetFullUri(string relativePath, params object[] parameters)
@@ -335,7 +335,7 @@ namespace RapidBase.Client
 
         public Task<GetTransactionResponse> GetTransaction(uint256 transactionId)
         {
-            return Get<GetTransactionResponse>("transactions/" + transactionId);
+            return Get<GetTransactionResponse>("transactions/" + EscapeUrlPart(transactionId.ToString()));
         }
 
         public async Task<bool> CreateWalletIfNotExists(string name)
@@ -356,7 +356,7 @@ namespace RapidBase.Client
 
         public Task<WalletAddress> CreateAddress(string walletName, InsertWalletAddress address)
         {
-            return Post<WalletAddress>("wallets/" + walletName + "/addresses", address);
+            return Post<WalletAddress>("wallets/" + EscapeUrlPart(walletName) + "/addresses", address);
         }
 
         public Task<WalletAddress> CreateAddress(string walletName, IDestination dest, Script redeem, bool mergePast = false)
@@ -412,14 +412,14 @@ namespace RapidBase.Client
 
         public Task<HDKeySet> CreateKeySet(string walletName, HDKeySet keyset)
         {
-            return Post<HDKeySet>("wallets/" + walletName + "/keysets", keyset);
+            return Post<HDKeySet>("wallets/" + EscapeUrlPart(walletName) + "/keysets", keyset);
         }
 
         public async Task<bool> CreateKeySetIfNotExists(string walletName, HDKeySet keyset)
         {
             try
             {
-                await Post<HDKeySet>("wallets/" + walletName + "/keysets", keyset).ConfigureAwait(false);
+                await Post<HDKeySet>("wallets/" + EscapeUrlPart(walletName) + "/keysets", keyset).ConfigureAwait(false);
                 return true;
             }
             catch (RapidBaseException ex)
@@ -459,7 +459,7 @@ namespace RapidBase.Client
 
         private static string BuildPath(string wallet, string keyset)
         {
-            return "wallets/" + wallet + "/keysets/" + keyset;
+            return "wallets/" + EscapeUrlPart(wallet) + "/keysets/" + EscapeUrlPart(keyset);
         }
 
         public async Task<bool> DeleteKeySet(string wallet, string keyset)
@@ -470,12 +470,20 @@ namespace RapidBase.Client
 
         public Task<KeySetData[]> GetKeySets(string wallet)
         {
-            return Get<KeySetData[]>("wallets/" + wallet + "/keysets");
+            return Get<KeySetData[]>("wallets/" + EscapeUrlPart(wallet) + "/keysets");
         }
 
         public Task<WalletModel> GetWallet(string walletName)
         {
-            return Get<WalletModel>("wallets/" + walletName);
+            return Get<WalletModel>("wallets/" + EscapeUrlPart(walletName));
+        }
+
+        public static string EscapeUrlPart(string str)
+        {
+            var path = System.Web.NBitcoin.HttpUtility.UrlEncode(str);
+            if (path.Contains("?") || path.Contains("/"))
+                throw new ArgumentException("Invalid character found in the path of the request ('?' or '/')");
+            return path;
         }
     }
 }
