@@ -55,10 +55,17 @@ namespace RapidBase.Controllers
         {
             if (string.IsNullOrEmpty(wallet.Name))
                 throw new FormatException("Invalid wallet name");
+            AssertValidUrlPart(wallet.Name, "wallet name");
             var repo = Configuration.CreateWalletRepository();
             if (!repo.Create(wallet))
                 throw Error(409, "wallet already exist");
             return wallet;
+        }
+
+        private void AssertValidUrlPart(string str, string fieldName)
+        {
+            if (str.Contains('/') || str.Contains('?'))
+                Error(400, "A field contains illegal characters (" + fieldName + ")");
         }
 
         private Exception Error(int httpCode, string reason)
@@ -146,6 +153,7 @@ namespace RapidBase.Controllers
         [Route("wallets/{walletName}/keysets")]
         public HDKeySet CreateKeyset(string walletName, [FromBody]HDKeySet keyset)
         {
+            AssertValidUrlPart(keyset.Name, "Keyset name");
             if (keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
                 throw Error(400, "ExtPubKeys not specified");
             if (keyset.ExtPubKeys.Length < keyset.SignatureCount)
