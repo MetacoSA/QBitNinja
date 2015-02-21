@@ -110,7 +110,7 @@ namespace RapidBase.Tests
 
         //        tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
         //        {
-        //            Name = "@098098.@##.balance?frpoeifpo"
+        //            Name = "@098098.//frpoeifpo"
         //        });
         //        tester.SendGet<string>("wallets/" + walletName);
         //    }

@@ -65,7 +65,7 @@ namespace RapidBase.Controllers
         private void AssertValidUrlPart(string str, string fieldName)
         {
             if (str.Contains('/') || str.Contains('?'))
-                Error(400, "A field contains illegal characters (" + fieldName + ")");
+                throw Error(400, "A field contains illegal characters (" + fieldName + ")");
         }
 
         private Exception Error(int httpCode, string reason)
