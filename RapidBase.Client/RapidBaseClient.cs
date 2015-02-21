@@ -165,6 +165,11 @@ namespace RapidBase.Client
         {
             return Client.GetWallet(Name);
         }
+
+        public Task<WalletAddress[]> GetAddresses()
+        {
+            return Client.GetAddresses(Name);
+        }
     }
     public class RapidBaseClient
     {
@@ -484,6 +489,11 @@ namespace RapidBase.Client
             if (path.Contains("?") || path.Contains("/"))
                 throw new ArgumentException("Invalid character found in the path of the request ('?' or '/')");
             return path;
+        }
+
+        public Task<WalletAddress[]> GetAddresses(string walletName)
+        {
+            return Get<WalletAddress[]>("wallets/" + EscapeUrlPart(walletName) + "/addresses");
         }
     }
 }
