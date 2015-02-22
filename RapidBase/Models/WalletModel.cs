@@ -31,7 +31,27 @@ namespace RapidBase.Models
             get;
             set;
         }
-        public JToken CustomData
+        public JToken UserData
+        {
+            get;
+            set;
+        }
+
+        [JsonIgnore]
+        public KeySetData KeysetData
+        {
+            get
+            {
+                if (AdditionalInformation == null)
+                    return null;
+                var prop = AdditionalInformation.Property("keysetData");
+                if (prop == null)
+                    return null;
+                return Serializer.ToObject<KeySetData>(prop.Value.ToString());
+            }
+        }
+
+        public JObject AdditionalInformation
         {
             get;
             set;

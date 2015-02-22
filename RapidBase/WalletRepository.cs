@@ -7,9 +7,10 @@ using RapidBase.Models;
 using System;
 using System.Text;
 using NBitcoin.DataEncoders;
+using Newtonsoft.Json.Linq;
 
 namespace RapidBase
-{
+{   
     public class WalletRepository
     {
         public WalletRepository(IndexerClient indexer,
@@ -93,20 +94,37 @@ namespace RapidBase
             return WalletTable.Read();
         }
 
-        public ScriptRule AddAddress(string walletName, WalletAddress address)
+        public ScriptRule AddAddress(string walletName, WalletAddress address, Dictionary<string,JObject> properties)
         {
             if (address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
+
+            JObject moreInfo = ToAdditionalInformation(address, properties);
             var rule = new ScriptRule
             {
-                CustomData = address.CustomData == null ? null : address.CustomData.ToString(),
+                CustomData = moreInfo.ToString(),
                 ScriptPubKey = address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
             };
-            if (!WalletAddressesTable.GetChild(walletName).Create(address.Address.ToString(), address, false))
+            address.AdditionalInformation = moreInfo;
+            if (!WalletAddressesTable
+                .GetChild(walletName)
+                .Create(address.Address.ToString(), address, false))
                 return null;
             Indexer.AddWalletRule(walletName, rule);
             return rule;
+        }
+
+
+        private static JObject ToAdditionalInformation(WalletAddress address, Dictionary<string, JObject> properties)
+        {
+            JObject obj = new JObject();
+            obj.Add("userData", address.UserData ?? new JValue(""));
+            foreach (var kv in properties)
+            {
+                obj.Add(kv.Key, kv.Value);
+            }
+            return obj;
         }
 
         private static string Hash(WalletAddress address)

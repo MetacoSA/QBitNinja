@@ -1,8 +1,10 @@
 ﻿using NBitcoin;
 using NBitcoin.Indexer;
+using Newtonsoft.Json.Linq;
 using RapidBase.ModelBinders;
 using RapidBase.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -97,6 +99,14 @@ namespace RapidBase.Controllers
             string walletName,
             [FromBody]InsertWalletAddress insertAddress)
         {
+            return AddWalletAddressesCore(walletName, insertAddress, null);
+        }
+
+        private WalletAddress AddWalletAddressesCore(string walletName, InsertWalletAddress insertAddress, Dictionary<string, JObject> additionalProperties)
+        {
+            insertAddress.Address.AdditionalInformation = null; //The user should not be able to set this information
+            if (additionalProperties == null)
+                additionalProperties = new Dictionary<string, JObject>();
             var address = insertAddress.Address;
             if (address.RedeemScript != null && address.Address == null)
             {
@@ -109,7 +119,7 @@ namespace RapidBase.Controllers
                 throw Error(400, "The provided redeem script does not correspond to the given address");
 
             var repo = Configuration.CreateWalletRepository();
-            var rule = repo.AddAddress(walletName, address);
+            var rule = repo.AddAddress(walletName, address, additionalProperties);
             if (rule == null)
                 throw Error(409, "This address already exist in the wallet");
 
@@ -182,9 +192,28 @@ namespace RapidBase.Controllers
         public HDKeyData Generate(string walletName, string keysetName)
         {
             var repo = Configuration.CreateWalletRepository();
+            var keyset = repo.GetKeySetData(walletName, keysetName);
             var key = repo.NewKey(walletName, keysetName);
             if (key != null)
+            {
+                keyset.State = new HDKeyState()
+                {
+                    CurrentPath = key.Path
+                };
+                AddWalletAddressesCore(walletName, new InsertWalletAddress()
+                {
+                    Address = new WalletAddress()
+                    {
+                        Address = key.Address,
+                        RedeemScript = key.RedeemScript
+                    },
+                    MergePast = true
+                }, new Dictionary<string, JObject>()
+                {
+                     { "keysetData", JObject.Parse(Serializer.ToString<KeySetData>(keyset)) }
+                });
                 return key;
+            }
             AssetWalletAndKeysetExists(walletName, keysetName);
             throw Error(500, "Unknown error about the keyset");
         }

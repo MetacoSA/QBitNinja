@@ -1184,7 +1184,7 @@ namespace RapidBase.Tests
                     Address = new WalletAddress()
                     {
                         Address = alice3.GetAddress(),
-                        CustomData = new JValue("hello")
+                        UserData = new JValue("hello")
                     }
                 });
 
@@ -1343,7 +1343,13 @@ namespace RapidBase.Tests
 
                 balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
                 Assert.True(balance.Operations.Count == 1);
-                tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys");
+                var hdKeyData = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys");
+                var addresses = tester.SendGet<WalletAddress[]>("wallets/alice/addresses");
+                var generated = addresses.FirstOrDefault(a => a.Address.ToString() == hdKeyData.Address.ToString());
+                Assert.NotNull(generated);
+                Assert.True(generated.KeysetData.State.CurrentPath == hdKeyData.Path);
+                
+
                 balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
                 Assert.True(balance.Operations.Count == 2);
                 var scriptCoins = balance.Operations.SelectMany(o => o.ReceivedCoins).OfType<ScriptCoin>();
