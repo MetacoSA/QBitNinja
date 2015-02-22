@@ -42,16 +42,17 @@ namespace RapidBase.Models
         {
             get
             {
-                if (AdditionalInformation == null)
+                var info = AdditionalInformation as JObject;
+                if (info == null)
                     return null;
-                var prop = AdditionalInformation.Property("keysetData");
+                var prop = info.Property("keysetData");
                 if (prop == null)
                     return null;
                 return Serializer.ToObject<KeySetData>(prop.Value.ToString());
             }
         }
 
-        public JObject AdditionalInformation
+        public JToken AdditionalInformation
         {
             get;
             set;
