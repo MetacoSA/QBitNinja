@@ -106,7 +106,7 @@ namespace Build
                     });
                 }
                 MemoryStream ms = new MemoryStream();
-                manifest.Save(ms, false);
+                manifest.Save(ms, true);
                 ms.Position = 0;
                 var result = new StreamReader(ms).ReadToEnd();
                 File.WriteAllText(ModifiedNuspec, result);
