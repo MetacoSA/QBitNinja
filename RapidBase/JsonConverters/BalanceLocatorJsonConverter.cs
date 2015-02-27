@@ -1,4 +1,5 @@
-﻿using NBitcoin.Indexer;
+﻿#if !CLIENT
+using NBitcoin.Indexer;
 using Newtonsoft.Json;
 using System;
 
@@ -30,3 +31,4 @@ namespace RapidBase.JsonConverters
         }
     }
 }
+#endif

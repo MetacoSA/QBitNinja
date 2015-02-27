@@ -2,6 +2,7 @@
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
 using System;
+using System.Reflection;
 
 namespace RapidBase.JsonConverters
 {
@@ -9,7 +10,7 @@ namespace RapidBase.JsonConverters
     {
         public override bool CanConvert(Type objectType)
         {
-            return typeof(Script).IsAssignableFrom(objectType);
+            return typeof(Script).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo());
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)

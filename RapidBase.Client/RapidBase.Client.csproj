@@ -82,59 +82,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\RapidBase\JsonConverters\Base58JsonConverter.cs">
-      <Link>JsonConverters\Base58JsonConverter.cs</Link>
+    <Compile Include="..\RapidBase\JsonConverters\*.cs">
+      <Link>JsonConverters\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\BitcoinSerializableJsonConverter.cs">
-      <Link>JsonConverters\BitcoinSerializableJsonConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\CoinJsonConverter.cs">
-      <Link>JsonConverters\CoinJsonConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\JsonObjectException.cs">
-      <Link>JsonConverters\JsonObjectException.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\KeyPathJsonConverter.cs">
-      <Link>JsonConverters\KeyPathJsonConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\MoneyJsonConverter.cs">
-      <Link>JsonConverters\MoneyJsonConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\NetworkJsonConverter.cs">
-      <Link>JsonConverters\NetworkJsonConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\JsonConverters\ScriptJsonConverter.cs">
-      <Link>JsonConverters\ScriptJsonConverter.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\BalanceModel.cs">
-      <Link>Models\BalanceModel.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\BlockFeature.cs">
-      <Link>Models\BlockFeature.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\DataFormat.cs">
-      <Link>Models\DataFormat.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\GetBlockResponse.cs">
-      <Link>Models\GetBlockResponse.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\GetTransactionResponse.cs">
-      <Link>Models\GetTransactionResponse.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\HelpModel.cs">
-      <Link>Models\HelpModel.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\KeySet.cs">
-      <Link>Models\KeySet.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\RapidBaseException.cs">
-      <Link>Models\RapidBaseException.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\WalletModel.cs">
-      <Link>Models\WalletModel.cs</Link>
-    </Compile>
-    <Compile Include="..\RapidBase\Models\WhatIsItModels.cs">
-      <Link>Models\WhatIsItModels.cs</Link>
+    <Compile Include="..\RapidBase\Models\*.cs">
+      <Link>Models\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\RapidBase\Serializer.cs">
       <Link>Serializer.cs</Link>

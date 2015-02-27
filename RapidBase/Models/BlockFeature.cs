@@ -102,7 +102,7 @@ namespace RapidBase.Models
                 return feature;
             }
 
-            if (str.Length == 0x40 && str.All(c => HexEncoder.IsDigit(c) != -1))
+            if (str.Length == 0x40 && str.ToCharArray().All(c => HexEncoder.IsDigit(c) != -1))
             {
                 feature.BlockId = new uint256(str);
                 return feature;
