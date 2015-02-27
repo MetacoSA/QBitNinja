@@ -124,7 +124,10 @@ namespace Build
                 return "net45+win+wpa81+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10";
             if (profile == "Profile111")
                 return "net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10";
-            throw new NotSupportedException("Profile not supported " + profile);
+            var prof = NetPortableProfileTable.GetProfile(profile);
+            if(prof == null)
+                throw new NotSupportedException("Profile not supported " + profile);
+            return prof.CustomProfileString;
         }
 
         private string Find(string file, string attribute)
