@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<UsingTask TaskName="Build.CreateNuspec" AssemblyFile="bin\$(Configuration)\Build.dll"></UsingTask>
+	<ItemGroup>
+		<Projects Include="..\RapidBase.Client/RapidBase.Client.csproj"></Projects>
+		<Projects Include="..\RapidBase.Client(Profile111)/RapidBase.Client(Profile111).csproj"></Projects>
+		<Projects Include="..\RapidBase.Client(Profile259)/RapidBase.Client(Profile259).csproj"></Projects>
+	</ItemGroup>
+	
+	<Target Name="Build">
+		<MSBuild Targets="Build" Properties="Configuration=$(Configuration)" Projects="@(Projects)"></MSBuild>
+		<Build.CreateNuspec
+			OriginalNuspec="../RapidBase.Client/RapidBase.Client.Tokenized.nuspec"
+			ModifiedNuspec="../RapidBase.Client/RapidBase.Client.nuspec"
+			AssemblyFile="../RapidBase.Client/Properties/AssemblyInfo.cs"
+			Configuration="$(Configuration)"
+			Projects="@(Projects)"
+			></Build.CreateNuspec>
+	</Target>
+ </Project>

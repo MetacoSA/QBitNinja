@@ -95,7 +95,9 @@
     <Compile Include="RapidBaseClient.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="RapidBase.Client.nuspec" />
+    <None Include="RapidBase.Client.Tokenized.nuspec">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="PushNuget.ps1" />
   </ItemGroup>
