@@ -67,8 +67,7 @@ namespace Build
                     string targetFramework = "net45";
                     if (prop != null)
                     {
-                        var nugetProfile = NetPortableProfileTable.GetProfile(prop.EvaluatedValue);
-                        targetFramework = nugetProfile.CustomProfileString;
+                        targetFramework = FindMagicFreakingNugetString(prop.EvaluatedValue);
                         portable = true;
                     }
                     Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
@@ -107,7 +106,7 @@ namespace Build
                     });
                 }
                 MemoryStream ms = new MemoryStream();
-                manifest.Save(ms, true);
+                manifest.Save(ms, false);
                 ms.Position = 0;
                 var result = new StreamReader(ms).ReadToEnd();
                 File.WriteAllText(ModifiedNuspec, result);
@@ -117,6 +116,15 @@ namespace Build
                 ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
             }
             return true;
+        }
+
+        private string FindMagicFreakingNugetString(string profile)
+        {
+            if (profile == "Profile259")
+                return "net45+win+wpa81+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10";
+            if (profile == "Profile111")
+                return "net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10";
+            throw new NotSupportedException("Profile not supported " + profile);
         }
 
         private string Find(string file, string attribute)
