@@ -99,22 +99,33 @@ namespace RapidBase.Tests
             }
         }
 
-        //[Fact]
-        //public void Play()
-        //{
-        //    using (var tester = ServerTester.Create())
-        //    {
-        //        var walletName = System.Web.NBitcoin.HttpUtility.UrlEncode("@098098.@##.balance?frpoeifpo")
-        //            .Replace("/", "%2F")
-        //            .Replace("?", "%3F");
+        [Fact]
+        public void Play()
+        {
 
-        //        tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
-        //        {
-        //            Name = "@098098.//frpoeifpo"
-        //        });
-        //        tester.SendGet<string>("wallets/" + walletName);
-        //    }
-        //}
+            //var conf = IndexerConfiguration.FromConfiguration();
+            //var client = conf.CreateIndexerClient();
+            //var rules = client.GetAllWalletRules();
+            //var result = rules.GroupBy(r => r.WalletId);
+
+            //var indexer = conf.CreateIndexer();
+
+            //var b = client.GetBlock(new uint256("..."));
+            //indexer.IndexWalletOrderedBalance(0, b, rules);
+
+            //using (var tester = ServerTester.Create())
+            //{
+            //    var walletName = System.Web.NBitcoin.HttpUtility.UrlEncode("@098098.@##.balance?frpoeifpo")
+            //        .Replace("/", "%2F")
+            //        .Replace("?", "%3F");
+
+            //    tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
+            //    {
+            //        Name = "@098098.//frpoeifpo"
+            //    });
+            //    tester.SendGet<string>("wallets/" + walletName);
+            //}
+        }
 
 
         [Fact]
