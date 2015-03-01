@@ -17,7 +17,9 @@ namespace RapidBase.Models
             Raw = script;
             Asm = script.ToString();
             Hash = new uint160(script.Hash.ToBytes(false), false);
-            Address = script.GetScriptAddress(network).ToString();
+            var address = script.GetDestinationAddress(network);
+            if(address != null)
+                Address =  address.ToString();
         }
 
         public uint160 Hash
