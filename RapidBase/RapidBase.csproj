@@ -209,17 +209,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
-    <None Include="Properties\PublishProfiles\rapidbase-test - FTP.pubxml" />
-    <None Include="Properties\PublishProfiles\rapidbase-test - Web Deploy.pubxml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\web.config" />
     <Content Include="Views\Help\Index.cshtml" />
-    <None Include="Properties\PublishProfiles\rapidbase-test.pubxml" />
-    <None Include="Properties\PublishProfiles\testnet-rapidbase - FTP.pubxml" />
+    <None Include="Properties\PublishProfiles\rapidbase-test - Web Deploy.pubxml" />
     <None Include="Properties\PublishProfiles\testnet-rapidbase - Web Deploy.pubxml" />
-    <None Include="Properties\PublishProfiles\testnet-rapidbase.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -228,6 +224,7 @@
     </None>
     <None Include="Web.QA.config">
       <DependentUpon>Web.config</DependentUpon>
+      <SubType>Designer</SubType>
     </None>
     <None Include="Web.Release.config">
       <DependentUpon>Web.config</DependentUpon>
