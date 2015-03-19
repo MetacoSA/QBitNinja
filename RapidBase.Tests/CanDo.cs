@@ -1,4 +1,5 @@
 ﻿using Microsoft.WindowsAzure.Storage.Auth;
+using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
@@ -7,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using RapidBase.Controllers;
 using RapidBase.Models;
 using System;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -127,6 +129,78 @@ namespace RapidBase.Tests
             //}
         }
 
+        [Fact]
+        public void CanSerializeDynamicEntity()
+        {
+            var entity = new DynamicTableEntity();
+            entity.PartitionKey = "a";
+            entity.RowKey = "b";
+            entity.Properties.Add("a", new EntityProperty(null as bool?));
+            entity.Properties.Add("aa", new EntityProperty(true as bool?));
+            entity.Properties.Add("aaa", new EntityProperty(false as bool?));
+
+            entity.Properties.Add("b", new EntityProperty(null as byte[]));
+            entity.Properties.Add("bb", new EntityProperty(new byte[] { 1, 2, 3 }));
+
+            entity.Properties.Add("c", new EntityProperty(DateTime.Now as DateTime?));
+            entity.Properties.Add("cc", new EntityProperty(DateTime.Now));
+
+            entity.Properties.Add("d", new EntityProperty(null as DateTimeOffset?));
+            entity.Properties.Add("dd", new EntityProperty(DateTimeOffset.UtcNow));
+
+            entity.Properties.Add("e", new EntityProperty(null as double?));
+            entity.Properties.Add("ee", new EntityProperty(1.0d));
+
+            entity.Properties.Add("f", new EntityProperty(null as Guid?));
+            entity.Properties.Add("ff", new EntityProperty(Guid.NewGuid()));
+
+            entity.Properties.Add("g", new EntityProperty(null as int?));
+            entity.Properties.Add("gg", new EntityProperty(1 as int?));
+
+            entity.Properties.Add("h", new EntityProperty(null as long?));
+            entity.Properties.Add("hh", new EntityProperty(1L as long?));
+
+            entity.Properties.Add("i", new EntityProperty(null as string));
+            entity.Properties.Add("ii", new EntityProperty("lol" as string));
+
+            var message = ListenableCloudTable.FromTableEntity(entity);
+            var deserialized = ListenableCloudTable.ToTableEntity(message);
+
+            Assert.Equal(entity.PartitionKey, deserialized.PartitionKey);
+            Assert.Equal(entity.RowKey, deserialized.RowKey);
+            Assert.Equal(entity.Properties.Count, deserialized.Properties.Count);
+            foreach (var p in entity.Properties)
+            {
+                var p1 = p.Value;
+                var p2 = entity.Properties[p.Key];
+                Assert.Equal(p1.PropertyType, p2.PropertyType);
+                if (p1.PropertyAsObject != null)
+                {
+                    Assert.True(p1.PropertyAsObject.Equals(p2.PropertyAsObject));
+                }
+                else
+                {
+                    Assert.Null(p2.PropertyAsObject);
+                }
+            }
+        }
+
+        [Fact]
+        public void CanBroadcastTransaction()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var consumer = tester.Configuration.GetBroadcastedTransactionsListenable().CreateConsumer();
+                var tx = Encoders.Hex.EncodeData(new Transaction().ToBytes());
+                consumer.EnsureExistsAndDrainedAsync().Wait();
+                tester.Send<string>(HttpMethod.Post, "transactions", tx);
+                var entity = consumer.ReceiveAsync().Result;
+                Assert.NotNull(entity);
+                tester.Send<string>(HttpMethod.Post, "transactions", tx);
+                entity = consumer.ReceiveAsync().Result;
+                Assert.Null(entity);
+            }
+        }
 
         [Fact]
         public void CanGetBlock()
@@ -1359,7 +1433,7 @@ namespace RapidBase.Tests
                 var generated = addresses.FirstOrDefault(a => a.Address.ToString() == hdKeyData.Address.ToString());
                 Assert.NotNull(generated);
                 Assert.True(generated.KeysetData.State.CurrentPath == hdKeyData.Path);
-                
+
 
                 balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
                 Assert.True(balance.Operations.Count == 2);

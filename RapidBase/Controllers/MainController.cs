@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using Microsoft.WindowsAzure.Storage.Table;
+using NBitcoin;
 using NBitcoin.Indexer;
 using Newtonsoft.Json.Linq;
 using RapidBase.ModelBinders;
@@ -10,6 +11,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ModelBinding;
 
@@ -36,6 +38,17 @@ namespace RapidBase.Controllers
             set;
         }
 
+        [HttpPost]
+        [Route("transactions")]
+        public async Task Broadcast([FromBody]string transaction)
+        {
+            Transaction tx = new Transaction(transaction);
+            var entity = new DynamicTableEntity("a", tx.GetHash().ToString());
+            entity.Properties.Add("d", new EntityProperty(tx.ToBytes()));
+            await Configuration.GetBroadcastedTransactionsListenable()
+                .CreatePublisher()
+                .AddAsync(entity);
+        }
 
         [HttpGet]
         [Route("transactions/{txId}")]
@@ -119,10 +132,11 @@ namespace RapidBase.Controllers
                 throw Error(400, "The provided redeem script does not correspond to the given address");
 
             var repo = Configuration.CreateWalletRepository();
-            var rule = repo.AddAddress(walletName, address, additionalProperties);
-            if (rule == null)
+            var walletRule = repo.AddAddress(walletName, address, additionalProperties);
+            Configuration.GetWalletRuleListenable().CreatePublisher().AddAsync(walletRule.CreateTableEntity()).Wait();
+            if (walletRule == null)
                 throw Error(409, "This address already exist in the wallet");
-
+            var rule = walletRule.Rule;
             bool merge = false;
             if (insertAddress.MergePast)
             {

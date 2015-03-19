@@ -16,8 +16,9 @@ namespace RapidBase
         {
             var conf = new RapidBaseConfiguration
             {
-                Indexer = IndexerConfiguration.FromConfiguration(), 
-                LocalChain = ConfigurationManager.AppSettings["LocalChain"]
+                Indexer = IndexerConfiguration.FromConfiguration(),
+                LocalChain = ConfigurationManager.AppSettings["LocalChain"],
+                ServiceBus = ConfigurationManager.AppSettings["ServiceBus"]
             };
             return conf;
         }
@@ -37,15 +38,30 @@ namespace RapidBase
         public void EnsureSetup()
         {
             Indexer.EnsureSetup();
-            
+
             var tasks = new[]
             {
                 GetCallbackTable(),
                 GetChainCacheCloudTable(),
-                GetCrudTable()
+                GetCrudTable(),
             }.Select(t => t.CreateIfNotExistsAsync()).ToArray();
 
-            Task.WaitAll(tasks);
+            var tasks2 = new Task[]
+            { 
+                GetWalletRuleListenable().EnsureSetupAsync(),
+                GetBroadcastedTransactionsListenable().EnsureSetupAsync(),
+            };
+            Task.WaitAll(tasks.Concat(tasks2).ToArray());
+        }
+
+        public ListenableCloudTable GetBroadcastedTransactionsListenable()
+        {
+            return new ListenableCloudTable(Indexer.GetTable("broadcastedtx"), ServiceBus, Indexer.GetTable("broadcastedtx").Name);
+        }
+
+        public ListenableCloudTable GetWalletRuleListenable()
+        {
+            return new ListenableCloudTable(null, ServiceBus, Indexer.GetTable("walletrules").Name);
         }
 
         public CloudTable GetCallbackTable()
@@ -98,6 +114,12 @@ namespace RapidBase
         ///////
 
         public int CoinbaseMaturity
+        {
+            get;
+            set;
+        }
+
+        public string ServiceBus
         {
             get;
             set;

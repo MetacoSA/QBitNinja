@@ -94,7 +94,7 @@ namespace RapidBase
             return WalletTable.Read();
         }
 
-        public ScriptRule AddAddress(string walletName, WalletAddress address, Dictionary<string,JObject> properties)
+        public WalletRuleEntry AddAddress(string walletName, WalletAddress address, Dictionary<string,JObject> properties)
         {
             if (address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
@@ -111,8 +111,7 @@ namespace RapidBase
                 .GetChild(walletName)
                 .Create(address.Address.ToString(), address, false))
                 return null;
-            Indexer.AddWalletRule(walletName, rule);
-            return rule;
+            return Indexer.AddWalletRule(walletName, rule);
         }
 
 

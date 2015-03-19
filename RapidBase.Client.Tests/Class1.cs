@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using RapidBase.Models;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -18,6 +19,44 @@ namespace RapidBase.Client.Tests
 
             var balanceSummary = client.GetBalanceSummary(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
             Assert.True(balanceSummary.Confirmed.TransactionCount > 60);
+        }
+
+        [Fact]
+        public void temp()
+        {
+
+            var client = CreateClient();
+            client.Colored = true;
+            var colored = new BitcoinColoredAddress("akDqb3L5hC2MRzzZNhhZyrRLJSS8HXysKrF");
+            var balance = client.GetBalance(colored).Result;
+
+            Money coins = new Money(0);
+            foreach (var op in balance.Operations)
+            {
+                var tx = client.GetTransaction(op.TransactionId).Result;
+                foreach (var i in op.ReceivedCoins)
+                {
+                    if (!(i.GetType() == typeof(ColoredCoin)))
+                        continue;
+                    var cc = (ColoredCoin)i;
+                    var dest = cc.ScriptPubKey.GetDestinationAddress(Network.Main).ToColoredAddress();
+                    coins += i.Amount;
+                    Debug.WriteLine("{0} to {1}", i.Amount.ToUnit(MoneyUnit.Bit), dest);
+                }
+                foreach (var s in op.SpentCoins)
+                {
+                    if (!(s.GetType() == typeof(ColoredCoin)))
+                        continue;
+                    var cc = (ColoredCoin)s;
+                    var dest = cc.ScriptPubKey.PaymentScript.PaymentScript.GetDestinationAddress(Network.Main).ToColoredAddress();
+                    coins -= s.Amount;
+                    // breakpoint here:
+                     Debug.WriteLine("-{0} to {1}", s.Amount.ToUnit(MoneyUnit.Bit), dest);
+                }
+
+                Debug.WriteLine("balance: {0}", coins.ToUnit(MoneyUnit.Bit));
+            }
+
         }
 
         [Fact]
