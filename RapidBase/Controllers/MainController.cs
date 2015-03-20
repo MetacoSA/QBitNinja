@@ -133,9 +133,9 @@ namespace RapidBase.Controllers
 
             var repo = Configuration.CreateWalletRepository();
             var walletRule = repo.AddAddress(walletName, address, additionalProperties);
-            Configuration.GetWalletRuleListenable().CreatePublisher().AddAsync(walletRule.CreateTableEntity()).Wait();
             if (walletRule == null)
                 throw Error(409, "This address already exist in the wallet");
+            Configuration.GetWalletRuleListenable().CreatePublisher().AddAsync(walletRule.CreateTableEntity()).Wait();
             var rule = walletRule.Rule;
             bool merge = false;
             if (insertAddress.MergePast)
