@@ -38,7 +38,7 @@ namespace RapidBase.Tests
             set;
         }
 
-        readonly List<IDisposable> _disposables = new List<IDisposable>();
+        internal readonly List<IDisposable> _disposables = new List<IDisposable>();
 
 
         public ServerTester(string ns)
@@ -170,10 +170,21 @@ namespace RapidBase.Tests
         }
 
 
-        public void UpdateServerChain()
+        public void UpdateServerChain(bool insist = false)
         {
             if (!_resolver.UpdateChain())
+            {
+                if (insist)
+                {
+                    for (int i = 0 ; i < 5 ; i++)
+                    {
+                        Thread.Sleep(100);
+                        if (_resolver.UpdateChain())
+                            return;
+                    }
+                }
                 Assert.True(false, "Chain should have updated");
+            }
         }
 
         public void AssertTotal(IDestination dest, Money total)
@@ -241,11 +252,16 @@ namespace RapidBase.Tests
         {
             var balances = SendGet<BalanceModel>("balances/" + dest.GetDestinationAddress(Network.TestNet).ToColoredAddress());
 
-            var spent = balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Outpoint).ToDictionary(c=>c);
+            var spent = balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Outpoint).ToDictionary(c => c);
             var received = balances.Operations.SelectMany(o => o.ReceivedCoins);
 
             var unspent = received.Where(c => !spent.ContainsKey(c.Outpoint)).ToArray();
             return unspent;
+        }
+
+        public ListenerTester CreateListenerTester()
+        {
+            return new ListenerTester(this);
         }
     }
 }

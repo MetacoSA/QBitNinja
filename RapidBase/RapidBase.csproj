@@ -209,8 +209,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RapidBaseConfiguration.cs" />
     <Compile Include="RapidBaseDependencyResolver.cs" />
+    <Compile Include="RapidBaseListener.cs" />
+    <Compile Include="RapidBaseListenerTrace.cs" />
     <Compile Include="Scope.cs" />
     <Compile Include="Serializer.cs" />
+    <Compile Include="SingleThreadTaskScheduler.cs" />
     <Compile Include="WalletRepository.cs" />
     <Compile Include="WhatIsIt.cs" />
   </ItemGroup>

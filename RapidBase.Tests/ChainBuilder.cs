@@ -16,16 +16,30 @@ namespace RapidBase.Tests
             Chain = new ConcurrentChain(Network.TestNet);
         }
 
+        public bool SkipIndexer
+        {
+            get;
+            set;
+        }
+
         public void Broadcast(Transaction funding)
         {
             _ongoingTransactions.Add(funding);
             var indexer = CreateIndexer();
-            indexer.Index(new TransactionEntry.Entity(null, funding, null));
-            foreach (var entity in OrderedBalanceChange.ExtractScriptBalances(null, funding, null, null, 0))
+            if (!SkipIndexer)
             {
-                indexer.Index(new[] { entity });
+                indexer.Index(new TransactionEntry.Entity(null, funding, null));
+                foreach (var entity in OrderedBalanceChange.ExtractScriptBalances(null, funding, null, null, 0))
+                {
+                    indexer.Index(new[] { entity });
+                }
             }
+            if (NewTransaction != null)
+                NewTransaction(funding);
         }
+
+        public event Action<Transaction> NewTransaction;
+        public event Action<Block> NewBlock;
 
         private AzureIndexer CreateIndexer()
         {
@@ -95,17 +109,28 @@ namespace RapidBase.Tests
 
             var clientIndexer = indexer.Configuration.CreateIndexerClient();
             var height = Chain.Tip.Height + 1;
-            indexer.IndexOrderedBalance(height, block);
-            indexer.IndexWalletOrderedBalance(height, block, clientIndexer.GetAllWalletRules());
-            indexer.IndexTransactions(height, block);
-            if (UploadBlock)
+            if (!SkipIndexer)
             {
-                indexer.Index(block);
+                indexer.IndexOrderedBalance(height, block);
+                indexer.IndexWalletOrderedBalance(height, block, clientIndexer.GetAllWalletRules());
+                indexer.IndexTransactions(height, block);
+                if (UploadBlock)
+                {
+                    indexer.Index(block);
+                }
             }
             var prev = Chain.GetBlock(block.Header.HashPrevBlock);
             Chain.SetTip(new ChainedBlock(block.Header, block.GetHash(), prev));
-            indexer.IndexChain(Chain);
+            if (!SkipIndexer)
+            {
+                indexer.IndexChain(Chain);
+            }
             _ongoingTransactions.Clear();
+
+            if (NewBlock != null)
+                NewBlock(block);
+
+
             return block;
         }
 

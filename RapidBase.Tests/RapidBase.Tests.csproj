@@ -155,6 +155,7 @@
     <Compile Include="CallbackTester.cs" />
     <Compile Include="ChainBuilder.cs" />
     <Compile Include="CanDo.cs" />
+    <Compile Include="ListenerTester.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServerTester.cs" />
   </ItemGroup>

@@ -186,6 +186,23 @@ namespace RapidBase.Tests
         }
 
         [Fact]
+        public void CanUseSingleThreadTaskScheduler()
+        {
+            var scheduler = new SingleThreadTaskScheduler();
+            int a = 0;
+            int b = 0;
+            new Task(() => a = 1).Start(scheduler);
+            new Task(() =>
+            {
+                throw new Exception();
+            }).Start(scheduler);
+            new Task(() => b = 1).Start(scheduler);
+            scheduler.Dispose();
+            Assert.True(a == 1);
+            Assert.True(b == 1);
+        }
+
+        [Fact]
         public void CanBroadcastTransaction()
         {
             using (var tester = ServerTester.Create())
@@ -199,6 +216,35 @@ namespace RapidBase.Tests
                 tester.Send<string>(HttpMethod.Post, "transactions", tx);
                 entity = consumer.ReceiveAsync().Result;
                 Assert.Null(entity);
+            }
+        }
+
+        [Fact]
+        public void CanListenBlockchain()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var listener = tester.CreateListenerTester();
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
+                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Operations.Count == 1);
+                Assert.True(balance.Operations[0].Confirmations == 0);
+                Assert.True(balance.Operations[0].BlockId == null);
+
+                var savedTx = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash());
+                Assert.NotNull(savedTx);
+                Assert.True(savedTx.Block == null);
+                var block = tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain(true);
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.True(balance.Operations.Count == 1);
+                Assert.True(balance.Operations[0].Confirmations == 1);
+                Assert.True(balance.Operations[0].BlockId == block.GetHash());
+
+                savedTx = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash());
+                Assert.NotNull(savedTx);
+                Assert.True(savedTx.Block.Confirmations == 1);
             }
         }
 

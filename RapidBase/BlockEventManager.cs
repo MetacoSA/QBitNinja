@@ -30,7 +30,7 @@ namespace RapidBase
         public BlockEventManager(RapidBaseConfiguration conf)
         {
             Configuration = conf;
-            Timeout = TimeSpan.FromMinutes(60);
+            Timeout = TimeSpan.FromMinutes(1);
         }
         public TimeSpan Timeout
         {
