@@ -150,7 +150,7 @@ namespace RapidBase
             }
             catch (AggregateException aex)
             {
-                ExceptionDispatchInfo.Capture(aex).Throw();
+                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
             }
             return this;
 
