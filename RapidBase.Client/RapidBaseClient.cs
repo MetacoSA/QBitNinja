@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using NBitcoin.DataEncoders;
 
 namespace RapidBase.Client
 {
@@ -71,8 +72,6 @@ namespace RapidBase.Client
             keyset.Name = Name;
             return Client.CreateKeySetIfNotExists(Wallet.Name, keyset);
         }
-
-
 
         public Task<HDKeyData> GenerateKey()
         {
@@ -204,6 +203,11 @@ namespace RapidBase.Client
         public WalletClient GetWalletClient(string wallet)
         {
             return new WalletClient(this, wallet);
+        }
+
+        public Task Broadcast(Transaction transaction)
+        {
+            return Post<string>("transactions", Encoders.Hex.EncodeData(transaction.ToBytes()));
         }
 
         public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
