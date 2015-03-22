@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -111,6 +112,17 @@ namespace RapidBase.Tests
                         }
                     }
                 }
+            }
+        }
+
+        public void AssertReceivedTransaction(uint256 txId)
+        {
+            CancellationTokenSource s = new CancellationTokenSource();
+            s.CancelAfter(3000);
+            while (!_ReceivedTransactions.ContainsKey(txId))
+            {
+                if (s.IsCancellationRequested)
+                    Assert.False(true);
             }
         }
 

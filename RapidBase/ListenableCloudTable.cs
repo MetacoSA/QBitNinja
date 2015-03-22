@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -72,6 +73,23 @@ namespace RapidBase
     }
     public class CloudTableConsumer
     {
+        class SubscriptionClientDisposable : IDisposable
+        {
+            SubscriptionClient _Client;
+            public SubscriptionClientDisposable(SubscriptionClient client)
+            {
+                _Client = client;
+            }
+            #region IDisposable Members
+
+            public void Dispose()
+            {
+                if (!_Client.IsClosed)
+                    _Client.Close();
+            }
+
+            #endregion
+        }
         private ListenableCloudTable _Parent;
         private string subscriptionName;
 
@@ -95,6 +113,11 @@ namespace RapidBase
             var client = CreateSubscriptionClient();
             BrokeredMessage message = null;
             message = await client.ReceiveAsync(timeout.Value).ConfigureAwait(false);
+            return ToCloudTableEvent(message);
+        }
+
+        private static CloudTableEvent ToCloudTableEvent(BrokeredMessage message)
+        {
             if (message == null)
                 return null;
             CloudTableEvent evt = new CloudTableEvent();
@@ -117,6 +140,51 @@ namespace RapidBase
             var subscription = await _Parent.GetNamespace().EnsureSubscriptionExistsAsync(_Parent.Topic, subscriptionName).ConfigureAwait(false);
             await DrainMessages().ConfigureAwait(false);
         }
+
+        public CloudTableConsumer EnsureExists()
+        {
+            try
+            {
+
+                _Parent.GetNamespace().EnsureSubscriptionExistsAsync(_Parent.Topic, subscriptionName).Wait();
+            }
+            catch (AggregateException aex)
+            {
+                ExceptionDispatchInfo.Capture(aex).Throw();
+            }
+            return this;
+
+        }
+
+        public IDisposable OnMessage(Action<CloudTableEvent> evt)
+        {
+            var client = CreateSubscriptionClient();
+            client.OnMessage(bm =>
+            {
+                evt(ToCloudTableEvent(bm));
+            }, new OnMessageOptions()
+            {
+                AutoComplete = true,
+                MaxConcurrentCalls = 1
+            });
+            if (_Parent.CloudTable != null)
+            {
+                foreach (var ev in _Parent.CloudTable
+                    .ExecuteQuery(new TableQuery())
+                    .Select(e => new CloudTableEvent()
+                    {
+                        Addition = true,
+                        AddedEntity = e,
+                        PartitionKey = e.PartitionKey,
+                        RowKey = e.RowKey
+                    }))
+                {
+                    evt(ev);
+                }
+            }
+            return new SubscriptionClientDisposable(client);
+        }
+
     }
 
     public class CloudTableEvent

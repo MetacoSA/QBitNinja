@@ -42,12 +42,11 @@ namespace RapidBase.Controllers
         [Route("transactions")]
         public async Task Broadcast([FromBody]string transaction)
         {
-            Transaction tx = new Transaction(transaction);
-            var entity = new DynamicTableEntity("a", tx.GetHash().ToString());
-            entity.Properties.Add("d", new EntityProperty(tx.ToBytes()));
+            var tx = new BroadcastedTransaction();
+            tx.Transaction = new Transaction(transaction);
             await Configuration.GetBroadcastedTransactionsListenable()
                 .CreatePublisher()
-                .AddAsync(entity);
+                .AddAsync(tx.ToEntity());
         }
 
         [HttpGet]

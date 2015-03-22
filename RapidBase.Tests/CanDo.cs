@@ -207,15 +207,11 @@ namespace RapidBase.Tests
         {
             using (var tester = ServerTester.Create())
             {
-                var consumer = tester.Configuration.GetBroadcastedTransactionsListenable().CreateConsumer();
-                var tx = Encoders.Hex.EncodeData(new Transaction().ToBytes());
-                consumer.EnsureExistsAndDrainedAsync().Wait();
-                tester.Send<string>(HttpMethod.Post, "transactions", tx);
-                var entity = consumer.ReceiveAsync().Result;
-                Assert.NotNull(entity);
-                tester.Send<string>(HttpMethod.Post, "transactions", tx);
-                entity = consumer.ReceiveAsync().Result;
-                Assert.Null(entity);
+                var tx = new Transaction();
+                var bytes = Encoders.Hex.EncodeData(tx.ToBytes());
+                var listener = tester.CreateListenerTester();
+                tester.Send<string>(HttpMethod.Post, "transactions", bytes);
+                listener.AssertReceivedTransaction(tx.GetHash());
             }
         }
 
@@ -1245,6 +1241,7 @@ namespace RapidBase.Tests
                 }, result);
             }
         }
+
 
         [Fact]
         public void CanManageWallet()

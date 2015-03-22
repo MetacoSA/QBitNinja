@@ -84,7 +84,10 @@ namespace RapidBase.Tests
             {
                 Clean(Configuration.Indexer.GetBlocksContainer());
                 Clean(Configuration.Indexer.CreateTableClient());
+                Configuration.GetBroadcastedTransactionsListenable().CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
+                Configuration.GetWalletRuleListenable().CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
             }
+
             foreach (var dispo in _disposables)
                 dispo.Dispose();
         }

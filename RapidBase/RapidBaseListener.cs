@@ -1,7 +1,10 @@
-﻿using NBitcoin;
+﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
+using NBitcoin;
 using NBitcoin.Indexer;
 using NBitcoin.Protocol;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,19 +36,70 @@ namespace RapidBase
             }
         }
 
+        List<IDisposable> _Disposables = new List<IDisposable>();
         SingleThreadTaskScheduler _Scheduler;
         public void Listen()
         {
             _Scheduler = new SingleThreadTaskScheduler();
+            ListenerTrace.Info("Connecting to node " + Configuration.Indexer.Node + "...");
             _Node = _Configuration.Indexer.ConnectToNode(true);
+            ListenerTrace.Info("Connected");
+            ListenerTrace.Info("Handshaking...");
             _Node.VersionHandshake();
+            ListenerTrace.Info("Handshaked");
             _Chain = new ConcurrentChain(_Configuration.Indexer.Network);
+            ListenerTrace.Info("Fetching headers...");
             _Node.SynchronizeChain(_Chain);
+            ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
             _Indexer = Configuration.Indexer.CreateIndexer();
+            ListenerTrace.Info("Indexing indexer chain...");
             _Indexer.IndexChain(_Chain);
             _Node.MessageReceived += node_MessageReceived;
             _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
+
+            ListenerTrace.Info("Fetching transactions to broadcast...");
+            _Disposables.Add(Configuration
+                .GetBroadcastedTransactionsListenable()
+                .CreateConsumer()
+                .EnsureExists()
+                .OnMessage(evt =>
+                {
+                    uint256 hash = null;
+                    try
+                    {
+                        var tx = new BroadcastedTransaction(evt.AddedEntity);
+                        hash = tx.Transaction.GetHash();
+                        var value = _BroadcastedTransactions.GetOrAdd(hash, tx);
+                        ListenerTrace.Info("Broadcasting " + hash);
+                        if (value == tx) //Was not present before
+                        {
+                            _Node.SendMessage(new InvPayload(tx.Transaction));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LastException = ex;
+                        ListenerTrace.Error("Error for new broadcasted transaction " + hash, ex);
+                    }
+                }));
+            ListenerTrace.Info("Transactions to broadcast fetched");
+            ListenerTrace.Info("Fetching wallet rules...");
+            _Disposables.Add(Configuration
+               .GetWalletRuleListenable()
+               .CreateConsumer()
+               .EnsureExists()
+               .OnMessage(evt =>
+               {
+                   ListenerTrace.Info("New wallet rule");
+                   RunTask("New wallet rule", () =>
+                   {
+                       _Wallets.Add(new WalletRuleEntry(evt.AddedEntity, Configuration.Indexer.CreateIndexerClient()));
+                   }, true);
+               }));
+            ListenerTrace.Info("Wallet rules fetched");
         }
+
+        ConcurrentDictionary<uint256, BroadcastedTransaction> _BroadcastedTransactions = new ConcurrentDictionary<uint256, BroadcastedTransaction>();
 
         private Node _Node;
         public Node Node
@@ -67,6 +121,27 @@ namespace RapidBase
 
         void node_MessageReceived(Node node, IncomingMessage message)
         {
+            if (message.Message.Payload is GetDataPayload)
+            {
+                var getData = (GetDataPayload)message.Message.Payload;
+                foreach (var data in getData.Inventory)
+                {
+                    if (data.Type == InventoryType.MSG_TX && _BroadcastedTransactions.ContainsKey(data.Hash))
+                    {
+                        var result = _BroadcastedTransactions[data.Hash];
+                        var tx = new TxPayload(result.Transaction);
+                        node.SendMessage(tx);
+                        ListenerTrace.Info("Broadcasted " + data.Hash);
+                        try
+                        {
+                            Configuration.GetBroadcastedTransactionsListenable().CloudTable.Execute(TableOperation.Delete(result.ToEntity()));
+                        }
+                        catch (StorageException)
+                        {
+                        }
+                    }
+                }
+            }
             if (message.Message.Payload is InvPayload)
             {
                 var inv = (InvPayload)message.Message.Payload;
@@ -75,6 +150,7 @@ namespace RapidBase
             if (message.Message.Payload is TxPayload)
             {
                 var tx = ((TxPayload)message.Message.Payload).Object;
+                ListenerTrace.Verbose("Received Transaction " + tx.GetHash());
                 RunTask("New transaction", () =>
                 {
                     var txId = tx.GetHash();
@@ -89,11 +165,13 @@ namespace RapidBase
             if (message.Message.Payload is BlockPayload)
             {
                 var block = ((BlockPayload)message.Message.Payload).Object;
+                ListenerTrace.Info("Received block " + block.GetHash());
                 RunTask("New block", () =>
                 {
                     var blockId = block.GetHash();
                     node.SynchronizeChain(_Chain);
                     _Indexer.IndexChain(_Chain);
+                    ListenerTrace.Info("New height : " + _Chain.Height);
                     var header = _Chain.GetBlock(blockId);
                     if (header == null)
                         return;
@@ -129,7 +207,7 @@ namespace RapidBase
                 }
                 catch (Exception ex)
                 {
-                    RapidBaseListenerTrace.Error("Error during task : " + name, ex);
+                    ListenerTrace.Error("Error during task : " + name, ex);
                     LastException = ex;
                 }
             }).Start(commonThread ? _Scheduler : TaskScheduler.Default);
@@ -146,9 +224,19 @@ namespace RapidBase
         public void Dispose()
         {
             if (_Scheduler != null)
+            {
+
                 _Scheduler.Dispose();
+                _Scheduler = null;
+            }
             if (_Node != null)
+            {
                 _Node.Dispose();
+                _Node = null;
+            }
+            foreach (var dispo in _Disposables)
+                dispo.Dispose();
+            _Disposables.Clear();
         }
 
         #endregion
