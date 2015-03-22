@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Client.Tests", "R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Build", "Build\Build.csproj", "{28BA4865-0990-4B5A-947E-143C700B1CB4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Listener.Console", "RapidBase.Listener.Console\RapidBase.Listener.Console.csproj", "{9A05CF5C-3BF7-4898-8268-53089008B64C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,14 @@ Global
 		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA-Testnet|Any CPU.Build.0 = Release|Any CPU
 		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA|Any CPU.Build.0 = Release|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA-Testnet|Any CPU.ActiveCfg = Release|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA-Testnet|Any CPU.Build.0 = Release|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

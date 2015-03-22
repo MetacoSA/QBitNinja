@@ -10,7 +10,7 @@ namespace RapidBase
 {
     public static class ListenerTrace
     {
-        static TraceSource _Source = new TraceSource("Rapidbase.Listener");
+        static TraceSource _Source = new TraceSource("RapidBase.Listener");
         public static void Error(string info, Exception ex)
         {
             _Source.TraceEvent(TraceEventType.Error, 0, info + "\r\n" + Utils.ExceptionToString(ex));

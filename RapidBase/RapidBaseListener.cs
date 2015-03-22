@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RapidBase
@@ -40,6 +41,7 @@ namespace RapidBase
         SingleThreadTaskScheduler _Scheduler;
         public void Listen()
         {
+            _Evt.Reset();
             _Scheduler = new SingleThreadTaskScheduler();
             ListenerTrace.Info("Connecting to node " + Configuration.Indexer.Node + "...");
             _Node = _Configuration.Indexer.ConnectToNode(true);
@@ -225,7 +227,6 @@ namespace RapidBase
         {
             if (_Scheduler != null)
             {
-
                 _Scheduler.Dispose();
                 _Scheduler = null;
             }
@@ -237,8 +238,14 @@ namespace RapidBase
             foreach (var dispo in _Disposables)
                 dispo.Dispose();
             _Disposables.Clear();
+            _Evt.Set();
         }
 
         #endregion
+        ManualResetEvent _Evt = new ManualResetEvent(true);
+        public void Wait()
+        {
+            _Evt.WaitOne();
+        }
     }
 }
