@@ -271,7 +271,12 @@ namespace RapidBase
                     _Indexer.IndexOrderedBalance(tx);
                     RunTask("New transaction", () =>
                     {
-                        _Indexer.Index(OrderedBalanceChange.ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets));
+                        var balances = 
+                            OrderedBalanceChange
+                            .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
+                            .GroupBy(b=>b.PartitionKey);
+                        foreach(var b in balances)
+                            _Indexer.Index(b);
                     }, true);
                 }, false);
             }
