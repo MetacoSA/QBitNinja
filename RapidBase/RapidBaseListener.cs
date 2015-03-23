@@ -78,7 +78,7 @@ namespace RapidBase
                     uint256 hash = null;
                     try
                     {
-                        if(evt.Addition)
+                        if (evt.Addition)
                         {
                             var tx = new BroadcastedTransaction(evt.AddedEntity);
                             hash = tx.Transaction.GetHash();
@@ -120,12 +120,13 @@ namespace RapidBase
             _Disposables.Add(ping);
         }
 
-        private  void DeleteExpiredBroadcasted(CloudTableEvent evt, uint256 hash)
+        private void DeleteExpiredBroadcasted(CloudTableEvent evt, uint256 hash)
         {
             if (evt.AddedEntity != null)
             {
                 if (DateTimeOffset.UtcNow - evt.AddedEntity.Timestamp > TimeSpan.FromHours(24.0))
                 {
+                    ListenerTrace.Verbose("Cleaning expired broadcasted " + hash);
                     DeleteBroadcasted(evt.AddedEntity, hash);
                 }
             }
@@ -150,11 +151,14 @@ namespace RapidBase
             {
                 BroadcastedTransaction unused;
                 _BroadcastedTransactions.TryRemove(hash, out unused);
+                entity.ETag = "*";
                 Configuration.GetBroadcastedTransactionsListenable().CloudTable.Execute(TableOperation.Delete(entity));
             }
             catch (Exception ex)
             {
-                ListenerTrace.Error("Error while cleaning up broadcasted transaction " + hash, ex);
+                StorageException storageEx = ex as StorageException;
+                if (storageEx == null || storageEx.RequestInformation == null || storageEx.RequestInformation.HttpStatusCode != 404)
+                    ListenerTrace.Error("Error while cleaning up broadcasted transaction " + hash, ex);
             }
         }
 
@@ -308,10 +312,10 @@ namespace RapidBase
 
         private void UpdateBroadcastState(uint256 txId, string p)
         {
-            
+
         }
 
-    
+
 
         WalletRuleEntryCollection _Wallets = null;
 

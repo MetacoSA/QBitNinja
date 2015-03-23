@@ -163,6 +163,9 @@ namespace RapidBase.Tests
             entity.Properties.Add("i", new EntityProperty(null as string));
             entity.Properties.Add("ii", new EntityProperty("lol" as string));
 
+            entity.ETag = "toto";
+            entity.Timestamp = DateTimeOffset.Now;
+
             var message = ListenableCloudTable.FromTableEntity(entity);
             var deserialized = ListenableCloudTable.ToTableEntity(message);
 

@@ -284,7 +284,12 @@ namespace RapidBase
             var json = JObject.Parse(message.GetBody<string>());
             foreach (var property in json.Properties())
             {
-                Deserizalize(json, property, entity);
+                if (property.Name == "Etag")
+                    entity.ETag = property.Value.ToObject<string>();
+                else if (property.Name == "Timestamp")
+                    entity.Timestamp = property.Value.ToObject<DateTimeOffset>();
+                else
+                    Deserizalize(json, property, entity);
             }
             return entity;
         }
@@ -296,6 +301,9 @@ namespace RapidBase
             {
                 Serialize(json, property.Key, property.Value);
             }
+            json.Add(new JProperty("Etag", entity.ETag));
+            json.Add(new JProperty("Timestamp", entity.Timestamp));
+
             var message = new BrokeredMessage(json.ToString(Formatting.None));
             message.PartitionKey = entity.PartitionKey;
             message.Properties["RowKey"] = entity.RowKey;
