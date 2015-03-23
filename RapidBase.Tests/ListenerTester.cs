@@ -118,7 +118,7 @@ namespace RapidBase.Tests
         public void AssertReceivedTransaction(uint256 txId)
         {
             CancellationTokenSource s = new CancellationTokenSource();
-            s.CancelAfter(3000);
+            s.CancelAfter(5000);
             while (!_ReceivedTransactions.ContainsKey(txId))
             {
                 if (s.IsCancellationRequested)
