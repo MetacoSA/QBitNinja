@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
+using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using NBitcoin.Protocol;
 using System;
@@ -59,8 +60,16 @@ namespace RapidBase
             _Node.MessageReceived += node_MessageReceived;
             _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
 
+            ListenerTrace.Info("Connecting and handshaking for the sender node...");
+            _SenderNode = _Configuration.Indexer.ConnectToNode(false);
+            _SenderNode.VersionHandshake();
+            _SenderNode.MessageReceived += _SenderNode_MessageReceived;
+            ListenerTrace.Info("Sender node handshaked");
+
             ListenerTrace.Info("Fetching transactions to broadcast...");
-            _Disposables.Add(Configuration
+
+            _Disposables.Add(
+                Configuration
                 .GetBroadcastedTransactionsListenable()
                 .CreateConsumer()
                 .EnsureExists()
@@ -69,19 +78,26 @@ namespace RapidBase
                     uint256 hash = null;
                     try
                     {
-                        var tx = new BroadcastedTransaction(evt.AddedEntity);
-                        hash = tx.Transaction.GetHash();
-                        var value = _BroadcastedTransactions.GetOrAdd(hash, tx);
-                        ListenerTrace.Info("Broadcasting " + hash);
-                        if (value == tx) //Was not present before
+                        if(evt.Addition)
                         {
-                            _Node.SendMessage(new InvPayload(tx.Transaction));
+                            var tx = new BroadcastedTransaction(evt.AddedEntity);
+                            hash = tx.Transaction.GetHash();
+                            var value = _BroadcastedTransactions.GetOrAdd(hash, tx);
+                            ListenerTrace.Info("Broadcasting " + hash);
+                            if (value == tx) //Was not present before
+                            {
+                                _SenderNode.SendMessage(new InvPayload(tx.Transaction));
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
                         LastException = ex;
                         ListenerTrace.Error("Error for new broadcasted transaction " + hash, ex);
+                    }
+                    finally
+                    {
+                        DeleteExpiredBroadcasted(evt, hash);
                     }
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
@@ -99,6 +115,55 @@ namespace RapidBase
                    }, true);
                }));
             ListenerTrace.Info("Wallet rules fetched");
+
+            var ping = new Timer(Ping, null, 0, 1000 * 60);
+            _Disposables.Add(ping);
+        }
+
+        private  void DeleteExpiredBroadcasted(CloudTableEvent evt, uint256 hash)
+        {
+            if (evt.AddedEntity != null)
+            {
+                if (DateTimeOffset.UtcNow - evt.AddedEntity.Timestamp > TimeSpan.FromHours(24.0))
+                {
+                    DeleteBroadcasted(evt.AddedEntity, hash);
+                }
+            }
+        }
+        private void DeleteBroadcasted(uint256 txId)
+        {
+            BroadcastedTransaction tx;
+            if (_BroadcastedTransactions.TryGetValue(txId, out tx))
+            {
+                DeleteBroadcasted(tx);
+            }
+        }
+
+        private void DeleteBroadcasted(BroadcastedTransaction tx)
+        {
+            DeleteBroadcasted(tx.ToEntity(), tx.Transaction.GetHash());
+        }
+
+        private void DeleteBroadcasted(DynamicTableEntity entity, uint256 hash)
+        {
+            try
+            {
+                BroadcastedTransaction unused;
+                _BroadcastedTransactions.TryRemove(hash, out unused);
+                Configuration.GetBroadcastedTransactionsListenable().CloudTable.Execute(TableOperation.Delete(entity));
+            }
+            catch (Exception ex)
+            {
+                ListenerTrace.Error("Error while cleaning up broadcasted transaction " + hash, ex);
+            }
+        }
+
+        void Ping(object state)
+        {
+            ListenerTrace.Verbose("Ping");
+            _Node.SendMessage(new PingPayload());
+            ListenerTrace.Verbose("Ping");
+            _SenderNode.SendMessage(new PingPayload());
         }
 
         ConcurrentDictionary<uint256, BroadcastedTransaction> _BroadcastedTransactions = new ConcurrentDictionary<uint256, BroadcastedTransaction>();
@@ -111,6 +176,14 @@ namespace RapidBase
                 return _Node;
             }
         }
+        private Node _SenderNode;
+        public Node SenderNode
+        {
+            get
+            {
+                return _SenderNode;
+            }
+        }
 
         private ConcurrentChain _Chain;
         public ConcurrentChain Chain
@@ -121,7 +194,8 @@ namespace RapidBase
             }
         }
 
-        void node_MessageReceived(Node node, IncomingMessage message)
+
+        void _SenderNode_MessageReceived(Node node, IncomingMessage message)
         {
             if (message.Message.Payload is GetDataPayload)
             {
@@ -144,10 +218,43 @@ namespace RapidBase
                     }
                 }
             }
+            if (message.Message.Payload is PongPayload)
+            {
+                ListenerTrace.Verbose("Pong");
+            }
+        }
+        void node_MessageReceived(Node node, IncomingMessage message)
+        {
             if (message.Message.Payload is InvPayload)
             {
                 var inv = (InvPayload)message.Message.Payload;
+                foreach (var inventory in inv.Inventory.Where(i => _BroadcastedTransactions.ContainsKey(i.Hash)))
+                {
+                    ListenerTrace.Info("Broadcasted reached mempool " + inventory);
+                }
                 node.SendMessage(new GetDataPayload(inv.Inventory.ToArray()));
+            }
+            if (message.Message.Payload is RejectPayload)
+            {
+                var reject = (RejectPayload)message.Message.Payload;
+                uint256 txId = null;
+                try
+                {
+                    var str = Encoders.Hex.DecodeData(reject.Message);
+                    txId = new uint256(str);
+                }
+                catch (Exception)
+                {
+                }
+                if (txId != null && _BroadcastedTransactions.ContainsKey(txId))
+                {
+                    ListenerTrace.Info("Broadcasted transaction rejected (" + reject.Code + ") " + txId);
+                    DeleteBroadcasted(txId);
+                    if (reject.Code != RejectCode.DUPLICATE)
+                    {
+                        UpdateBroadcastState(txId, reject.Code.ToString());
+                    }
+                }
             }
             if (message.Message.Payload is TxPayload)
             {
@@ -193,8 +300,18 @@ namespace RapidBase
                     }, false);
                 }, true);
             }
+            if (message.Message.Payload is PongPayload)
+            {
+                ListenerTrace.Verbose("Pong");
+            }
         }
 
+        private void UpdateBroadcastState(uint256 txId, string p)
+        {
+            
+        }
+
+    
 
         WalletRuleEntryCollection _Wallets = null;
 
