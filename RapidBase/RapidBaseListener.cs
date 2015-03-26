@@ -225,15 +225,7 @@ namespace RapidBase
             if (message.Message.Payload is RejectPayload)
             {
                 var reject = (RejectPayload)message.Message.Payload;
-                uint256 txId = null;
-                try
-                {
-                    var str = Encoders.Hex.DecodeData(reject.Message);
-                    txId = new uint256(str);
-                }
-                catch (Exception)
-                {
-                }
+                uint256 txId = reject.Hash;
                 if (txId != null && _BroadcastedTransactions.ContainsKey(txId))
                 {
                     ListenerTrace.Info("Broadcasted transaction rejected (" + reject.Code + ") " + txId);
