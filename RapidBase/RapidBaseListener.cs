@@ -222,22 +222,6 @@ namespace RapidBase
                     }
                 }
             }
-            if (message.Message.Payload is PongPayload)
-            {
-                ListenerTrace.Verbose("Pong");
-            }
-        }
-        void node_MessageReceived(Node node, IncomingMessage message)
-        {
-            if (message.Message.Payload is InvPayload)
-            {
-                var inv = (InvPayload)message.Message.Payload;
-                foreach (var inventory in inv.Inventory.Where(i => _BroadcastedTransactions.ContainsKey(i.Hash)))
-                {
-                    ListenerTrace.Info("Broadcasted reached mempool " + inventory);
-                }
-                node.SendMessage(new GetDataPayload(inv.Inventory.ToArray()));
-            }
             if (message.Message.Payload is RejectPayload)
             {
                 var reject = (RejectPayload)message.Message.Payload;
@@ -259,6 +243,22 @@ namespace RapidBase
                         UpdateBroadcastState(txId, reject.Code.ToString());
                     }
                 }
+            }
+            if (message.Message.Payload is PongPayload)
+            {
+                ListenerTrace.Verbose("Pong");
+            }
+        }
+        void node_MessageReceived(Node node, IncomingMessage message)
+        {
+            if (message.Message.Payload is InvPayload)
+            {
+                var inv = (InvPayload)message.Message.Payload;
+                foreach (var inventory in inv.Inventory.Where(i => _BroadcastedTransactions.ContainsKey(i.Hash)))
+                {
+                    ListenerTrace.Info("Broadcasted reached mempool " + inventory);
+                }
+                node.SendMessage(new GetDataPayload(inv.Inventory.ToArray()));
             }
             if (message.Message.Payload is TxPayload)
             {
