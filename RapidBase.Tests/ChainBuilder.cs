@@ -124,6 +124,7 @@ namespace RapidBase.Tests
             if (!SkipIndexer)
             {
                 indexer.IndexChain(Chain);
+                UpdateCheckpoints();
             }
             _ongoingTransactions.Clear();
 
@@ -132,6 +133,18 @@ namespace RapidBase.Tests
 
 
             return block;
+        }
+
+        private void UpdateCheckpoints()
+        {
+            var indexer = CreateIndexer();
+            UpdateCheckpoint(indexer.GetCheckpoint(IndexerCheckpoints.Balances));
+            UpdateCheckpoint(indexer.GetCheckpoint(IndexerCheckpoints.Wallets));
+        }
+
+        private void UpdateCheckpoint(Checkpoint checkpoint)
+        {
+            checkpoint.SaveProgress(Chain.Tip);
         }
 
         public ChainBase Chain

@@ -430,6 +430,8 @@ namespace RapidBase.Controllers
         {
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
+            var checkpoint = Configuration.Indexer.CreateIndexer()
+                .GetCheckpoint(balanceId.Type == BalanceType.Address ? IndexerCheckpoints.Balances : IndexerCheckpoints.Wallets);
 
             var atBlock = AtBlock(at);
 
@@ -465,6 +467,7 @@ namespace RapidBase.Controllers
 
             var client = Configuration.Indexer.CreateIndexerClient();
             client.ColoredBalance = colored;
+
             var diff =
                 client
                 .GetOrderedBalance(balanceId, query)
@@ -515,7 +518,9 @@ namespace RapidBase.Controllers
                     Locator = summary.Locator,
                     OlderImmature = Math.Min(cachedSummary.OlderImmature, olderImmature)
                 };
-                cacheTable.Create(newCachedLocator, newCachedSummary);
+                var checkpointBlock = Chain.GetBlock(checkpoint.BlockLocator.Blocks[0]);
+                if (checkpointBlock != null && checkpointBlock.Height >= atBlock.Height)
+                    cacheTable.Create(newCachedLocator, newCachedSummary);
             }
 
             summary.PrepareForSend(at, debug);

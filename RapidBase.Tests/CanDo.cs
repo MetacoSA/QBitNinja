@@ -1017,6 +1017,62 @@ namespace RapidBase.Tests
         }
 
         [Fact]
+        public void CanGetBalanceSummaryNoConcurrencyProblems()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+
+
+                tester.ChainBuilder.SkipIndexer = true;
+                var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
+
+                //Emit a block (no indexation)
+                var block = tester.ChainBuilder.EmitBlock();
+                //
+
+                //Index the headers
+                var indexer = tester.Configuration.Indexer.CreateIndexer();
+                indexer.IndexChain(tester.ChainBuilder.Chain);
+                tester.UpdateServerChain();
+                //
+
+                //No balances indexed, should be zero
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                }, result);
+
+                //Index balances
+                indexer.IndexOrderedBalance(tester.ChainBuilder.Chain.Height, block);
+                var chk = indexer.GetCheckpoint(IndexerCheckpoints.Balances);
+                chk.SaveProgress(tester.ChainBuilder.Chain.Tip);
+
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                //Should now be indexed
+                AssertEx.AssertJsonEqual(new BalanceSummary()
+                {
+                    UnConfirmed = new BalanceSummaryDetails(),
+                    Immature = new BalanceSummaryDetails(),
+                    Spendable = new BalanceSummaryDetails()
+                    {
+                        Amount = Money.Coins(1.0m),
+                        Received = Money.Coins(1.0m),
+                        TransactionCount = 1,
+                    },
+                    Confirmed = new BalanceSummaryDetails()
+                    {
+                        Amount = Money.Coins(1.0m),
+                        Received = Money.Coins(1.0m),
+                        TransactionCount = 1,
+                    }
+                }, result);
+            }
+        }
+        [Fact]
         public void CanGetBalanceSummary()
         {
             using (var tester = ServerTester.Create())
