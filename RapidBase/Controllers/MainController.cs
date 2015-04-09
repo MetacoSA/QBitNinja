@@ -436,8 +436,12 @@ namespace RapidBase.Controllers
             var atBlock = AtBlock(at);
 
             var query = new BalanceQuery();
+            query.From = null;
             if (at != null)
                 query.From = ToBalanceLocator(atBlock);
+
+            if (query.From == null)
+                query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
 
             query.PageSizes = new[] { 1, 10, 100 };
 
@@ -601,6 +605,13 @@ namespace RapidBase.Controllers
             cancel.CancelAfter(30000);
 
             BalanceQuery query = new BalanceQuery();
+            query.From = null;
+
+            if (from != null)
+            {
+                query.From = ToBalanceLocator(from);
+                query.FromIncluded = true;
+            }
 
             if (continuation != null)
             {
@@ -611,10 +622,9 @@ namespace RapidBase.Controllers
                 };
             }
 
-            if (from != null)
+            if (query.From == null)
             {
-                query.From = ToBalanceLocator(from);
-                query.FromIncluded = true;
+                query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
             }
 
             if (until != null)
