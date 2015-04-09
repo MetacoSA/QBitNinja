@@ -436,12 +436,12 @@ namespace RapidBase.Controllers
             var atBlock = AtBlock(at);
 
             var query = new BalanceQuery();
-            query.From = null;
+            //query.From = null;
             if (at != null)
                 query.From = ToBalanceLocator(atBlock);
 
-            if (query.From == null)
-                query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
+            //if (query.From == null)
+            //    query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
 
             query.PageSizes = new[] { 1, 10, 100 };
 
@@ -633,7 +633,7 @@ namespace RapidBase.Controllers
                 query.FromIncluded = true;
             }
 
-            if (query.To.YoungerThan(query.From))
+            if (query.To.IsGreaterThan(query.From))
                 throw InvalidParameters("Invalid agurment : from < until");
 
             var client = Configuration.Indexer.CreateIndexerClient();
