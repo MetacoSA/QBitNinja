@@ -172,6 +172,27 @@ namespace QBitNinja.Client
     }
     public class QBitNinjaClient
     {
+        /// <summary>
+        /// Use qbit ninja public servers (api.qbit.ninja / tapi.qbit.ninja)
+        /// </summary>
+        /// <param name="network">The bitcoin network to use</param>
+        public QBitNinjaClient(Network network)
+        {
+            if (network == null)
+                throw new ArgumentNullException("network");
+            Network = network;
+            if (network == Network.Main)
+                BaseAddress = new Uri("http://api.qbit.ninja/", UriKind.Absolute);
+            if (network == Network.TestNet)
+                BaseAddress = new Uri("http://tapi.qbit.ninja/", UriKind.Absolute);
+            if (BaseAddress == null)
+                throw new NotSupportedException("Network not supported");
+        }
+        public QBitNinjaClient(string baseAddress, Network network = null)
+            : this(new Uri(baseAddress, UriKind.Absolute), network)
+        {
+
+        }
         public QBitNinjaClient(Uri baseAddress, Network network = null)
         {
             if (baseAddress == null)
