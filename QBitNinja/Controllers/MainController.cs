@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
 using NBitcoin.Indexer;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using QBitNinja.ModelBinders;
 using QBitNinja.Models;
@@ -40,10 +41,24 @@ namespace QBitNinja.Controllers
 
         [HttpPost]
         [Route("transactions")]
-        public async Task Broadcast([FromBody]string transaction)
+        public async Task Broadcast()
         {
+            Transaction transaction = null;
+            switch (this.Request.Content.Headers.ContentType.MediaType)
+            {
+                case "application/json":
+                    transaction = new Transaction(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
+                    break;
+                case "application/octet-stream":
+                    {
+                        transaction = new Transaction(await Request.Content.ReadAsByteArrayAsync());
+                        break;
+                    }
+                default:
+                    throw new HttpResponseException(HttpStatusCode.UnsupportedMediaType);
+            }
             var tx = new BroadcastedTransaction();
-            tx.Transaction = new Transaction(transaction);
+            tx.Transaction = transaction;
             await Configuration.GetBroadcastedTransactionsListenable()
                 .CreatePublisher()
                 .AddAsync(tx.ToEntity());
