@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Client", "RapidBase.Client\RapidBase.Client.csproj", "{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client", "QBitNinja.Client\QBitNinja.Client.csproj", "{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Client.Tests", "RapidBase.Client.Tests\RapidBase.Client.Tests.csproj", "{068A0D44-F058-4086-9EB5-9FF75B89EA74}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client.Tests", "QBitNinja.Client.Tests\QBitNinja.Client.Tests.csproj", "{068A0D44-F058-4086-9EB5-9FF75B89EA74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Client(Profile111)", "RapidBase.Client(Profile111)\RapidBase.Client(Profile111).csproj", "{C86B6060-023D-4E55-9FA2-0098DBB34E4D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client(Profile111)", "QBitNinja.Client(Profile111)\QBitNinja.Client(Profile111).csproj", "{C86B6060-023D-4E55-9FA2-0098DBB34E4D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidBase.Client(Profile259)", "RapidBase.Client(Profile259)\RapidBase.Client(Profile259).csproj", "{E2D86C21-D7F7-4496-AC57-EA3D41F23D4E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client(Profile259)", "QBitNinja.Client(Profile259)\QBitNinja.Client(Profile259).csproj", "{E2D86C21-D7F7-4496-AC57-EA3D41F23D4E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{44241912-4992-416E-A07B-4ABCA3C93826}"
 EndProject

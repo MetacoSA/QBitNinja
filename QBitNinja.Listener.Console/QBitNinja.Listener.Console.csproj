@@ -48,7 +48,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidBase\QBitNinja.csproj">
+    <ProjectReference Include="..\QBitNinja\QBitNinja.csproj">
       <Project>{39b56da4-7986-4ea4-8f00-f1e28efa0101}</Project>
       <Name>QBitNinja</Name>
     </ProjectReference>

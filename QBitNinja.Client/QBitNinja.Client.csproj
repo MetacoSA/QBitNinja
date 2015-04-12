@@ -85,17 +85,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\RapidBase\JsonConverters\*.cs">
+    <Compile Include="..\QBitNinja\JsonConverters\*.cs">
       <Link>JsonConverters\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\RapidBase\Models\*.cs">
+    <Compile Include="..\QBitNinja\Models\*.cs">
       <Link>Models\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\RapidBase\Serializer.cs">
+    <Compile Include="..\QBitNinja\Serializer.cs">
       <Link>Serializer.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RapidBaseClient.cs" />
+    <Compile Include="QBitNinjaClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

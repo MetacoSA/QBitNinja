@@ -102,7 +102,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidBase.Client\QBitNinja.Client.csproj">
+    <ProjectReference Include="..\QBitNinja.Client\QBitNinja.Client.csproj">
       <Project>{7c796b6b-86b5-4c57-adaa-12cf1fecda71}</Project>
       <Name>QBitNinja.Client</Name>
     </ProjectReference>
