@@ -66,7 +66,7 @@ namespace QBitNinja
 
         public CloudTable GetCallbackTable()
         {
-            return Indexer.GetTable("rapidcallbacks");
+            return Indexer.GetTable("callbacks");
         }
 
         private CloudTable GetCrudTable()
@@ -76,7 +76,7 @@ namespace QBitNinja
 
         private CloudTable GetChainCacheCloudTable()
         {
-            return Indexer.GetTable("rapidchainchache");
+            return Indexer.GetTable("chainchache");
         }
 
 
