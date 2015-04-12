@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace RapidBase.Tests
+namespace QBitNinja.Tests
 {
     public class ListenerTester : IDisposable
     {
@@ -24,7 +24,7 @@ namespace RapidBase.Tests
             Random rand = new Random();
             _Server = tester;
             _Server._disposables.Add(this);
-            _Listener = new RapidBaseListener(_Server.Configuration);
+            _Listener = new QBitNinjaListener(_Server.Configuration);
 
             _NodeServer = new NodeServer(_Server.Configuration.Indexer.Network, internalPort: rand.Next(20000, 50000));
             _NodeListener = new EventLoopMessageListener<IncomingMessage>(NewNodeMessage);
@@ -140,9 +140,9 @@ namespace RapidBase.Tests
             }
         }
 
-        private readonly RapidBaseListener _Listener;
+        private readonly QBitNinjaListener _Listener;
         private EventLoopMessageListener<IncomingMessage> _NodeListener;
-        public RapidBaseListener Listener
+        public QBitNinjaListener Listener
         {
             get
             {

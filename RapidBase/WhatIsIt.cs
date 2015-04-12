@@ -1,11 +1,11 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
-using RapidBase.Controllers;
-using RapidBase.Models;
+using QBitNinja.Controllers;
+using QBitNinja.Models;
 using System;
 using System.Linq;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class WhatIsIt
     {
@@ -28,7 +28,7 @@ namespace RapidBase
             }
         }
 
-        public RapidBaseConfiguration Configuration
+        public QBitNinjaConfiguration Configuration
         {
             get
             {

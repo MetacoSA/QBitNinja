@@ -1,7 +1,7 @@
 ﻿using NBitcoin;
 using System.Linq;
 using Newtonsoft.Json;
-using RapidBase.Models;
+using QBitNinja.Models;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NBitcoin.DataEncoders;
 
-namespace RapidBase.Client
+namespace QBitNinja.Client
 {
     public class KeySetClient
     {
-        private readonly RapidBaseClient _Client;
-        public RapidBaseClient Client
+        private readonly QBitNinjaClient _Client;
+        public QBitNinjaClient Client
         {
             get
             {
@@ -85,7 +85,7 @@ namespace RapidBase.Client
     }
     public class WalletClient
     {
-        public WalletClient(RapidBaseClient client, string walletName)
+        public WalletClient(QBitNinjaClient client, string walletName)
         {
             if (walletName == null)
                 throw new ArgumentNullException("walletName");
@@ -100,7 +100,7 @@ namespace RapidBase.Client
             get;
             private set;
         }
-        public RapidBaseClient Client
+        public QBitNinjaClient Client
         {
             get;
             private set;
@@ -170,9 +170,9 @@ namespace RapidBase.Client
             return Client.GetAddresses(Name);
         }
     }
-    public class RapidBaseClient
+    public class QBitNinjaClient
     {
-        public RapidBaseClient(Uri baseAddress, Network network = null)
+        public QBitNinjaClient(Uri baseAddress, Network network = null)
         {
             if (baseAddress == null)
                 throw new ArgumentNullException("baseAddress");
@@ -314,9 +314,9 @@ namespace RapidBase.Client
                     {
                         try
                         {
-                            var errorObject = Serializer.ToObject<RapidBaseError>(error, Network);
+                            var errorObject = Serializer.ToObject<QBitNinjaError>(error, Network);
                             if (errorObject.StatusCode != 0)
-                                throw new RapidBaseException(errorObject);
+                                throw new QBitNinjaException(errorObject);
                         }
                         catch (JsonSerializationException)
                         {
@@ -354,7 +354,7 @@ namespace RapidBase.Client
                 await CreateWallet(name).ConfigureAwait(false);
                 return true;
             }
-            catch (RapidBaseException ex)
+            catch (QBitNinjaException ex)
             {
                 if (ex.StatusCode == 409)
                     return false;
@@ -411,7 +411,7 @@ namespace RapidBase.Client
                 await CreateAddress(walletName, address).ConfigureAwait(false);
                 return true;
             }
-            catch (RapidBaseException ex)
+            catch (QBitNinjaException ex)
             {
                 if (ex.StatusCode == 409)
                     return false;
@@ -431,7 +431,7 @@ namespace RapidBase.Client
                 await Post<HDKeySet>("wallets/" + EscapeUrlPart(walletName) + "/keysets", keyset).ConfigureAwait(false);
                 return true;
             }
-            catch (RapidBaseException ex)
+            catch (QBitNinjaException ex)
             {
                 if (ex.StatusCode == 409)
                     return false;

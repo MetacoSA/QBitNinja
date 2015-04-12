@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class Scope
     {

@@ -1,4 +1,4 @@
-﻿namespace RapidBase.Models
+﻿namespace QBitNinja.Models
 {
     public enum DataFormat
     {

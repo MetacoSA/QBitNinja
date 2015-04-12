@@ -5,13 +5,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public static class Extensions
     {
-        public static RapidBaseConfiguration GetConfiguration(this HttpRequestContext ctx)
+        public static QBitNinjaConfiguration GetConfiguration(this HttpRequestContext ctx)
         {
-            return ((RapidBaseDependencyResolver)ctx.Configuration.DependencyResolver).Get<RapidBaseConfiguration>();
+            return ((QBitNinjaDependencyResolver)ctx.Configuration.DependencyResolver).Get<QBitNinjaConfiguration>();
         }
         public static T MinElement<T>(this IEnumerable<T> input, Func<T, int> predicate)
         {

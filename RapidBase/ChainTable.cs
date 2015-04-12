@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RapidBase
+namespace QBitNinja
 {
     /// <summary>
     /// Such table can store data keyed by Height/BlockId/TransactionId, and range query them 

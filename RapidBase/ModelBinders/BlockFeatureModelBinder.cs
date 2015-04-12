@@ -1,8 +1,8 @@
-﻿using RapidBase.Models;
+﻿using QBitNinja.Models;
 using System.Web.Http.ModelBinding;
 using System.Web.Http.ValueProviders;
 
-namespace RapidBase.ModelBinders
+namespace QBitNinja.ModelBinders
 {
     public class BlockFeatureModelBinder : IModelBinder
     {

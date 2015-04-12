@@ -12,12 +12,12 @@ using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System.Net.Http.Formatting;
 using Microsoft.WindowsAzure.Storage;
-using RapidBase.Models;
+using QBitNinja.Models;
 using Xunit;
 using System.Threading;
 using NBitcoin.OpenAsset;
 
-namespace RapidBase.Tests
+namespace QBitNinja.Tests
 {
     public class ServerTester : IDisposable
     {
@@ -26,7 +26,7 @@ namespace RapidBase.Tests
             return new ServerTester(ns);
         }
 
-        public RapidBaseConfiguration Configuration
+        public QBitNinjaConfiguration Configuration
         {
             get;
             set;
@@ -45,7 +45,7 @@ namespace RapidBase.Tests
         {
             CleanTable = true;
             Address = "http://localhost:" + (ushort)RandomUtils.GetUInt32() + "/";
-            Configuration = RapidBaseConfiguration.FromConfiguration();
+            Configuration = QBitNinjaConfiguration.FromConfiguration();
             Configuration.Indexer.StorageNamespace = ns;
             var server = WebApp.Start(Address, appBuilder =>
             {
@@ -54,7 +54,7 @@ namespace RapidBase.Tests
                     IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always
                 };
                 WebApiConfig.Register(config, Configuration);
-                _resolver = (RapidBaseDependencyResolver)config.DependencyResolver;
+                _resolver = (QBitNinjaDependencyResolver)config.DependencyResolver;
                 appBuilder.UseWebApi(config);
             });
             _disposables.Add(server);
@@ -74,7 +74,7 @@ namespace RapidBase.Tests
             return tester;
         }
 
-        RapidBaseDependencyResolver _resolver;
+        QBitNinjaDependencyResolver _resolver;
 
         #region IDisposable Members
 

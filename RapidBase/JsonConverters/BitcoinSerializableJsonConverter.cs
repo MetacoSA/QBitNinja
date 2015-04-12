@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 
-namespace RapidBase.JsonConverters
+namespace QBitNinja.JsonConverters
 {
     public class BitcoinSerializableJsonConverter : JsonConverter
     {

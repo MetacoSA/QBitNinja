@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public class InsertWalletAddress
     {

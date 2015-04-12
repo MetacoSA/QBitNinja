@@ -9,8 +9,8 @@
     <ProjectGuid>{5CB38069-834E-4586-B101-036BDBCA7B92}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidBase.Tests</RootNamespace>
-    <AssemblyName>RapidBase.Tests</AssemblyName>
+    <RootNamespace>QBitNinja.Tests</RootNamespace>
+    <AssemblyName>QBitNinja.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -184,9 +184,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidBase\RapidBase.csproj">
+    <ProjectReference Include="..\RapidBase\QBitNinja.csproj">
       <Project>{39b56da4-7986-4ea4-8f00-f1e28efa0101}</Project>
-      <Name>RapidBase</Name>
+      <Name>QBitNinja</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

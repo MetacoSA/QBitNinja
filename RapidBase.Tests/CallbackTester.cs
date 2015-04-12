@@ -7,7 +7,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 
-namespace RapidBase.Tests
+namespace QBitNinja.Tests
 {
     public class CallbackTester : IDisposable
     {

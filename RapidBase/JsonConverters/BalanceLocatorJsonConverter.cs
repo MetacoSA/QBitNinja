@@ -3,7 +3,7 @@ using NBitcoin.Indexer;
 using Newtonsoft.Json;
 using System;
 
-namespace RapidBase.JsonConverters
+namespace QBitNinja.JsonConverters
 {
     public class BalanceLocatorJsonConverter : JsonConverter
     {

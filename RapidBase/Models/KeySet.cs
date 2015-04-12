@@ -1,7 +1,7 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public class KeySetData
     {

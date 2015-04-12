@@ -12,19 +12,19 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RapidBase
+namespace QBitNinja
 {
-    public class RapidBaseListener : IDisposable
+    public class QBitNinjaListener : IDisposable
     {
-        private readonly RapidBaseConfiguration _Configuration;
-        public RapidBaseConfiguration Configuration
+        private readonly QBitNinjaConfiguration _Configuration;
+        public QBitNinjaConfiguration Configuration
         {
             get
             {
                 return _Configuration;
             }
         }
-        public RapidBaseListener(RapidBaseConfiguration configuration)
+        public QBitNinjaListener(QBitNinjaConfiguration configuration)
         {
             _Configuration = configuration;
         }

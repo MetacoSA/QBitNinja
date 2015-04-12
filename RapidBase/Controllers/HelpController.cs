@@ -1,7 +1,7 @@
-﻿using RapidBase.Models;
+﻿using QBitNinja.Models;
 using System.Web.Mvc;
 
-namespace RapidBase.Controllers
+namespace QBitNinja.Controllers
 {
     public class HelpController : Controller
     {

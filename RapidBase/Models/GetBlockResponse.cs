@@ -1,6 +1,6 @@
 ﻿using NBitcoin;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public class GetBlockResponse
     {

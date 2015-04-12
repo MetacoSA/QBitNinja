@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class NewBlockEvent
     {
@@ -27,7 +27,7 @@ namespace RapidBase
     }
     public class BlockEventManager
     {
-        public BlockEventManager(RapidBaseConfiguration conf)
+        public BlockEventManager(QBitNinjaConfiguration conf)
         {
             Configuration = conf;
             Timeout = TimeSpan.FromMinutes(1);
@@ -37,7 +37,7 @@ namespace RapidBase
             get;
             set;
         }
-        public RapidBaseConfiguration Configuration
+        public QBitNinjaConfiguration Configuration
         {
             get;
             set;

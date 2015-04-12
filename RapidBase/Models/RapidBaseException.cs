@@ -1,15 +1,15 @@
 ﻿using System;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
-    public class RapidBaseException : Exception
+    public class QBitNinjaException : Exception
     {
-        public RapidBaseException(RapidBaseError error)
+        public QBitNinjaException(QBitNinjaError error)
             : base(error.Message)
         {
             StatusCode = error.StatusCode;
         }
-        public RapidBaseException(int httpCode, string reason)
+        public QBitNinjaException(int httpCode, string reason)
             : base(reason)
         {
             StatusCode = httpCode;
@@ -25,9 +25,9 @@ namespace RapidBase.Models
             get;
             set;
         }
-        public RapidBaseError ToError()
+        public QBitNinjaError ToError()
         {
-            return new RapidBaseError
+            return new QBitNinjaError
             {
                 StatusCode = StatusCode,
                 Message = Message,
@@ -35,7 +35,7 @@ namespace RapidBase.Models
             };
         }
     }
-    public class RapidBaseError
+    public class QBitNinjaError
     {
         public int StatusCode
         {

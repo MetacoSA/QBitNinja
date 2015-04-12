@@ -1,7 +1,7 @@
 ﻿using NBitcoin;
 using System.Collections.Generic;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public class BlockInformation
     {

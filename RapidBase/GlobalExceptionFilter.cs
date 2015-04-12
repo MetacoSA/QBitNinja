@@ -1,7 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
-using RapidBase.JsonConverters;
-using RapidBase.Models;
+using QBitNinja.JsonConverters;
+using QBitNinja.Models;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Filters;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class GlobalExceptionFilter : ExceptionFilterAttribute
     {
@@ -19,30 +19,30 @@ namespace RapidBase
         {
             if (actionExecutedContext.Exception is FormatException)
             {
-                actionExecutedContext.Exception = new RapidBaseException(400, actionExecutedContext.Exception.Message);
+                actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message);
             }
             if (actionExecutedContext.Exception is JsonObjectException)
             {
-                actionExecutedContext.Exception = new RapidBaseException(400, actionExecutedContext.Exception.Message)
+                actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message)
                 {
                     Location = ((JsonObjectException)actionExecutedContext.Exception).Path
                 };
             }
             if (actionExecutedContext.Exception is JsonReaderException)
             {
-                actionExecutedContext.Exception = new RapidBaseException(400, actionExecutedContext.Exception.Message)
+                actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message)
                 {
                     Location = ((JsonReaderException)actionExecutedContext.Exception).Path
                 };
             }
-            if (actionExecutedContext.Exception is RapidBaseException)
+            if (actionExecutedContext.Exception is QBitNinjaException)
             {
-                var rapidEx = actionExecutedContext.Exception as RapidBaseException;
+                var rapidEx = actionExecutedContext.Exception as QBitNinjaException;
                 actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage()
                 {
                     StatusCode = (HttpStatusCode)rapidEx.StatusCode,
                     ReasonPhrase = rapidEx.Message + (rapidEx.Location == null ? "" : " at " + rapidEx.Location),
-                    Content = new ObjectContent<RapidBaseError>(rapidEx.ToError(), actionExecutedContext.ActionContext.ControllerContext.Configuration.Formatters.JsonFormatter, "application/json")
+                    Content = new ObjectContent<QBitNinjaError>(rapidEx.ToError(), actionExecutedContext.ActionContext.ControllerContext.Configuration.Formatters.JsonFormatter, "application/json")
                 });
             }
             if (actionExecutedContext.Exception is StorageException)

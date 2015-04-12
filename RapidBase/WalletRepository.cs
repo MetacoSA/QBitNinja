@@ -3,13 +3,13 @@ using NBitcoin;
 using System.Linq;
 using NBitcoin.Crypto;
 using NBitcoin.Indexer;
-using RapidBase.Models;
+using QBitNinja.Models;
 using System;
 using System.Text;
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json.Linq;
 
-namespace RapidBase
+namespace QBitNinja
 {   
     public class WalletRepository
     {

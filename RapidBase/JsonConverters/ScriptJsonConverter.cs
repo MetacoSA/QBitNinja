@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Reflection;
 
-namespace RapidBase.JsonConverters
+namespace QBitNinja.JsonConverters
 {
     public class ScriptJsonConverter : JsonConverter
     {

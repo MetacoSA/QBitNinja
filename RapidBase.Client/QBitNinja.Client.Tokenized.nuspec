@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
 <package >
 	<metadata>
-		<id>RapidBase.Client</id>
+		<id>QBitNinja.Client</id>
 		<version>$version$</version>
-		<title>RapidBase Client</title>
-		<authors>RapidBase</authors>
-		<owners>RapidBase</owners>
+		<title>QBitNinja Client</title>
+		<authors>QBitNinja</authors>
+		<owners>QBitNinja</owners>
 		<iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<description>Client library for RapidBase server</description>
+		<description>Client library for QBitNinja server</description>
 		<summary>
 		</summary>
-		<projectUrl>https://github.com/OS-RapidBase/RapidBase</projectUrl>
+		<projectUrl>https://github.com/NicolasDorier/QBitNinja</projectUrl>
 		<copyright>Copyright 2015</copyright>
 		<tags>bitcoin</tags>
 	</metadata>

@@ -2,8 +2,8 @@
 using NBitcoin;
 using NBitcoin.Indexer;
 using Newtonsoft.Json.Linq;
-using RapidBase.ModelBinders;
-using RapidBase.Models;
+using QBitNinja.ModelBinders;
+using QBitNinja.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +15,13 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ModelBinding;
 
-namespace RapidBase.Controllers
+namespace QBitNinja.Controllers
 {
     public class MainController : ApiController
     {
         public MainController(
             ConcurrentChain chain,
-            RapidBaseConfiguration config)
+            QBitNinjaConfiguration config)
         {
             Configuration = config;
             Chain = chain;
@@ -32,7 +32,7 @@ namespace RapidBase.Controllers
             set;
         }
 
-        public new RapidBaseConfiguration Configuration
+        public new QBitNinjaConfiguration Configuration
         {
             get;
             set;
@@ -84,7 +84,7 @@ namespace RapidBase.Controllers
 
         private Exception Error(int httpCode, string reason)
         {
-            return new RapidBaseException(httpCode, reason);
+            return new QBitNinjaException(httpCode, reason);
         }
 
         [HttpGet]

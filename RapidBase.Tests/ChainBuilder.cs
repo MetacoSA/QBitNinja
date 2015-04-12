@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RapidBase.Tests
+namespace QBitNinja.Tests
 {
     public class ChainBuilder
     {

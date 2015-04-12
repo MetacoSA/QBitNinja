@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Net.Http;
 using Xunit;
 
-namespace RapidBase.Tests
+namespace QBitNinja.Tests
 {
     public class AssertEx
     {

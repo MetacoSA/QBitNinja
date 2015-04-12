@@ -1,11 +1,11 @@
 ﻿using NBitcoin;
-using RapidBase.Models;
+using QBitNinja.Models;
 using System;
 using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
-namespace RapidBase.Client.Tests
+namespace QBitNinja.Client.Tests
 {
     public class Class1
     {
@@ -71,9 +71,9 @@ namespace RapidBase.Client.Tests
             }
             catch (AggregateException ex)
             {
-                var rex = (RapidBaseException)ex.InnerException;
+                var rex = (QBitNinjaException)ex.InnerException;
                 if (rex == null)
-                    Assert.False(true, "Should have thrown RapidBaseException");
+                    Assert.False(true, "Should have thrown QBitNinjaException");
                 Assert.Equal(400, rex.StatusCode);
             }
         }
@@ -138,9 +138,9 @@ namespace RapidBase.Client.Tests
             Assert.NotNull(tx);
         }
 
-        private RapidBaseClient CreateClient(Network network = null)
+        private QBitNinjaClient CreateClient(Network network = null)
         {
-            return new RapidBaseClient(new Uri("http://rapidbase-test.azurewebsites.net/"), network);
+            return new QBitNinjaClient(new Uri("http://QBitNinja-test.azurewebsites.net/"), network);
         }
 
     }

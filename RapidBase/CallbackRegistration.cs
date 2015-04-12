@@ -1,4 +1,4 @@
-﻿namespace RapidBase
+﻿namespace QBitNinja
 {
     public class CallbackRegistration
     {

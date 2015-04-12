@@ -8,7 +8,7 @@ using System;
 #if !CLIENT
 using NBitcoin.Indexer;
 #endif
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public class BalanceModel
     {

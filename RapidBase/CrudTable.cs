@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class CrudTableFactory
     {
@@ -129,7 +129,7 @@ namespace RapidBase
             return true;
         }
 
-        private static TableQuery AllInScope(RapidBase.Scope children)
+        private static TableQuery AllInScope(QBitNinja.Scope children)
         {
             return new TableQuery()
             {

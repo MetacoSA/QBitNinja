@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("RapidBase.Client")]
+[assembly: AssemblyTitle("QBitNinja.Client")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("RapidBase")]
-[assembly: AssemblyProduct("RapidBase.Client")]
-[assembly: AssemblyCopyright("Copyright © RapidBase 2015")]
+[assembly: AssemblyCompany("QBitNinja")]
+[assembly: AssemblyProduct("QBitNinja.Client")]
+[assembly: AssemblyCopyright("Copyright © QBitNinja 2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

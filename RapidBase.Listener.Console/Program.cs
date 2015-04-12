@@ -5,15 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RapidBase.Listener.Console
+namespace QBitNinja.Listener.Console
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var conf = RapidBaseConfiguration.FromConfiguration();
+            var conf = QBitNinjaConfiguration.FromConfiguration();
             conf.EnsureSetup();
-            RapidBaseListener listener = new RapidBaseListener(conf);
+            QBitNinjaListener listener = new QBitNinjaListener(conf);
             listener.Listen();
             listener.Wait();
         }

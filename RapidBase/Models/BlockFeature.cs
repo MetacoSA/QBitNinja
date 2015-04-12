@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Text;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public enum SpecialFeature
     {

@@ -8,9 +8,9 @@ using NBitcoin;
 using NBitcoin.Indexer;
 using System.IO;
 
-namespace RapidBase
+namespace QBitNinja
 {
-    public class RapidBaseDependencyResolver : IDependencyResolver
+    public class QBitNinjaDependencyResolver : IDependencyResolver
     {
         class AutoFacDependencyScope : IDependencyScope
         {
@@ -54,7 +54,7 @@ namespace RapidBase
         readonly IDependencyResolver _defaultResolver;
         readonly IContainer _container;
 
-        public RapidBaseDependencyResolver(RapidBaseConfiguration configuration, IDependencyResolver defaultResolver)
+        public QBitNinjaDependencyResolver(QBitNinjaConfiguration configuration, IDependencyResolver defaultResolver)
         {
             _defaultResolver = defaultResolver;
             ContainerBuilder builder = new ContainerBuilder();
@@ -142,7 +142,7 @@ namespace RapidBase
         const string LocalChainLocation = "LocalChain.dat";
         public void Dispose()
         {
-            SaveChainCache(Get<ConcurrentChain>(), Get<RapidBaseConfiguration>().LocalChain);
+            SaveChainCache(Get<ConcurrentChain>(), Get<QBitNinjaConfiguration>().LocalChain);
             _container.Dispose();
 
         }

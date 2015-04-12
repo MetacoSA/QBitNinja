@@ -3,7 +3,7 @@ using System;
 using System.Web.Http.ModelBinding;
 using System.Web.Http.ValueProviders;
 
-namespace RapidBase.ModelBinders
+namespace QBitNinja.ModelBinders
 {
     public class Base58ModelBinder : IModelBinder
     {

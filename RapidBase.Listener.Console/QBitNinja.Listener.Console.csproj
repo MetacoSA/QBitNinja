@@ -7,8 +7,8 @@
     <ProjectGuid>{9A05CF5C-3BF7-4898-8268-53089008B64C}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidBase.Listener.Console</RootNamespace>
-    <AssemblyName>RapidBase.Listener.Console</AssemblyName>
+    <RootNamespace>QBitNinja.Listener.Console</RootNamespace>
+    <AssemblyName>QBitNinja.Listener.Console</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -48,9 +48,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidBase\RapidBase.csproj">
+    <ProjectReference Include="..\RapidBase\QBitNinja.csproj">
       <Project>{39b56da4-7986-4ea4-8f00-f1e28efa0101}</Project>
-      <Name>RapidBase</Name>
+      <Name>QBitNinja</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

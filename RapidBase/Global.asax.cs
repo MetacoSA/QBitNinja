@@ -4,7 +4,7 @@ using System.Web;
 using System.Web.Http;
 using System.Web.Routing;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class WebApiApplication : HttpApplication
     {
@@ -12,7 +12,7 @@ namespace RapidBase
         {
             GlobalConfiguration.Configure(WebApiConfig.Register);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
-            Resolver = (RapidBaseDependencyResolver)GlobalConfiguration.Configuration.DependencyResolver;
+            Resolver = (QBitNinjaDependencyResolver)GlobalConfiguration.Configuration.DependencyResolver;
             Timer = new Timer(_ => Resolver.UpdateChain());
             Timer.Change(0, (int)TimeSpan.FromSeconds(30).TotalMilliseconds);
         }
@@ -27,7 +27,7 @@ namespace RapidBase
             set;
         }
 
-        internal RapidBaseDependencyResolver Resolver
+        internal QBitNinjaDependencyResolver Resolver
         {
             get;
             set;

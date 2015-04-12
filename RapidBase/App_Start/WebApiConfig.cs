@@ -4,7 +4,7 @@ using System.Net.Http.Formatting;
 using System.Web.Http;
 using System.Web.Http.Validation;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public static class WebApiConfig
     {
@@ -50,12 +50,12 @@ namespace RapidBase
             }
         }
 
-        public static void Register(HttpConfiguration config, RapidBaseConfiguration rapidbase)
+        public static void Register(HttpConfiguration config, QBitNinjaConfiguration QBitNinja)
         {
             SetThrottling();
-            if (rapidbase == null)
-                rapidbase = RapidBaseConfiguration.FromConfiguration();
-            rapidbase.EnsureSetup();
+            if (QBitNinja == null)
+                QBitNinja = QBitNinjaConfiguration.FromConfiguration();
+            QBitNinja.EnsureSetup();
             config.MapHttpAttributeRoutes();
             config.Formatters.Clear();
             config.Formatters.Add(new CustomJsonMediaTypeFormatter()
@@ -63,10 +63,10 @@ namespace RapidBase
 
                 Indent = true,
             });
-            config.DependencyResolver = new RapidBaseDependencyResolver(rapidbase, config.DependencyResolver);
+            config.DependencyResolver = new QBitNinjaDependencyResolver(QBitNinja, config.DependencyResolver);
             config.Filters.Add(new GlobalExceptionFilter());
             config.Services.Replace(typeof(IBodyModelValidator), new NoBodyModelProvider());
-            Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings, rapidbase.Indexer.Network);
+            Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings, QBitNinja.Indexer.Network);
         }
     }
 }

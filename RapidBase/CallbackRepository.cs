@@ -2,7 +2,7 @@
 using System;
 using System.Text;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class CallbackRepository
     {

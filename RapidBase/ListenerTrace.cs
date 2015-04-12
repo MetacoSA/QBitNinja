@@ -6,11 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public static class ListenerTrace
     {
-        static TraceSource _Source = new TraceSource("RapidBase.Listener");
+        static TraceSource _Source = new TraceSource("QBitNinja.Listener");
         public static void Error(string info, Exception ex)
         {
             _Source.TraceEvent(TraceEventType.Error, 0, info + "\r\n" + Utils.ExceptionToString(ex));

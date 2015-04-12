@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RapidBase
+namespace QBitNinja
 {
     public sealed class SingleThreadTaskScheduler : TaskScheduler, IDisposable
     {

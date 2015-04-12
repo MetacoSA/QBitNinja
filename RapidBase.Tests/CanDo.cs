@@ -5,8 +5,8 @@ using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using NBitcoin.OpenAsset;
 using Newtonsoft.Json.Linq;
-using RapidBase.Controllers;
-using RapidBase.Models;
+using QBitNinja.Controllers;
+using QBitNinja.Models;
 using System;
 using System.Configuration;
 using System.Linq;
@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace RapidBase.Tests
+namespace QBitNinja.Tests
 {
     public class CanDo
     {

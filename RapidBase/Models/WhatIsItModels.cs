@@ -4,7 +4,7 @@ using NBitcoin.DataEncoders;
 using System;
 using System.Linq;
 
-namespace RapidBase.Models
+namespace QBitNinja.Models
 {
     public class WhatIsScript
     {

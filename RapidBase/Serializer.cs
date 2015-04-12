@@ -1,12 +1,12 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using RapidBase.JsonConverters;
+using QBitNinja.JsonConverters;
 #if !CLIENT
 using System.Net.Http.Formatting;
 #endif
 
-namespace RapidBase
+namespace QBitNinja
 {
     public class Serializer
     {

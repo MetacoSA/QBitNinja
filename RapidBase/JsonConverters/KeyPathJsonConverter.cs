@@ -3,7 +3,7 @@ using System;
 using System.Reflection;
 using Newtonsoft.Json;
 
-namespace RapidBase.JsonConverters
+namespace QBitNinja.JsonConverters
 {
     public class KeyPathJsonConverter : JsonConverter
     {

@@ -4,17 +4,17 @@ using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RapidBase
+namespace QBitNinja
 {
-    public class RapidBaseConfiguration
+    public class QBitNinjaConfiguration
     {
-        public RapidBaseConfiguration()
+        public QBitNinjaConfiguration()
         {
             CoinbaseMaturity = 101;
         }
-        public static RapidBaseConfiguration FromConfiguration()
+        public static QBitNinjaConfiguration FromConfiguration()
         {
-            var conf = new RapidBaseConfiguration
+            var conf = new QBitNinjaConfiguration
             {
                 Indexer = IndexerConfiguration.FromConfiguration(),
                 LocalChain = ConfigurationManager.AppSettings["LocalChain"],
