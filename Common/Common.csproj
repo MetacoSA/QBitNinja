@@ -1,30 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">  
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{44241912-4992-416E-A07B-4ABCA3C93826}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
-	  <ExcludedStuff Include="..\RapidBase.Client\obj\**\*.cs">
-		  <Visible>false</Visible>
-	  </ExcludedStuff>
-	  <ExcludedStuff Include="..\RapidBase.Client\bin\**\*.cs">
-		  <Visible>false</Visible>
-	  </ExcludedStuff>
-	  <ExcludedStuff Include="..\RapidBase.Client\**\*.partial.cs">
-		  <Visible>false</Visible>
-	  </ExcludedStuff>
-	  <ExcludedStuff Include="..\RapidBase.Client\**\*.partial.cs">
-		  <Visible>false</Visible>
-	  </ExcludedStuff>
-	  <Compile Include="..\RapidBase.Client\**\*.cs" Exclude="@(ExcludedStuff)">
-		  <Link>Linked\%(RecursiveDir)%(Filename)%(Extension)</Link>
-	  </Compile>
-	  <Compile Include="..\RapidBase\JsonConverters\*.cs">
-		  <Link>JsonConverters\%(Filename)%(Extension)</Link>
-	  </Compile>
-	  <Compile Include="..\RapidBase\Models\*.cs">
-		  <Link>Models\%(Filename)%(Extension)</Link>
-	  </Compile>
-	  <Compile Include="..\RapidBase\Serializer.cs">
-		  <Link>Serializer.cs</Link>
-	  </Compile>
-
-  </ItemGroup>  
+    <ExcludedStuff Include="..\QBitNinja.Client\obj\**\*.cs">
+      <Visible>false</Visible>
+    </ExcludedStuff>
+    <ExcludedStuff Include="..\QBitNinja.Client\bin\**\*.cs">
+      <Visible>false</Visible>
+    </ExcludedStuff>
+    <ExcludedStuff Include="..\QBitNinja.Client\**\*.partial.cs">
+      <Visible>false</Visible>
+    </ExcludedStuff>
+    <ExcludedStuff Include="..\QBitNinja.Client\**\*.partial.cs">
+      <Visible>false</Visible>
+    </ExcludedStuff>
+    <Compile Include="..\QBitNinja.Client\**\*.cs" Exclude="@(ExcludedStuff)">
+      <Link>Linked\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\QBitNinja\JsonConverters\*.cs">
+      <Link>JsonConverters\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\QBitNinja\Models\*.cs">
+      <Link>Models\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\QBitNinja\Serializer.cs">
+      <Link>Serializer.cs</Link>
+    </Compile>
+  </ItemGroup>
 </Project>
