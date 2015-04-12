@@ -140,7 +140,7 @@ namespace QBitNinja.Client.Tests
 
         private QBitNinjaClient CreateClient(Network network = null)
         {
-            return new QBitNinjaClient(new Uri("http://QBitNinja-test.azurewebsites.net/"), network);
+            return new QBitNinjaClient(new Uri("http://api.qbit.ninja/"), network);
         }
 
     }
