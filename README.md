@@ -1,4 +1,4 @@
-﻿RapidBase
+﻿QBit Ninja
 ==========
 **An Open Source and powerful blockchain API**
 Showcase
