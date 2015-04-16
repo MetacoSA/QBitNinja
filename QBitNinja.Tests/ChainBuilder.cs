@@ -49,7 +49,7 @@ namespace QBitNinja.Tests
 
         readonly List<Transaction> _ongoingTransactions = new List<Transaction>();
 
-        public Transaction EmitMoney(Money money, IDestination destination, bool broadcast = true, bool coinbase = false)
+        public Transaction EmitMoney(Money money, Script destination, bool broadcast = true, bool coinbase = false)
         {
             var funding = new Transaction()
             {
@@ -75,6 +75,10 @@ namespace QBitNinja.Tests
             }
 
             return funding;
+        }
+        public Transaction EmitMoney(Money money, IDestination destination, bool broadcast = true, bool coinbase = false)
+        {
+            return EmitMoney(money, destination.ScriptPubKey, broadcast, coinbase);
         }
 
         private TxOut CreateRandom()

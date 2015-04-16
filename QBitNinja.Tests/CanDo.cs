@@ -1303,6 +1303,39 @@ namespace QBitNinja.Tests
 
 
         [Fact]
+        public void BalanceDoesNotIncludeNonStandardCoin()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
+                var prev = tester.ChainBuilder.EmitMoney(Money.Coins(1.5m), bob.ScriptPubKey + OpcodeType.OP_NOP);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                var tx = new Transaction()
+                {
+                    Inputs =
+                    {
+                        new TxIn()
+                        {
+                            PrevOut = prev.Outputs.AsCoins().First().Outpoint,
+                            ScriptSig = bob.ScriptPubKey
+                        }
+                    }
+                };
+                tx.Sign(bob, false);
+
+                tester.ChainBuilder.Broadcast(tx);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                Assert.Equal(1, result.Confirmed.TransactionCount);
+            }
+        }
+
+        [Fact]
         public void CanManageWallet()
         {
             using (var tester = ServerTester.Create())
