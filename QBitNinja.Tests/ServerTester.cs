@@ -16,6 +16,7 @@ using QBitNinja.Models;
 using Xunit;
 using System.Threading;
 using NBitcoin.OpenAsset;
+using Newtonsoft.Json;
 
 namespace QBitNinja.Tests
 {
@@ -113,9 +114,15 @@ namespace QBitNinja.Tests
             return response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
         }
 
-        [DebuggerHidden]
+        //[DebuggerHidden]
         public TResponse Send<TResponse>(HttpMethod method, string relativeAddress, object body = null)
         {
+            var seria = ((JsonMediaTypeFormatter)Serializer.JsonMediaTypeFormatter).SerializerSettings;
+            seria.Formatting = Formatting.Indented;
+            if (body != null)
+            {
+                var s = JsonConvert.SerializeObject(body, seria);
+            }
             HttpClient client = new HttpClient();
             var response = client.SendAsync(new HttpRequestMessage(method, Address + relativeAddress)
             {
@@ -126,7 +133,12 @@ namespace QBitNinja.Tests
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
             if (typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
-            return response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
+            var result = response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
+            if (result != null)
+            {
+                var s = JsonConvert.SerializeObject(result, seria);
+            }
+            return result;
         }
 
         private static void Clean(CloudBlobContainer cloudBlobContainer)
