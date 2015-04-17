@@ -99,14 +99,14 @@ namespace QBitNinja
             if (address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
 
-            JObject moreInfo = ToAdditionalInformation(address, properties);
+            
             var rule = new ScriptRule
             {
-                CustomData = moreInfo.ToString(),
+                CustomData = address.AdditionalInformation.ToString(),
                 ScriptPubKey = address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
             };
-            address.AdditionalInformation = moreInfo;
+
             if (!WalletAddressesTable
                 .GetChild(walletName)
                 .Create(address.Address.ToString(), address, false))
@@ -115,16 +115,6 @@ namespace QBitNinja
         }
 
 
-        private static JObject ToAdditionalInformation(WalletAddress address, Dictionary<string, JObject> properties)
-        {
-            JObject obj = new JObject();
-            obj.Add("userData", address.UserData ?? new JValue(""));
-            foreach (var kv in properties)
-            {
-                obj.Add(kv.Key, kv.Value);
-            }
-            return obj;
-        }
 
         private static string Hash(WalletAddress address)
         {

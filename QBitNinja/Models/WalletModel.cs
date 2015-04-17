@@ -11,14 +11,6 @@ namespace QBitNinja.Models
             get;
             set;
         }
-        public WalletAddress Address
-        {
-            get;
-            set;
-        }
-    }
-    public class WalletAddress : IDestination
-    {
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public Base58Data Address
         {
@@ -32,6 +24,35 @@ namespace QBitNinja.Models
             set;
         }
         public JToken UserData
+        {
+            get;
+            set;
+        }
+
+        public bool IsCoherent()
+        {
+            BitcoinScriptAddress scriptAddress = Address as BitcoinScriptAddress;
+            if (scriptAddress != null && RedeemScript != null)
+            {
+                return scriptAddress.Hash == RedeemScript.Hash;
+            }
+            if (scriptAddress == null && RedeemScript != null)
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+    public class WalletAddress : IDestination
+    {
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public Base58Data Address
+        {
+            get;
+            set;
+        }
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public Script RedeemScript
         {
             get;
             set;
@@ -58,20 +79,7 @@ namespace QBitNinja.Models
             set;
         }
 
-        public bool IsCoherent()
-        {
-            BitcoinScriptAddress scriptAddress = Address as BitcoinScriptAddress;
-            if (scriptAddress != null && RedeemScript != null)
-            {
-                return scriptAddress.Hash == RedeemScript.Hash;
-            }
-            if (scriptAddress == null && RedeemScript != null)
-            {
-                return false;
-            }
-            return true;
-        }
-
+        
         #region IDestination Members
 
         [JsonIgnore]

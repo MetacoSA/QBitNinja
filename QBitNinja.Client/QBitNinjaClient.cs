@@ -393,11 +393,8 @@ namespace QBitNinja.Client
         {
             return CreateAddress(walletName, new InsertWalletAddress()
             {
-                Address = new WalletAddress()
-                {
-                    Address = AssertAddress(dest),
-                    RedeemScript = redeem
-                },
+                Address = AssertAddress(dest),
+                RedeemScript = redeem,
                 MergePast = mergePast
             });
         }
@@ -416,11 +413,8 @@ namespace QBitNinja.Client
             var address = AssertAddress(dest);
             return CreateAddressIfNotExists(walletName, new InsertWalletAddress()
             {
-                Address = new WalletAddress()
-                {
-                    Address = address,
-                    RedeemScript = redeem
-                },
+                Address = address,
+                RedeemScript = redeem,
                 MergePast = mergePast
             });
         }

@@ -131,19 +131,22 @@ namespace QBitNinja.Controllers
 
         private WalletAddress AddWalletAddressesCore(string walletName, InsertWalletAddress insertAddress, Dictionary<string, JObject> additionalProperties)
         {
-            insertAddress.Address.AdditionalInformation = null; //The user should not be able to set this information
             if (additionalProperties == null)
                 additionalProperties = new Dictionary<string, JObject>();
-            var address = insertAddress.Address;
-            if (address.RedeemScript != null && address.Address == null)
+            if (insertAddress.RedeemScript != null && insertAddress.Address == null)
             {
-                address.Address = address.RedeemScript.GetScriptAddress(Network);
+                insertAddress.Address = insertAddress.RedeemScript.GetScriptAddress(Network);
             }
-            if (address.Address == null)
+            if (insertAddress.Address == null || !((insertAddress.Address) is IDestination))
                 throw Error(400, "Address is missing");
 
-            if (!address.IsCoherent())
+            if (!insertAddress.IsCoherent())
                 throw Error(400, "The provided redeem script does not correspond to the given address");
+
+            var address = new WalletAddress();
+            address.Address = insertAddress.Address;
+            address.RedeemScript = insertAddress.RedeemScript;
+            address.AdditionalInformation = ToAdditionalInformation(insertAddress, additionalProperties);
 
             var repo = Configuration.CreateWalletRepository();
             var walletRule = repo.AddAddress(walletName, address, additionalProperties);
@@ -165,6 +168,18 @@ namespace QBitNinja.Controllers
                 GetBalanceSummaryCacheTable(new BalanceId(walletName), false).Delete();
             }
             return address;
+        }
+
+
+        private static JObject ToAdditionalInformation(InsertWalletAddress address, Dictionary<string, JObject> properties)
+        {
+            JObject obj = new JObject();
+            obj.Add("userData", address.UserData ?? new JValue(""));
+            foreach (var kv in properties)
+            {
+                obj.Add(kv.Key, kv.Value);
+            }
+            return obj;
         }
 
         [HttpGet]
@@ -230,11 +245,8 @@ namespace QBitNinja.Controllers
                 };
                 AddWalletAddressesCore(walletName, new InsertWalletAddress()
                 {
-                    Address = new WalletAddress()
-                    {
-                        Address = key.Address,
-                        RedeemScript = key.RedeemScript
-                    },
+                    Address = key.Address,
+                    RedeemScript = key.RedeemScript,
                     MergePast = true
                 }, new Dictionary<string, JObject>()
                 {

@@ -972,10 +972,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice1.GetBitcoinSecret(Network.TestNet).GetAddress()
-                    }
+                    Address = alice1.GetBitcoinSecret(Network.TestNet).GetAddress()
                 });
 
                 var result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true");
@@ -987,10 +984,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice2.GetBitcoinSecret(Network.TestNet).GetAddress()
-                    }
+                    Address = alice2.GetBitcoinSecret(Network.TestNet).GetAddress()
                 });
 
                 //Alice2 recieved money in the past, so cache should be invalidated
@@ -1004,10 +998,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice3.GetBitcoinSecret(Network.TestNet).GetAddress()
-                    }
+                    Address = alice3.GetBitcoinSecret(Network.TestNet).GetAddress()
                 });
 
                 //Should not invalidate the cache, alice3 never received money
@@ -1359,28 +1350,19 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice1.GetAddress()
-                    }
+                    Address = alice1.GetAddress()
                 });
 
                 AssertEx.HttpError(409, () => tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice1.GetAddress()
-                    }
+                    Address = alice1.GetAddress()
                 }));
 
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice2.GetAddress()
-                    }
+                    Address = alice2.GetAddress()
                 });
 
                 var balance = tester.SendGet<BalanceModel>("wallets/Alice/balance");
@@ -1401,11 +1383,8 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = new WalletAddress()
-                    {
-                        Address = alice3.GetAddress(),
-                        UserData = new JValue("hello")
-                    }
+                    Address = alice3.GetAddress(),
+                    UserData = new JValue("hello")
                 });
 
                 balance = tester.SendGet<BalanceModel>("wallets/Alice/balance");
