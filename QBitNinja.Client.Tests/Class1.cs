@@ -1,4 +1,6 @@
 ﻿using NBitcoin;
+using NBitcoin.DataEncoders;
+using NBitcoin.Protocol;
 using QBitNinja.Models;
 using System;
 using System.Diagnostics;
@@ -24,7 +26,6 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void temp()
         {
-
             var client = new QBitNinjaClient(Network.Main);
             client.Colored = true;
             var colored = new BitcoinColoredAddress("akDqb3L5hC2MRzzZNhhZyrRLJSS8HXysKrF");
@@ -51,12 +52,33 @@ namespace QBitNinja.Client.Tests
                     var dest = cc.ScriptPubKey.PaymentScript.PaymentScript.GetDestinationAddress(Network.Main).ToColoredAddress();
                     coins -= s.Amount;
                     // breakpoint here:
-                     Debug.WriteLine("-{0} to {1}", s.Amount.ToUnit(MoneyUnit.Bit), dest);
+                    Debug.WriteLine("-{0} to {1}", s.Amount.ToUnit(MoneyUnit.Bit), dest);
                 }
 
                 Debug.WriteLine("balance: {0}", coins.ToUnit(MoneyUnit.Bit));
             }
 
+        }
+
+
+        [Fact]
+        public void CanTryBroadcast()
+        {
+            var client = new QBitNinjaClient(Network.Main);
+            var result = client.Broadcast(new Transaction()
+            {
+                Inputs =
+                {
+                    new TxIn()
+                    {
+                        ScriptSig = new Script(Op.GetPushOp(RandomUtils.GetBytes(32)))
+                    }
+                }
+            }).Result;
+
+            Assert.False(result.Success);
+            Assert.True(result.Error.ErrorCode == RejectCode.INVALID);
+            Assert.True(result.Error.Reason == "bad-txns-vout-empty");
         }
 
         [Fact]
