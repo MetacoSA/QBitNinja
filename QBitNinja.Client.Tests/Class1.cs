@@ -12,7 +12,7 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void CanGetBalance()
         {
-            var client = CreateClient();
+            var client = new QBitNinjaClient(Network.Main);
             var balance = client.GetBalance(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
             Assert.NotNull(balance);
             Assert.True(balance.Operations.Any(o => o.Amount == Money.Coins(0.02m)));
@@ -25,7 +25,7 @@ namespace QBitNinja.Client.Tests
         public void temp()
         {
 
-            var client = CreateClient();
+            var client = new QBitNinjaClient(Network.Main);
             client.Colored = true;
             var colored = new BitcoinColoredAddress("akDqb3L5hC2MRzzZNhhZyrRLJSS8HXysKrF");
             var balance = client.GetBalance(colored).Result;
@@ -65,7 +65,7 @@ namespace QBitNinja.Client.Tests
             try
             {
 
-                var client = CreateClient(Network.TestNet);
+                var client = new QBitNinjaClient(Network.TestNet);
                 var balance = client.GetBalance(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
                 Assert.False(true, "Should have thrown");
             }
@@ -81,7 +81,7 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void CanManageWallet()
         {
-            var client = CreateClient();
+            var client = new QBitNinjaClient(Network.Main);
             var wallet = client.GetWalletClient("temp-1Nicolas Dorier");
             wallet.CreateIfNotExists().Wait();
             wallet.CreateAddressIfNotExists(BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
@@ -111,7 +111,7 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void CanGetBlock()
         {
-            var client = CreateClient();
+            var client = new QBitNinjaClient(Network.Main);
             var block = client.GetBlock(new BlockFeature(SpecialFeature.Last), true).Result;
             Assert.NotNull(block);
             Assert.Null(block.Block);
@@ -133,14 +133,9 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void CanGetTransaction()
         {
-            var client = CreateClient();
+            var client = new QBitNinjaClient(Network.Main);
             var tx = client.GetTransaction(new uint256("ce530f95b2b7f559292c60cefa340eaf7c83cde3e063c59bc43c108a3bd24360")).Result;
             Assert.NotNull(tx);
-        }
-
-        private QBitNinjaClient CreateClient(Network network = null)
-        {
-            return new QBitNinjaClient(new Uri("http://api.qbit.ninja/"), network);
         }
 
     }

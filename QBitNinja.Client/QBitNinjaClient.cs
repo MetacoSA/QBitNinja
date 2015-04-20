@@ -287,7 +287,9 @@ namespace QBitNinja.Client
         {
             if (dest == null)
                 throw new ArgumentNullException("address");
-            var address = dest.ScriptPubKey.GetDestinationAddress(Network);
+            var base58 = dest as Base58Data;
+            var network = base58 == null ? Network : base58.Network;
+            var address = dest.ScriptPubKey.GetDestinationAddress(network);
             if (address == null)
                 throw new ArgumentException("address does not represent a valid bitcoin address", "address");
             if (dest is BitcoinColoredAddress)
