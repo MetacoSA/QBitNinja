@@ -94,24 +94,18 @@ namespace QBitNinja
             return WalletTable.Read();
         }
 
-        public WalletRuleEntry AddAddress(string walletName, WalletAddress address, Dictionary<string,JObject> properties)
+        public WalletRuleEntry AddAddress(WalletAddress address)
         {
             if (address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
 
+            var entry = address.CreateWalletRuleEntry();
             
-            var rule = new ScriptRule
-            {
-                CustomData = address.AdditionalInformation.ToString(),
-                ScriptPubKey = address.ScriptPubKey,
-                RedeemScript = address.RedeemScript
-            };
-
             if (!WalletAddressesTable
-                .GetChild(walletName)
+                .GetChild(entry.WalletId)
                 .Create(address.Address.ToString(), address, false))
                 return null;
-            return Indexer.AddWalletRule(walletName, rule);
+            return Indexer.AddWalletRule(entry.WalletId, entry.Rule);
         }
 
 

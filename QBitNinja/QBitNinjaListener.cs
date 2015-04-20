@@ -69,41 +69,67 @@ namespace QBitNinja
 
             _Disposables.Add(
                 Configuration
-                .GetBroadcastedTransactionsListenable()
+                .Topics
+                .BroadcastedTransactions
                 .CreateConsumer()
                 .EnsureExists()
-                .OnMessage(evt =>
+                .OnMessage((tx, ctl) =>
                 {
                     uint256 hash = null;
+                    var repo = Configuration.Indexer.CreateIndexerClient();
+                    var rejects = Configuration.GetRejectTable();
                     try
                     {
-                        if (evt.Addition)
+                        hash = tx.Transaction.GetHash();
+                        var indexedTx = repo.GetTransaction(hash);                        
+                        ListenerTrace.Info("Broadcasting " + hash);
+                        var reject = rejects.ReadOne(hash.ToString());
+                        if (reject != null)
                         {
-                            var tx = new BroadcastedTransaction(evt.AddedEntity);
-                            hash = tx.Transaction.GetHash();
-                            var value = _BroadcastedTransactions.GetOrAdd(hash, tx);
-                            ListenerTrace.Info("Broadcasting " + hash);
-                            if (value == tx) //Was not present before
-                            {
-                                _SenderNode.SendMessage(new InvPayload(tx.Transaction));
-                            }
+                            ListenerTrace.Info("Abort broadcasting of rejected");
+                            return;
+                        }
+
+                        if (_Broadcasting.Count > 1000)
+                            _Broadcasting.Clear();
+
+                        if (!_Broadcasting.TryAdd(hash, tx.Transaction))
+                        {
+                            ListenerTrace.Info("Already broadcasting");
+                            return;
+                        }
+                        if (indexedTx == null || !indexedTx.BlockIds.Any(id => Chain.Contains(id)))
+                        {
+                            _SenderNode.SendMessage(new InvPayload(tx.Transaction));
+                        }
+
+                        var reschedule = new[]
+                        {
+                            TimeSpan.FromMinutes(5),
+                            TimeSpan.FromMinutes(10),
+                            TimeSpan.FromHours(1),
+                            TimeSpan.FromHours(6),
+                            TimeSpan.FromHours(24),
+                        };
+                        if (tx.Tried <= reschedule.Length - 1)
+                        {
+                            ctl.RescheduleIn(reschedule[tx.Tried]);
+                            tx.Tried++;
                         }
                     }
                     catch (Exception ex)
                     {
                         LastException = ex;
                         ListenerTrace.Error("Error for new broadcasted transaction " + hash, ex);
-                    }
-                    finally
-                    {
-                        DeleteExpiredBroadcasted(evt, hash);
+                        throw;
                     }
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
             ListenerTrace.Info("Fetching wallet rules...");
             _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
             _Disposables.Add(Configuration
-               .GetWalletRuleListenable()
+               .Topics
+               .AddedAddresses
                .CreateConsumer()
                .EnsureExists()
                .OnMessage(evt =>
@@ -111,7 +137,7 @@ namespace QBitNinja
                    ListenerTrace.Info("New wallet rule");
                    RunTask("New wallet rule", () =>
                    {
-                       _Wallets.Add(new WalletRuleEntry(evt.AddedEntity, Configuration.Indexer.CreateIndexerClient()));
+                       _Wallets.Add(evt.CreateWalletRuleEntry());
                    }, true);
                }));
             ListenerTrace.Info("Wallet rules fetched");
@@ -120,48 +146,7 @@ namespace QBitNinja
             _Disposables.Add(ping);
         }
 
-        private void DeleteExpiredBroadcasted(CloudTableEvent evt, uint256 hash)
-        {
-            if (evt.AddedEntity != null)
-            {
-                if (DateTimeOffset.UtcNow - evt.AddedEntity.Timestamp > TimeSpan.FromHours(24.0))
-                {
-                    ListenerTrace.Verbose("Cleaning expired broadcasted " + hash);
-                    DeleteBroadcasted(evt.AddedEntity, hash);
-                }
-            }
-        }
-        private void DeleteBroadcasted(uint256 txId)
-        {
-            BroadcastedTransaction tx;
-            if (_BroadcastedTransactions.TryGetValue(txId, out tx))
-            {
-                DeleteBroadcasted(tx);
-            }
-        }
-
-        private void DeleteBroadcasted(BroadcastedTransaction tx)
-        {
-            DeleteBroadcasted(tx.ToEntity(), tx.Transaction.GetHash());
-        }
-
-        private void DeleteBroadcasted(DynamicTableEntity entity, uint256 hash)
-        {
-            try
-            {
-                BroadcastedTransaction unused;
-                _BroadcastedTransactions.TryRemove(hash, out unused);
-                entity.ETag = "*";
-                Configuration.GetBroadcastedTransactionsListenable().CloudTable.Execute(TableOperation.Delete(entity));
-            }
-            catch (Exception ex)
-            {
-                StorageException storageEx = ex as StorageException;
-                if (storageEx == null || storageEx.RequestInformation == null || storageEx.RequestInformation.HttpStatusCode != 404)
-                    ListenerTrace.Error("Error while cleaning up broadcasted transaction " + hash, ex);
-            }
-        }
-
+       
         void Ping(object state)
         {
             ListenerTrace.Verbose("Ping");
@@ -169,8 +154,6 @@ namespace QBitNinja
             ListenerTrace.Verbose("Ping");
             _SenderNode.SendMessage(new PingPayload());
         }
-
-        ConcurrentDictionary<uint256, BroadcastedTransaction> _BroadcastedTransactions = new ConcurrentDictionary<uint256, BroadcastedTransaction>();
 
         private Node _Node;
         public Node Node
@@ -198,7 +181,7 @@ namespace QBitNinja
             }
         }
 
-
+        ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
         void _SenderNode_MessageReceived(Node node, IncomingMessage message)
         {
             if (message.Message.Payload is GetDataPayload)
@@ -206,19 +189,12 @@ namespace QBitNinja
                 var getData = (GetDataPayload)message.Message.Payload;
                 foreach (var data in getData.Inventory)
                 {
-                    if (data.Type == InventoryType.MSG_TX && _BroadcastedTransactions.ContainsKey(data.Hash))
+                    Transaction tx = null;
+                    if (data.Type == InventoryType.MSG_TX && _Broadcasting.TryRemove(data.Hash, out tx))
                     {
-                        var result = _BroadcastedTransactions[data.Hash];
-                        var tx = new TxPayload(result.Transaction);
-                        node.SendMessage(tx);
+                        var payload = new TxPayload(tx);
+                        node.SendMessage(payload);
                         ListenerTrace.Info("Broadcasted " + data.Hash);
-                        try
-                        {
-                            Configuration.GetBroadcastedTransactionsListenable().CloudTable.Execute(TableOperation.Delete(result.ToEntity()));
-                        }
-                        catch (StorageException)
-                        {
-                        }
                     }
                 }
             }
@@ -226,13 +202,12 @@ namespace QBitNinja
             {
                 var reject = (RejectPayload)message.Message.Payload;
                 uint256 txId = reject.Hash;
-                if (txId != null && _BroadcastedTransactions.ContainsKey(txId))
+                if (txId != null)
                 {
                     ListenerTrace.Info("Broadcasted transaction rejected (" + reject.Code + ") " + txId);
-                    DeleteBroadcasted(txId);
                     if (reject.Code != RejectCode.DUPLICATE)
                     {
-                        UpdateBroadcastState(txId, reject.Code.ToString());
+                        Configuration.GetRejectTable().Create(txId.ToString(), reject);
                     }
                 }
             }
@@ -246,7 +221,7 @@ namespace QBitNinja
             if (message.Message.Payload is InvPayload)
             {
                 var inv = (InvPayload)message.Message.Payload;
-                foreach (var inventory in inv.Inventory.Where(i => _BroadcastedTransactions.ContainsKey(i.Hash)))
+                foreach (var inventory in inv.Inventory.Where(i => _Broadcasting.ContainsKey(i.Hash)))
                 {
                     ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
@@ -263,11 +238,11 @@ namespace QBitNinja
                     _Indexer.IndexOrderedBalance(tx);
                     RunTask("New transaction", () =>
                     {
-                        var balances = 
+                        var balances =
                             OrderedBalanceChange
                             .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
-                            .GroupBy(b=>b.PartitionKey);
-                        foreach(var b in balances)
+                            .GroupBy(b => b.PartitionKey);
+                        foreach (var b in balances)
                             _Indexer.Index(b);
                     }, true);
                 }, false);
@@ -306,12 +281,6 @@ namespace QBitNinja
                 ListenerTrace.Verbose("Pong");
             }
         }
-
-        private void UpdateBroadcastState(uint256 txId, string p)
-        {
-
-        }
-
 
 
         WalletRuleEntryCollection _Wallets = null;

@@ -4,7 +4,9 @@ using NBitcoin.Indexer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace QBitNinja
 {
@@ -159,12 +161,28 @@ namespace QBitNinja
         }
 
 
-        public T ReadOne(string item)
+
+        public async Task<T> ReadOneAsync(string item)
         {
-            var e = Table.Execute(TableOperation.Retrieve(Escape(Scope), Escape(item))).Result as DynamicTableEntity;
+            var e = (await Table.ExecuteAsync(TableOperation.Retrieve(Escape(Scope), Escape(item))).ConfigureAwait(false)).Result as DynamicTableEntity;
             if (e == null)
                 return default(T);
             return Serializer.ToObject<T>(e.Properties["data"].StringValue);
+        }
+
+
+        public T ReadOne(string item)
+        {
+            try
+            {
+
+                return ReadOneAsync(item).Result;
+            }
+            catch (AggregateException aex)
+            {
+                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+                throw;
+            }
         }
 
         public CrudTable<T> GetChild(params string[] children)

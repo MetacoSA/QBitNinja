@@ -85,8 +85,8 @@ namespace QBitNinja.Tests
             {
                 Clean(Configuration.Indexer.GetBlocksContainer());
                 Clean(Configuration.Indexer.CreateTableClient());
-                Configuration.GetBroadcastedTransactionsListenable().CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
-                Configuration.GetWalletRuleListenable().CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
+                Configuration.Topics.BroadcastedTransactions.CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
+                Configuration.Topics.AddedAddresses.CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
             }
 
             foreach (var dispo in _disposables)

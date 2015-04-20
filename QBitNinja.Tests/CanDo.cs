@@ -4,9 +4,11 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using NBitcoin.OpenAsset;
+using NBitcoin.Protocol;
 using Newtonsoft.Json.Linq;
 using QBitNinja.Controllers;
 using QBitNinja.Models;
+using RapidBase.Models;
 using System;
 using System.Configuration;
 using System.Linq;
@@ -130,65 +132,6 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
-        public void CanSerializeDynamicEntity()
-        {
-            var entity = new DynamicTableEntity();
-            entity.PartitionKey = "a";
-            entity.RowKey = "b";
-            entity.Properties.Add("a", new EntityProperty(null as bool?));
-            entity.Properties.Add("aa", new EntityProperty(true as bool?));
-            entity.Properties.Add("aaa", new EntityProperty(false as bool?));
-
-            entity.Properties.Add("b", new EntityProperty(null as byte[]));
-            entity.Properties.Add("bb", new EntityProperty(new byte[] { 1, 2, 3 }));
-
-            entity.Properties.Add("c", new EntityProperty(DateTime.Now as DateTime?));
-            entity.Properties.Add("cc", new EntityProperty(DateTime.Now));
-
-            entity.Properties.Add("d", new EntityProperty(null as DateTimeOffset?));
-            entity.Properties.Add("dd", new EntityProperty(DateTimeOffset.UtcNow));
-
-            entity.Properties.Add("e", new EntityProperty(null as double?));
-            entity.Properties.Add("ee", new EntityProperty(1.0d));
-
-            entity.Properties.Add("f", new EntityProperty(null as Guid?));
-            entity.Properties.Add("ff", new EntityProperty(Guid.NewGuid()));
-
-            entity.Properties.Add("g", new EntityProperty(null as int?));
-            entity.Properties.Add("gg", new EntityProperty(1 as int?));
-
-            entity.Properties.Add("h", new EntityProperty(null as long?));
-            entity.Properties.Add("hh", new EntityProperty(1L as long?));
-
-            entity.Properties.Add("i", new EntityProperty(null as string));
-            entity.Properties.Add("ii", new EntityProperty("lol" as string));
-
-            entity.ETag = "toto";
-            entity.Timestamp = DateTimeOffset.Now;
-
-            var message = ListenableCloudTable.FromTableEntity(entity);
-            var deserialized = ListenableCloudTable.ToTableEntity(message);
-
-            Assert.Equal(entity.PartitionKey, deserialized.PartitionKey);
-            Assert.Equal(entity.RowKey, deserialized.RowKey);
-            Assert.Equal(entity.Properties.Count, deserialized.Properties.Count);
-            foreach (var p in entity.Properties)
-            {
-                var p1 = p.Value;
-                var p2 = entity.Properties[p.Key];
-                Assert.Equal(p1.PropertyType, p2.PropertyType);
-                if (p1.PropertyAsObject != null)
-                {
-                    Assert.True(p1.PropertyAsObject.Equals(p2.PropertyAsObject));
-                }
-                else
-                {
-                    Assert.Null(p2.PropertyAsObject);
-                }
-            }
-        }
-
-        [Fact]
         public void CanUseSingleThreadTaskScheduler()
         {
             var scheduler = new SingleThreadTaskScheduler();
@@ -213,8 +156,23 @@ namespace QBitNinja.Tests
                 var tx = new Transaction();
                 var bytes = Encoders.Hex.EncodeData(tx.ToBytes());
                 var listener = tester.CreateListenerTester();
-                tester.Send<string>(HttpMethod.Post, "transactions", bytes);
+                var response = tester.Send<BroadcastResponse>(HttpMethod.Post, "transactions", bytes);
+                Assert.True(response.Success);
+                Assert.True(response.Error == null);
                 listener.AssertReceivedTransaction(tx.GetHash());
+
+                listener.Reject(new RejectPayload()
+                {
+                    Code = RejectCode.INSUFFICIENTFEE
+                });
+
+                tx = new Transaction();
+                tx.Inputs.Add(new TxIn());
+                bytes = Encoders.Hex.EncodeData(tx.ToBytes());
+                response = tester.Send<BroadcastResponse>(HttpMethod.Post, "transactions", bytes);
+
+                Assert.False(response.Success);
+                Assert.True(response.Error.ErrorCode == RejectCode.INSUFFICIENTFEE);
             }
         }
 

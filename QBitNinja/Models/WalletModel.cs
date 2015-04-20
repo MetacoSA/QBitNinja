@@ -99,6 +99,12 @@ namespace QBitNinja.Models
         }
 
         #endregion
+
+        public string WalletName
+        {
+            get;
+            set;
+        }
     }
     public class WalletModel
     {

@@ -1,11 +1,44 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
+using NBitcoin;
 using NBitcoin.Indexer;
+using NBitcoin.Protocol;
+using QBitNinja.Models;
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace QBitNinja
 {
+    public class QBitTopics
+    {
+        public QBitTopics(QBitNinjaConfiguration configuration)
+        {
+            _BroadcastedTransactions = new ListenableCloudTable<BroadcastedTransaction>(configuration.ServiceBus, configuration.Indexer.GetTable("broadcastedtransactions").Name);
+            _AddedAddresses = new ListenableCloudTable<WalletAddress>(configuration.ServiceBus, configuration.Indexer.GetTable("walletrules").Name);
+        }
+
+        ListenableCloudTable<BroadcastedTransaction> _BroadcastedTransactions;
+        public ListenableCloudTable<BroadcastedTransaction> BroadcastedTransactions
+        {
+            get
+            {
+                return _BroadcastedTransactions;
+            }
+        }
+        private ListenableCloudTable<WalletAddress> _AddedAddresses;
+        public ListenableCloudTable<WalletAddress> AddedAddresses
+        {
+            get
+            {
+                return _AddedAddresses;
+            }
+        }
+
+        internal Task EnsureSetupAsync()
+        {
+            return Task.WhenAll(new[] { BroadcastedTransactions.EnsureSetupAsync(), AddedAddresses.EnsureSetupAsync() });
+        }
+    }
     public class QBitNinjaConfiguration
     {
         public QBitNinjaConfiguration()
@@ -44,25 +77,35 @@ namespace QBitNinja
                 GetCallbackTable(),
                 GetChainCacheCloudTable(),
                 GetCrudTable(),
+                GetRejectTable().Table
             }.Select(t => t.CreateIfNotExistsAsync()).ToArray();
 
             var tasks2 = new Task[]
             { 
-                GetWalletRuleListenable().EnsureSetupAsync(),
-                GetBroadcastedTransactionsListenable().EnsureSetupAsync(),
+                Topics.EnsureSetupAsync(),
             };
             Task.WaitAll(tasks.Concat(tasks2).ToArray());
         }
 
-        public ListenableCloudTable GetBroadcastedTransactionsListenable()
+
+        public CrudTable<RejectPayload> GetRejectTable()
         {
-            return new ListenableCloudTable(Indexer.GetTable("broadcastedtx"), ServiceBus, Indexer.GetTable("broadcastedtx").Name);
+            return GetCrudTableFactory().GetTable<RejectPayload>("rejectedbroadcasted");
         }
 
-        public ListenableCloudTable GetWalletRuleListenable()
+
+        QBitTopics _Topics;
+        public QBitTopics Topics
         {
-            return new ListenableCloudTable(null, ServiceBus, Indexer.GetTable("walletrules").Name);
+            get
+            {
+                if (_Topics == null)
+                    _Topics = new QBitTopics(this);
+                return _Topics;
+            }
         }
+
+        
 
         public CloudTable GetCallbackTable()
         {

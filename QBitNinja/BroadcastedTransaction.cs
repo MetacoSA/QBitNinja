@@ -15,23 +15,19 @@ namespace QBitNinja
         {
 
         }
-        public BroadcastedTransaction(DynamicTableEntity entity)
+        public BroadcastedTransaction(Transaction tx)
         {
-            var bytes = entity.Properties["d"].BinaryValue;
-            Transaction = new Transaction(bytes);
+            Transaction = tx;
+        }
+        public int Tried
+        {
+            get;
+            set;
         }
         public Transaction Transaction
         {
             get;
             set;
-        }
-        public DynamicTableEntity ToEntity()
-        {
-            var entity = new DynamicTableEntity("a", Transaction.GetHash().ToString());
-            entity.Properties.Add("d", new EntityProperty(Transaction.ToBytes()));
-            entity.RowKey = Transaction.GetHash().ToString();
-            entity.PartitionKey = entity.RowKey;
-            return entity;
         }
     }
 }

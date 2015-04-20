@@ -42,7 +42,7 @@ namespace QBitNinja.Tests
             _Server.ChainBuilder.NewTransaction += ChainBuilder_NewTransaction;
         }
 
-      
+
         void ChainBuilder_NewBlock(Block obj)
         {
             _Blocks.AddOrUpdate(obj.GetHash(), obj, (a, b) => b);
@@ -70,12 +70,25 @@ namespace QBitNinja.Tests
             if (message.Message.Payload is InvPayload)
             {
                 InvPayload invPayload = (InvPayload)message.Message.Payload;
-                message.Node.SendMessage(new GetDataPayload(invPayload.Inventory.ToArray()));
+                if (_Reject == null)
+                    message.Node.SendMessage(new GetDataPayload(invPayload.Inventory.ToArray()));
+                else
+                {
+                    _Reject.Message = "tx";
+                    _Reject.Hash = invPayload.Inventory[0].Hash;
+                    message.Node.SendMessage(_Reject);
+                }
             }
             if (message.Message.Payload is TxPayload)
             {
                 TxPayload txPayload = (TxPayload)message.Message.Payload;
                 _ReceivedTransactions.AddOrUpdate(txPayload.Object.GetHash(), txPayload.Object, (k, v) => v);
+                _Transactions.AddOrUpdate(txPayload.Object.GetHash(), txPayload.Object, (k, v) => v);
+                foreach (var node in _Nodes)
+                {
+                    if (node != message.Node)
+                        node.SendMessage(new InvPayload(txPayload.Object));
+                }
             }
             if (message.Message.Payload is GetHeadersPayload)
             {
@@ -164,5 +177,11 @@ namespace QBitNinja.Tests
         }
 
         #endregion
+
+        RejectPayload _Reject;
+        public void Reject(RejectPayload reject)
+        {
+            _Reject = reject;
+        }
     }
 }

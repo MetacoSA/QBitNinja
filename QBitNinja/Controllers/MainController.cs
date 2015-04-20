@@ -41,27 +41,61 @@ namespace QBitNinja.Controllers
 
         [HttpPost]
         [Route("transactions")]
-        public async Task Broadcast()
+        public async Task<BroadcastResponse> Broadcast()
         {
-            Transaction transaction = null;
+            Transaction tx = null;
             switch (this.Request.Content.Headers.ContentType.MediaType)
             {
                 case "application/json":
-                    transaction = new Transaction(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
+                    tx = new Transaction(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
                     break;
                 case "application/octet-stream":
                     {
-                        transaction = new Transaction(await Request.Content.ReadAsByteArrayAsync());
+                        tx = new Transaction(await Request.Content.ReadAsByteArrayAsync());
                         break;
                     }
                 default:
                     throw new HttpResponseException(HttpStatusCode.UnsupportedMediaType);
             }
-            var tx = new BroadcastedTransaction();
-            tx.Transaction = transaction;
-            await Configuration.GetBroadcastedTransactionsListenable()
+            await Configuration
+                .Topics
+                .BroadcastedTransactions
                 .CreatePublisher()
-                .AddAsync(tx.ToEntity());
+                .AddAsync(new BroadcastedTransaction(tx));
+
+            var hash = tx.GetHash();
+            for (int i = 0 ; i < 10 ; i++)
+            {
+                var indexed = await Configuration.Indexer.CreateIndexerClient().GetTransactionAsync(hash);
+                if (indexed != null)
+                    return new BroadcastResponse()
+                    {
+                        Success = true
+                    }; 
+                var reject = await Configuration.GetRejectTable().ReadOneAsync(hash.ToString());
+                if (reject != null)
+                    return new BroadcastResponse()
+                    {
+                        Success = false,
+                        Error = new BroadcastError()
+                        {
+                            ErrorCode = reject.Code,
+                            Message = reject.Message,
+                            Reason = reject.Reason
+                        }
+                    };
+                await Task.Delay(100 * i);
+            }
+            return new BroadcastResponse()
+            {
+                Success = true,
+                Error = new BroadcastError()
+                {
+                    ErrorCode = NBitcoin.Protocol.RejectCode.INVALID,
+                    Message = "Unknown",
+                    Reason = "Unknown"
+                }
+            };
         }
 
         [HttpGet]
@@ -147,12 +181,15 @@ namespace QBitNinja.Controllers
             address.Address = insertAddress.Address;
             address.RedeemScript = insertAddress.RedeemScript;
             address.AdditionalInformation = ToAdditionalInformation(insertAddress, additionalProperties);
+            address.WalletName = walletName;
 
             var repo = Configuration.CreateWalletRepository();
-            var walletRule = repo.AddAddress(walletName, address, additionalProperties);
+            var walletRule = repo.AddAddress(address);
             if (walletRule == null)
                 throw Error(409, "This address already exist in the wallet");
-            Configuration.GetWalletRuleListenable().CreatePublisher().AddAsync(walletRule.CreateTableEntity()).Wait();
+
+            
+            var unused = Configuration.Topics.AddedAddresses.CreatePublisher().AddAsync(address);
             var rule = walletRule.Rule;
             bool merge = false;
             if (insertAddress.MergePast)

@@ -1,5 +1,7 @@
 ﻿using Microsoft.ServiceBus;
 using Microsoft.ServiceBus.Messaging;
+using NBitcoin.Indexer;
+using QBitNinja.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -9,6 +11,16 @@ namespace QBitNinja
 {
     public static class Extensions
     {
+        public static WalletRuleEntry CreateWalletRuleEntry(this WalletAddress address)
+        {
+            return new WalletRuleEntry(address.WalletName, new ScriptRule()
+            {
+                CustomData = address.AdditionalInformation.ToString(),
+                ScriptPubKey = address.ScriptPubKey,
+                RedeemScript = address.RedeemScript
+            });
+
+        }
         public static QBitNinjaConfiguration GetConfiguration(this HttpRequestContext ctx)
         {
             return ((QBitNinjaDependencyResolver)ctx.Configuration.DependencyResolver).Get<QBitNinjaConfiguration>();

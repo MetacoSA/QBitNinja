@@ -226,9 +226,9 @@ namespace QBitNinja.Client
             return new WalletClient(this, wallet);
         }
 
-        public Task Broadcast(Transaction transaction)
+        public Task<BroadcastResponse> Broadcast(Transaction transaction)
         {
-            return Post<string>("transactions", Encoders.Hex.EncodeData(transaction.ToBytes()));
+            return Post<BroadcastResponse>("transactions", Encoders.Hex.EncodeData(transaction.ToBytes()));
         }
 
         public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
