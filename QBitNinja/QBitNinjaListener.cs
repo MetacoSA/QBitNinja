@@ -58,7 +58,6 @@ namespace QBitNinja
             ListenerTrace.Info("Indexing indexer chain...");
             _Indexer.IndexChain(_Chain);
             _Node.MessageReceived += node_MessageReceived;
-            _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
 
             ListenerTrace.Info("Connecting and handshaking for the sender node...");
             _SenderNode = _Configuration.Indexer.ConnectToNode(false);
@@ -102,6 +101,7 @@ namespace QBitNinja
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
             ListenerTrace.Info("Fetching wallet rules...");
+            _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
             _Disposables.Add(Configuration
                .GetWalletRuleListenable()
                .CreateConsumer()
