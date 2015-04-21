@@ -7,6 +7,7 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +19,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace QBitNinja
+namespace QBitNinja.Notifications
 {
 
     public class MessageControl
@@ -59,12 +60,14 @@ namespace QBitNinja
             #endregion
         }
         private QBitNinjaQueue<T> _Parent;
-        private string subscriptionName;
+        private SubscriptionCreation subscriptionCreation;
 
-        internal QBitNinjaQueueConsumer(QBitNinjaQueue<T> parent, string subscriptionName)
+        internal QBitNinjaQueueConsumer(QBitNinjaQueue<T> parent, SubscriptionCreation subscriptionCreation)
         {
+            if (subscriptionCreation.TopicPath == null || subscriptionCreation.Name == null)
+                throw new ArgumentException("Missing informations in subscription creation", "subscriptionCreation");
             this._Parent = parent;
-            this.subscriptionName = subscriptionName;
+            this.subscriptionCreation = subscriptionCreation;
         }
 
         public async Task DrainMessages()
@@ -86,13 +89,13 @@ namespace QBitNinja
 
         public SubscriptionClient CreateSubscriptionClient()
         {
-            var client = SubscriptionClient.CreateFromConnectionString(_Parent.ConnectionString, _Parent.Topic, subscriptionName, ReceiveMode.ReceiveAndDelete);
+            var client = SubscriptionClient.CreateFromConnectionString(_Parent.ConnectionString, subscriptionCreation.TopicPath, subscriptionCreation.Name, ReceiveMode.ReceiveAndDelete);
             return client;
         }
 
         public async Task EnsureExistsAndDrainedAsync()
         {
-            var subscription = await _Parent.GetNamespace().EnsureSubscriptionExistsAsync(_Parent.Topic, subscriptionName).ConfigureAwait(false);
+            var subscription = await _Parent.GetNamespace().EnsureSubscriptionExistsAsync(subscriptionCreation).ConfigureAwait(false);
             await DrainMessages().ConfigureAwait(false);
         }
 
@@ -101,7 +104,7 @@ namespace QBitNinja
             try
             {
 
-                _Parent.GetNamespace().EnsureSubscriptionExistsAsync(_Parent.Topic, subscriptionName).Wait();
+                _Parent.GetNamespace().EnsureSubscriptionExistsAsync(subscriptionCreation).Wait();
             }
             catch (AggregateException aex)
             {
@@ -153,10 +156,21 @@ namespace QBitNinja
     public class QBitNinjaQueue<T> where T : class
     {
         public QBitNinjaQueue(string connectionString, string topic)
+            : this(connectionString, new TopicCreation()
+            {
+                Path = topic
+            })
+        {
+
+        }
+        public QBitNinjaQueue(string connectionString, TopicCreation topic, SubscriptionCreation defaultSubscription = null)
         {
             _Topic = topic;
+            _DefaultSubscription = defaultSubscription;
             _ConnectionString = connectionString;
         }
+
+        SubscriptionCreation _DefaultSubscription;
 
         public async Task<bool> AddAsync(T entity)
         {
@@ -172,15 +186,23 @@ namespace QBitNinja
             var client = TopicClient.CreateFromConnectionString(ConnectionString, Topic);
             return client;
         }
-        public QBitNinjaQueueConsumer<T> CreateConsumer(string subscriptionName)
+        public QBitNinjaQueueConsumer<T> CreateConsumer(string subscriptionName = null)
         {
-            return new QBitNinjaQueueConsumer<T>(this, subscriptionName);
+            return CreateConsumer(new SubscriptionCreation()
+            {
+                Name = subscriptionName,
+            });
         }
 
-
-        public QBitNinjaQueueConsumer<T> CreateConsumer()
+        public QBitNinjaQueueConsumer<T> CreateConsumer(SubscriptionCreation subscriptionDescription)
         {
-            return CreateConsumer(GetMac());
+            if (subscriptionDescription == null)
+                throw new ArgumentNullException("subscriptionDescription");
+            if (subscriptionDescription.Name == null)
+                subscriptionDescription.Name = GetMac();
+            subscriptionDescription.TopicPath = _Topic.Path;
+            subscriptionDescription.Merge(_DefaultSubscription);
+            return new QBitNinjaQueueConsumer<T>(this, subscriptionDescription);
         }
 
         private string GetMac()
@@ -191,12 +213,12 @@ namespace QBitNinja
             return Encoders.Hex.EncodeData(bytes);
         }
 
-        private readonly string _Topic;
+        private readonly TopicCreation _Topic;
         public string Topic
         {
             get
             {
-                return _Topic;
+                return _Topic.Path;
             }
         }
         private readonly string _ConnectionString;
@@ -212,9 +234,7 @@ namespace QBitNinja
 
         internal Task EnsureSetupAsync()
         {
-            List<Task> tasks = new List<Task>();
-            tasks.Add(GetNamespace().EnsureTopicExistAsync(Topic));
-            return Task.WhenAll(tasks.ToArray());
+            return GetNamespace().EnsureTopicExistAsync(_Topic);
         }
 
         public NamespaceManager GetNamespace()

@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage.Auth;
+﻿using Microsoft.ServiceBus.Messaging;
+using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
 using NBitcoin.DataEncoders;
@@ -8,7 +9,7 @@ using NBitcoin.Protocol;
 using Newtonsoft.Json.Linq;
 using QBitNinja.Controllers;
 using QBitNinja.Models;
-using RapidBase.Models;
+using QBitNinja.Notifications;
 using System;
 using System.Configuration;
 using System.Linq;
@@ -202,6 +203,27 @@ namespace QBitNinja.Tests
                 savedTx = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash());
                 Assert.NotNull(savedTx);
                 Assert.True(savedTx.Block.Confirmations == 1);
+            }
+        }
+
+        [Fact]
+        public void CanRecreateSubscriptionsAndTopics()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var queue = new QBitNinjaQueue<Transaction>(tester.Configuration.ServiceBus, "toto");
+                queue.EnsureSetupAsync().Wait();
+                queue.CreateConsumer(new SubscriptionCreation()).EnsureExists();
+                queue.CreateConsumer(new SubscriptionCreation()
+                {
+                    UserMetadata = "hello"
+                }).EnsureExists();
+
+                queue = new QBitNinjaQueue<Transaction>(tester.Configuration.ServiceBus, new TopicCreation("toto")
+                {
+                    EnableExpress = true
+                });
+                queue.EnsureSetupAsync().Wait();
             }
         }
 

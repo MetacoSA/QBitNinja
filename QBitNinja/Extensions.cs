@@ -2,10 +2,14 @@
 using Microsoft.ServiceBus.Messaging;
 using NBitcoin.Indexer;
 using QBitNinja.Models;
+using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
+using System.Xml;
 
 namespace QBitNinja
 {
@@ -42,33 +46,82 @@ namespace QBitNinja
             return element;
         }
 
-        public static async Task<TopicDescription> EnsureTopicExistAsync(this NamespaceManager ns, string topicName)
+        public static async Task<TopicDescription> EnsureTopicExistAsync(this NamespaceManager ns, TopicCreation topic)
         {
+            var create = ChangeType<TopicCreation, TopicDescription>(topic);
+            create.Path = topic.Path;
+
+            TopicDescription result = null;
             try
             {
-                return await ns.GetTopicAsync(topicName).ConfigureAwait(false);
+                result = await ns.GetTopicAsync(topic.Path).ConfigureAwait(false);
             }
             catch (MessagingEntityNotFoundException)
             {
-
             }
-            return await ns.CreateTopicAsync(new TopicDescription(topicName)
+            if (result == null)
+            {                
+                result = await ns.CreateTopicAsync(create).ConfigureAwait(false);
+            }
+            if (!topic.Validate(ChangeType<TopicDescription,TopicCreation>(result)))
             {
-                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5),
-                AutoDeleteOnIdle = TimeSpan.FromMinutes(5)
-            }).ConfigureAwait(false);
+                await ns.DeleteTopicAsync(topic.Path).ConfigureAwait(false);
+                return await EnsureTopicExistAsync(ns, topic).ConfigureAwait(false);
+            }
+            return result;
         }
 
-        public static async Task<SubscriptionDescription> EnsureSubscriptionExistsAsync(this NamespaceManager ns, string topic, string subscriptionName)
+        public static Task<TopicDescription> EnsureTopicExistAsync(this NamespaceManager ns, string topicName)
         {
+            return EnsureTopicExistAsync(ns, new TopicCreation()
+            {
+                Path = topicName
+            });
+        }
+
+        public static async Task<SubscriptionDescription> EnsureSubscriptionExistsAsync(this NamespaceManager ns, SubscriptionCreation subscription)
+        {
+            var create = ChangeType<SubscriptionCreation, SubscriptionDescription>(subscription);
+            create.TopicPath = subscription.TopicPath;
+            create.Name = subscription.Name;
+
+            SubscriptionDescription result = null;
             try
             {
-                return await ns.GetSubscriptionAsync(topic, subscriptionName).ConfigureAwait(false);
+                result = await ns.GetSubscriptionAsync(subscription.TopicPath, subscription.Name).ConfigureAwait(false);
             }
             catch (MessagingEntityNotFoundException)
             {
             }
-            return await ns.CreateSubscriptionAsync(topic, subscriptionName).ConfigureAwait(false);
+            if (result == null)
+            {                
+                result = await ns.CreateSubscriptionAsync(create).ConfigureAwait(false);
+            }
+            if (!subscription.Validate(ChangeType<SubscriptionDescription,SubscriptionCreation>(result)))
+            {
+                await ns.DeleteSubscriptionAsync(subscription.TopicPath, subscription.Name).ConfigureAwait(false);
+                return await EnsureSubscriptionExistsAsync(ns, subscription).ConfigureAwait(false);
+            }
+            return result;
+        }
+
+        private static T2 ChangeType<T1, T2>(T1 input)
+        {
+            MemoryStream ms = new MemoryStream();
+            DataContractSerializer seria = new DataContractSerializer(typeof(T1));
+            seria.WriteObject(ms, input);
+            ms.Position = 0;
+            seria = new DataContractSerializer(typeof(T2));
+            return (T2)seria.ReadObject(ms);
+        }
+
+        public static  Task<SubscriptionDescription> EnsureSubscriptionExistsAsync(this NamespaceManager ns, string topic, string subscriptionName)
+        {
+            return EnsureSubscriptionExistsAsync(ns, new SubscriptionCreation()
+            {
+                TopicPath = topic,
+                Name = subscriptionName
+            });
         }
     }
 }

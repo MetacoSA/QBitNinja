@@ -3,6 +3,8 @@ using NBitcoin;
 using NBitcoin.Indexer;
 using NBitcoin.Protocol;
 using QBitNinja.Models;
+using QBitNinja.Notifications;
+using System;
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,11 +15,39 @@ namespace QBitNinja
     {
         public QBitTopics(QBitNinjaConfiguration configuration)
         {
-            _BroadcastedTransactions = new QBitNinjaQueue<BroadcastedTransaction>(configuration.ServiceBus, configuration.Indexer.GetTable("broadcastedtransactions").Name);
-            _AddedAddresses = new QBitNinjaQueue<WalletAddress>(configuration.ServiceBus, configuration.Indexer.GetTable("walletrules").Name);
+            _BroadcastedTransactions = new QBitNinjaQueue<BroadcastedTransaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("broadcastedtransactions").Name)
+            {
+                EnableExpress = true
+            }, new SubscriptionCreation()
+            {
+                AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
+            });
 
-            _NewBlocks = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, configuration.Indexer.GetTable("newblocks").Name);
-            _NewTransactions = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, configuration.Indexer.GetTable("newtransactions").Name);
+            _AddedAddresses = new QBitNinjaQueue<WalletAddress>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
+            {
+                EnableExpress = true,
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
+            }, new SubscriptionCreation()
+            {
+                AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
+            });
+
+            _NewBlocks = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newblocks").Name)
+            {
+                EnableExpress = true,
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
+            }, new SubscriptionCreation()
+            {
+                AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
+            });
+            _NewTransactions = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newtransactions").Name)
+            {
+                EnableExpress = true,
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
+            }, new SubscriptionCreation()
+            {
+                AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
+            });
         }
 
         private QBitNinjaQueue<Transaction> _NewTransactions;
@@ -131,7 +161,7 @@ namespace QBitNinja
             }
         }
 
-        
+
 
         public CloudTable GetCallbackTable()
         {
