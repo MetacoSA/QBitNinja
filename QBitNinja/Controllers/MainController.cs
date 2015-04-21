@@ -60,7 +60,6 @@ namespace QBitNinja.Controllers
             await Configuration
                 .Topics
                 .BroadcastedTransactions
-                .CreatePublisher()
                 .AddAsync(new BroadcastedTransaction(tx));
 
             var hash = tx.GetHash();
@@ -187,7 +186,7 @@ namespace QBitNinja.Controllers
                 throw Error(409, "This address already exist in the wallet");
 
             
-            var unused = Configuration.Topics.AddedAddresses.CreatePublisher().AddAsync(address);
+            var unused = Configuration.Topics.AddedAddresses.AddAsync(address);
             var rule = walletRule.Rule;
             bool merge = false;
             if (insertAddress.MergePast)

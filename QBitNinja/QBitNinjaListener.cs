@@ -243,7 +243,7 @@ namespace QBitNinja
                             .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
                             .AsEnumerable();
                         _Indexer.Index(balances);
-                        var unused = Configuration.Topics.NewTransactions.CreatePublisher().AddAsync(tx);
+                        var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
                     }, true);
                 }, false);
             }
@@ -265,7 +265,7 @@ namespace QBitNinja
                     RunTask("New block", () =>
                     {
                         _Indexer.Index(block);
-                        var unused = Configuration.Topics.NewBlocks.CreatePublisher().AddAsync(block.Header);
+                        var unused = Configuration.Topics.NewBlocks.AddAsync(block.Header);
                     }, false);
                     RunTask("New block", () =>
                     {

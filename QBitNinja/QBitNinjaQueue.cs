@@ -20,30 +20,6 @@ using System.Web;
 
 namespace QBitNinja
 {
-    public class CloudTablePublisher<T> where T : class
-    {
-        private QBitNinjaQueue<T> _Parent;
-
-        internal CloudTablePublisher(QBitNinjaQueue<T> parent)
-        {
-            this._Parent = parent;
-        }
-
-        public async Task<bool> AddAsync(T entity)
-        {
-            var client = CreateTopicClient();
-            var str = Serializer.ToString<T>(entity);
-            BrokeredMessage brokered = new BrokeredMessage(str);
-            await client.SendAsync(brokered).ConfigureAwait(false);
-            return true;
-        }
-
-        internal TopicClient CreateTopicClient()
-        {
-            var client = TopicClient.CreateFromConnectionString(_Parent.ConnectionString, _Parent.Topic);
-            return client;
-        }
-    }
 
     public class MessageControl
     {
@@ -63,7 +39,7 @@ namespace QBitNinja
             _Scheduled = date;
         }
     }
-    public class CloudTableConsumer<T> where T : class
+    public class QBitNinjaQueueConsumer<T> where T : class
     {
         class SubscriptionClientDisposable : IDisposable
         {
@@ -85,7 +61,7 @@ namespace QBitNinja
         private QBitNinjaQueue<T> _Parent;
         private string subscriptionName;
 
-        internal CloudTableConsumer(QBitNinjaQueue<T> parent, string subscriptionName)
+        internal QBitNinjaQueueConsumer(QBitNinjaQueue<T> parent, string subscriptionName)
         {
             this._Parent = parent;
             this.subscriptionName = subscriptionName;
@@ -120,7 +96,7 @@ namespace QBitNinja
             await DrainMessages().ConfigureAwait(false);
         }
 
-        public CloudTableConsumer<T> EnsureExists()
+        public QBitNinjaQueueConsumer<T> EnsureExists()
         {
             try
             {
@@ -153,7 +129,7 @@ namespace QBitNinja
                     BrokeredMessage message = new BrokeredMessage(Serializer.ToString(obj));
                     message.MessageId = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
                     message.ScheduledEnqueueTimeUtc = control._Scheduled.Value;
-                    _Parent.CreatePublisher().CreateTopicClient().Send(message);
+                    _Parent.CreateTopicClient().Send(message);
                 }
             }, new OnMessageOptions()
             {
@@ -182,18 +158,27 @@ namespace QBitNinja
             _ConnectionString = connectionString;
         }
 
-        public CloudTablePublisher<T> CreatePublisher()
+        public async Task<bool> AddAsync(T entity)
         {
-            return new CloudTablePublisher<T>(this);
+            var client = CreateTopicClient();
+            var str = Serializer.ToString<T>(entity);
+            BrokeredMessage brokered = new BrokeredMessage(str);
+            await client.SendAsync(brokered).ConfigureAwait(false);
+            return true;
         }
 
-        public CloudTableConsumer<T> CreateConsumer(string subscriptionName)
+        internal TopicClient CreateTopicClient()
         {
-            return new CloudTableConsumer<T>(this, subscriptionName);
+            var client = TopicClient.CreateFromConnectionString(ConnectionString, Topic);
+            return client;
+        }
+        public QBitNinjaQueueConsumer<T> CreateConsumer(string subscriptionName)
+        {
+            return new QBitNinjaQueueConsumer<T>(this, subscriptionName);
         }
 
 
-        public CloudTableConsumer<T> CreateConsumer()
+        public QBitNinjaQueueConsumer<T> CreateConsumer()
         {
             return CreateConsumer(GetMac());
         }
