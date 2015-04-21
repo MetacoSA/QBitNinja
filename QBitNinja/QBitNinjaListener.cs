@@ -81,7 +81,7 @@ namespace QBitNinja
                     try
                     {
                         hash = tx.Transaction.GetHash();
-                        var indexedTx = repo.GetTransaction(hash);                        
+                        var indexedTx = repo.GetTransaction(hash);
                         ListenerTrace.Info("Broadcasting " + hash);
                         var reject = rejects.ReadOne(hash.ToString());
                         if (reject != null)
@@ -146,7 +146,7 @@ namespace QBitNinja
             _Disposables.Add(ping);
         }
 
-       
+
         void Ping(object state)
         {
             ListenerTrace.Verbose("Ping");
@@ -241,9 +241,9 @@ namespace QBitNinja
                         var balances =
                             OrderedBalanceChange
                             .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
-                            .GroupBy(b => b.PartitionKey);
-                        foreach (var b in balances)
-                            _Indexer.Index(b);
+                            .AsEnumerable();
+                        _Indexer.Index(balances);
+                        var unused = Configuration.Topics.NewTransactions.CreatePublisher().AddAsync(tx);
                     }, true);
                 }, false);
             }
@@ -265,6 +265,7 @@ namespace QBitNinja
                     RunTask("New block", () =>
                     {
                         _Indexer.Index(block);
+                        var unused = Configuration.Topics.NewBlocks.CreatePublisher().AddAsync(block.Header);
                     }, false);
                     RunTask("New block", () =>
                     {

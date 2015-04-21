@@ -204,7 +204,7 @@
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
     <Compile Include="JsonConverters\NetworkJsonConverter.cs" />
     <Compile Include="JsonConverters\ScriptJsonConverter.cs" />
-    <Compile Include="ListenableCloudTable.cs" />
+    <Compile Include="QBitNinjaQueue.cs" />
     <Compile Include="ListenerTrace.cs" />
     <Compile Include="ModelBinders\BalanceLocatorModelBinder.cs" />
     <Compile Include="ModelBinders\Base58ModelBinder.cs" />

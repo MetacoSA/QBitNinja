@@ -13,20 +13,42 @@ namespace QBitNinja
     {
         public QBitTopics(QBitNinjaConfiguration configuration)
         {
-            _BroadcastedTransactions = new ListenableCloudTable<BroadcastedTransaction>(configuration.ServiceBus, configuration.Indexer.GetTable("broadcastedtransactions").Name);
-            _AddedAddresses = new ListenableCloudTable<WalletAddress>(configuration.ServiceBus, configuration.Indexer.GetTable("walletrules").Name);
+            _BroadcastedTransactions = new QBitNinjaQueue<BroadcastedTransaction>(configuration.ServiceBus, configuration.Indexer.GetTable("broadcastedtransactions").Name);
+            _AddedAddresses = new QBitNinjaQueue<WalletAddress>(configuration.ServiceBus, configuration.Indexer.GetTable("walletrules").Name);
+
+            _NewBlocks = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, configuration.Indexer.GetTable("newblocks").Name);
+            _NewTransactions = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, configuration.Indexer.GetTable("newtransactions").Name);
         }
 
-        ListenableCloudTable<BroadcastedTransaction> _BroadcastedTransactions;
-        public ListenableCloudTable<BroadcastedTransaction> BroadcastedTransactions
+        private QBitNinjaQueue<Transaction> _NewTransactions;
+        public QBitNinjaQueue<Transaction> NewTransactions
+        {
+            get
+            {
+                return _NewTransactions;
+            }
+        }
+
+        private QBitNinjaQueue<BlockHeader> _NewBlocks;
+        public QBitNinjaQueue<BlockHeader> NewBlocks
+        {
+            get
+            {
+                return _NewBlocks;
+            }
+        }
+
+
+        QBitNinjaQueue<BroadcastedTransaction> _BroadcastedTransactions;
+        public QBitNinjaQueue<BroadcastedTransaction> BroadcastedTransactions
         {
             get
             {
                 return _BroadcastedTransactions;
             }
         }
-        private ListenableCloudTable<WalletAddress> _AddedAddresses;
-        public ListenableCloudTable<WalletAddress> AddedAddresses
+        private QBitNinjaQueue<WalletAddress> _AddedAddresses;
+        public QBitNinjaQueue<WalletAddress> AddedAddresses
         {
             get
             {
@@ -36,7 +58,11 @@ namespace QBitNinja
 
         internal Task EnsureSetupAsync()
         {
-            return Task.WhenAll(new[] { BroadcastedTransactions.EnsureSetupAsync(), AddedAddresses.EnsureSetupAsync() });
+            return Task.WhenAll(new[] { 
+                BroadcastedTransactions.EnsureSetupAsync(), 
+                NewTransactions.EnsureSetupAsync(),
+                NewBlocks.EnsureSetupAsync(),
+                AddedAddresses.EnsureSetupAsync() });
         }
     }
     public class QBitNinjaConfiguration

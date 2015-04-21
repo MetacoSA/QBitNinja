@@ -22,9 +22,9 @@ namespace QBitNinja
 {
     public class CloudTablePublisher<T> where T : class
     {
-        private ListenableCloudTable<T> _Parent;
+        private QBitNinjaQueue<T> _Parent;
 
-        internal CloudTablePublisher(ListenableCloudTable<T> parent)
+        internal CloudTablePublisher(QBitNinjaQueue<T> parent)
         {
             this._Parent = parent;
         }
@@ -82,10 +82,10 @@ namespace QBitNinja
 
             #endregion
         }
-        private ListenableCloudTable<T> _Parent;
+        private QBitNinjaQueue<T> _Parent;
         private string subscriptionName;
 
-        internal CloudTableConsumer(ListenableCloudTable<T> parent, string subscriptionName)
+        internal CloudTableConsumer(QBitNinjaQueue<T> parent, string subscriptionName)
         {
             this._Parent = parent;
             this.subscriptionName = subscriptionName;
@@ -174,9 +174,9 @@ namespace QBitNinja
 
     }
 
-    public class ListenableCloudTable<T> where T : class
+    public class QBitNinjaQueue<T> where T : class
     {
-        public ListenableCloudTable(string connectionString, string topic)
+        public QBitNinjaQueue(string connectionString, string topic)
         {
             _Topic = topic;
             _ConnectionString = connectionString;
