@@ -80,7 +80,6 @@ namespace QBitNinja.Controllers
                         Error = new BroadcastError()
                         {
                             ErrorCode = reject.Code,
-                            Message = reject.Message,
                             Reason = reject.Reason
                         }
                     };
@@ -92,7 +91,6 @@ namespace QBitNinja.Controllers
                 Error = new BroadcastError()
                 {
                     ErrorCode = NBitcoin.Protocol.RejectCode.INVALID,
-                    Message = "Unknown",
                     Reason = "Unknown"
                 }
             };

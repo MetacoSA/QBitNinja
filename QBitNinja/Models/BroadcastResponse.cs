@@ -16,12 +16,6 @@ namespace QBitNinja.Models
             set;
         }
 
-        public string Message
-        {
-            get;
-            set;
-        }
-
         public string Reason
         {
             get;
