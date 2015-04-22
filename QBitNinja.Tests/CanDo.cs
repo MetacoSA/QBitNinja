@@ -183,8 +183,13 @@ namespace QBitNinja.Tests
             using (var tester = ServerTester.Create())
             {
                 var listener = tester.CreateListenerTester();
+
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
+
+                
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
+                listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions).Wait();
+
                 var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 0);
@@ -193,8 +198,13 @@ namespace QBitNinja.Tests
                 var savedTx = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash());
                 Assert.NotNull(savedTx);
                 Assert.True(savedTx.Block == null);
+
                 var block = tester.ChainBuilder.EmitBlock();
+                listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks).Wait();
+
                 tester.UpdateServerChain(true);
+
+
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 1);
@@ -203,6 +213,27 @@ namespace QBitNinja.Tests
                 savedTx = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash());
                 Assert.NotNull(savedTx);
                 Assert.True(savedTx.Block.Confirmations == 1);
+
+            }
+        }
+
+        void Insist(Action act)
+        {
+            int tried = 0;
+            while (true)
+            {
+                try
+                {
+                    act();
+                    break;
+                }
+                catch (Exception)
+                {
+                    tried++;
+                    if (tried > 5)
+                        throw;
+                    Thread.Sleep(1000);
+                }
             }
         }
 
@@ -211,7 +242,7 @@ namespace QBitNinja.Tests
         {
             using (var tester = ServerTester.Create())
             {
-                var queue = new QBitNinjaQueue<Transaction>(tester.Configuration.ServiceBus, "toto");
+                var queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, "toto");
                 queue.EnsureSetupAsync().Wait();
                 queue.CreateConsumer(new SubscriptionCreation()).EnsureExists();
                 queue.CreateConsumer(new SubscriptionCreation()
@@ -219,7 +250,7 @@ namespace QBitNinja.Tests
                     UserMetadata = "hello"
                 }).EnsureExists();
 
-                queue = new QBitNinjaQueue<Transaction>(tester.Configuration.ServiceBus, new TopicCreation("toto")
+                queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, new TopicCreation("toto")
                 {
                     EnableExpress = true
                 });

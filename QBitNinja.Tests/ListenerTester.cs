@@ -38,11 +38,24 @@ namespace QBitNinja.Tests
             _Listener.Configuration.Indexer.Node = "127.0.0.1:" + _NodeServer.LocalEndpoint.Port;
             _Listener.Listen();
 
+            _Updater = new BlocksUpdater(_Listener.Configuration);
+            _Updater.Listen();
+
+            _Server.Configuration.Indexer.CreateIndexer().Index(_Server.Configuration.Indexer.Network.GetGenesis());
+
             _Server.ChainBuilder.SkipIndexer = true;
             _Server.ChainBuilder.NewBlock += ChainBuilder_NewBlock;
             _Server.ChainBuilder.NewTransaction += ChainBuilder_NewTransaction;
         }
 
+        private readonly BlocksUpdater _Updater;
+        public BlocksUpdater Updater
+        {
+            get
+            {
+                return _Updater;
+            }
+        }
 
         void ChainBuilder_NewBlock(Block obj)
         {
@@ -170,19 +183,36 @@ namespace QBitNinja.Tests
         {
             if (_Listener != null)
                 _Listener.Dispose();
+            if (_Updater != null)
+                _Updater.Dispose();
             if (_NodeServer != null)
                 _NodeServer.Dispose();
             if (_NodeListener != null)
                 _NodeListener.Dispose();
             Assert.Null(Listener.LastException);
+            Assert.Null(Updater.LastException);
         }
 
         #endregion
 
-        RejectPayload _Reject;
+        volatile RejectPayload _Reject;
         public void Reject(RejectPayload reject)
         {
             _Reject = reject;
+        }
+
+
+
+        internal async Task WaitMessageAsync<T>(QBitNinjaTopic<T> topic) where T : class
+        {
+            var message = await topic.CreateConsumer(new SubscriptionCreation()
+            {
+                Name = "test",
+                DefaultMessageTimeToLive = TimeSpan.FromSeconds(1.0),
+                AutoDeleteOnIdle = TimeSpan.FromMinutes(5.0)
+            }).ReceiveAsync(TimeSpan.FromSeconds(10.0)).ConfigureAwait(false);
+            if (message == null)
+                Assert.True(false, "No message received on topic");
         }
     }
 }

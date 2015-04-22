@@ -30,7 +30,6 @@ namespace QBitNinja.Notifications
                 Validate(DefaultMessageTimeToLive, creation.DefaultMessageTimeToLive) &&
                 Validate(EnableDeadLetteringOnMessageExpiration, creation.EnableDeadLetteringOnMessageExpiration) &&
                 Validate(EnableDeadLetteringOnFilterEvaluationExceptions, creation.EnableDeadLetteringOnFilterEvaluationExceptions) &&
-                Validate(MessageCount, creation.MessageCount) &&
                 Validate(MaxDeliveryCount, creation.MaxDeliveryCount) &&
                 Validate(EnableBatchedOperations, creation.EnableBatchedOperations) &&
                 Validate(ForwardTo, creation.ForwardTo) &&
@@ -55,8 +54,6 @@ namespace QBitNinja.Notifications
                 EnableDeadLetteringOnMessageExpiration = subscription.EnableDeadLetteringOnMessageExpiration;
             if (EnableDeadLetteringOnFilterEvaluationExceptions == null)
                 EnableDeadLetteringOnFilterEvaluationExceptions = subscription.EnableDeadLetteringOnFilterEvaluationExceptions;
-            if (MessageCount == null)
-                MessageCount = subscription.MessageCount;
             if (MaxDeliveryCount == null)
                 MaxDeliveryCount = subscription.MaxDeliveryCount;
             if (EnableBatchedOperations == null)
@@ -114,12 +111,6 @@ namespace QBitNinja.Notifications
         }
         [DataMember(Name = "DeadLetteringOnFilterEvaluationExceptions", IsRequired = false, Order = 1006, EmitDefaultValue = false)]
         public bool? EnableDeadLetteringOnFilterEvaluationExceptions
-        {
-            get;
-            set;
-        }
-        [DataMember(Name = "MessageCount", IsRequired = false, Order = 1009, EmitDefaultValue = false)]
-        public long? MessageCount
         {
             get;
             set;

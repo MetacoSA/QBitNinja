@@ -15,7 +15,7 @@ namespace QBitNinja
     {
         public QBitTopics(QBitNinjaConfiguration configuration)
         {
-            _BroadcastedTransactions = new QBitNinjaQueue<BroadcastedTransaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("broadcastedtransactions").Name)
+            _BroadcastedTransactions = new QBitNinjaTopic<BroadcastedTransaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("broadcastedtransactions").Name)
             {
                 EnableExpress = true
             }, new SubscriptionCreation()
@@ -23,7 +23,7 @@ namespace QBitNinja
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
             });
 
-            _AddedAddresses = new QBitNinjaQueue<WalletAddress>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
+            _AddedAddresses = new QBitNinjaTopic<WalletAddress>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
             {
                 EnableExpress = true,
                 DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
@@ -32,32 +32,45 @@ namespace QBitNinja
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
             });
 
-            _NewBlocks = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newblocks").Name)
+            _NewBlocks = new QBitNinjaTopic<BlockHeader>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newblocks").Name)
             {
                 DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
-                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(1.0),
-                RequiresDuplicateDetection = true
+                EnableExpress = true
             }, new SubscriptionCreation()
             {
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
             });
-            _NewBlocks.GetMessageId = (header) => header.GetHash().ToString();
 
-
-            _NewTransactions = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newtransactions").Name)
+            _NewTransactions = new QBitNinjaTopic<Transaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newtransactions").Name)
             {
                 DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
-                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(5.0),
-                RequiresDuplicateDetection = true
             }, new SubscriptionCreation()
             {
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0),
             });
-            _NewTransactions.GetMessageId = (tx) => tx.GetHash().ToString();
+
+            _NeedIndexNewBlock = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("newindexblocks").Name)
+            {
+                
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
+                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(5.0),
+                RequiresDuplicateDetection = true,
+            });
+            _NeedIndexNewBlock.GetMessageId = (header) => header.GetHash().ToString();
+
+
+            _NeedIndexNewTransaction = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("newindextxs").Name)
+            {
+
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
+                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(5.0),
+                RequiresDuplicateDetection = true,
+            });
+            _NeedIndexNewTransaction.GetMessageId = (header) => header.GetHash().ToString();
         }
 
-        private QBitNinjaQueue<Transaction> _NewTransactions;
-        public QBitNinjaQueue<Transaction> NewTransactions
+        private QBitNinjaTopic<Transaction> _NewTransactions;
+        public QBitNinjaTopic<Transaction> NewTransactions
         {
             get
             {
@@ -65,8 +78,8 @@ namespace QBitNinja
             }
         }
 
-        private QBitNinjaQueue<BlockHeader> _NewBlocks;
-        public QBitNinjaQueue<BlockHeader> NewBlocks
+        private QBitNinjaTopic<BlockHeader> _NewBlocks;
+        public QBitNinjaTopic<BlockHeader> NewBlocks
         {
             get
             {
@@ -74,17 +87,35 @@ namespace QBitNinja
             }
         }
 
+        QBitNinjaQueue<BlockHeader> _NeedIndexNewBlock;
+        public QBitNinjaQueue<BlockHeader> NeedIndexNewBlock
+        {
+            get
+            {
+                return _NeedIndexNewBlock;
+            }
+        }
 
-        QBitNinjaQueue<BroadcastedTransaction> _BroadcastedTransactions;
-        public QBitNinjaQueue<BroadcastedTransaction> BroadcastedTransactions
+        QBitNinjaQueue<Transaction> _NeedIndexNewTransaction;
+        public QBitNinjaQueue<Transaction> NeedIndexNewTransaction
+        {
+            get
+            {
+                return _NeedIndexNewTransaction;
+            }
+        }
+
+
+        QBitNinjaTopic<BroadcastedTransaction> _BroadcastedTransactions;
+        public QBitNinjaTopic<BroadcastedTransaction> BroadcastedTransactions
         {
             get
             {
                 return _BroadcastedTransactions;
             }
         }
-        private QBitNinjaQueue<WalletAddress> _AddedAddresses;
-        public QBitNinjaQueue<WalletAddress> AddedAddresses
+        private QBitNinjaTopic<WalletAddress> _AddedAddresses;
+        public QBitNinjaTopic<WalletAddress> AddedAddresses
         {
             get
             {
@@ -98,7 +129,10 @@ namespace QBitNinja
                 BroadcastedTransactions.EnsureSetupAsync(), 
                 NewTransactions.EnsureSetupAsync(),
                 NewBlocks.EnsureSetupAsync(),
-                AddedAddresses.EnsureSetupAsync() });
+                AddedAddresses.EnsureSetupAsync(),
+                NeedIndexNewBlock.EnsureSetupAsync(),
+                NeedIndexNewTransaction.EnsureSetupAsync()
+            });
         }
     }
     public class QBitNinjaConfiguration

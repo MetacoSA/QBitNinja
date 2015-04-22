@@ -92,9 +92,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NBitcoin.1.0.8.17\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.Indexer, Version=2.0.4.25, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin.Indexer, Version=2.0.4.28, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.Indexer.2.0.4.25\lib\net45\NBitcoin.Indexer.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.Indexer.2.0.4.28\lib\net45\NBitcoin.Indexer.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -180,8 +180,10 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ActionDisposable.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Notifications\BlocksUpdater.cs" />
     <Compile Include="Notifications\BroadcastedTransaction.cs" />
     <Compile Include="ChainTable.cs" />
     <Compile Include="Controllers\HelpController.cs" />
@@ -201,8 +203,11 @@
     <Compile Include="JsonConverters\MoneyJsonConverter.cs" />
     <Compile Include="JsonConverters\NetworkJsonConverter.cs" />
     <Compile Include="JsonConverters\ScriptJsonConverter.cs" />
-    <Compile Include="Notifications\SubscriptionCreation.cs" />
+    <Compile Include="Notifications\IndexerBlocksRepository.cs" />
     <Compile Include="Notifications\QBitNinjaQueue.cs" />
+    <Compile Include="Notifications\QueueCreation.cs" />
+    <Compile Include="Notifications\SubscriptionCreation.cs" />
+    <Compile Include="Notifications\QBitNinjaTopic.cs" />
     <Compile Include="ListenerTrace.cs" />
     <Compile Include="ModelBinders\BalanceLocatorModelBinder.cs" />
     <Compile Include="ModelBinders\Base58ModelBinder.cs" />

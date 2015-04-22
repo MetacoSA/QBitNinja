@@ -121,22 +121,8 @@ namespace QBitNinja.Notifications
                     }
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
-            ListenerTrace.Info("Fetching wallet rules...");
-            _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
-            _Disposables.Add(Configuration
-               .Topics
-               .AddedAddresses
-               .CreateConsumer()
-               .EnsureExists()
-               .OnMessage(evt =>
-               {
-                   ListenerTrace.Info("New wallet rule");
-                   RunTask("New wallet rule", () =>
-                   {
-                       _Wallets.Add(evt.CreateWalletRuleEntry());
-                   }, true);
-               }));
-            ListenerTrace.Info("Wallet rules fetched");
+
+
 
             var ping = new Timer(Ping, null, 0, 1000 * 60);
             _Disposables.Add(ping);
@@ -231,27 +217,19 @@ namespace QBitNinja.Notifications
             {
                 var tx = ((TxPayload)message.Message.Payload).Object;
                 ListenerTrace.Verbose("Received Transaction " + tx.GetHash());
-                RunTask("New transaction", () =>
+
+                Async(() =>
                 {
-                    var txId = tx.GetHash();
-                    _Indexer.Index(new TransactionEntry.Entity(txId, tx, null));
-                    _Indexer.IndexOrderedBalance(tx);
-                    RunTask("New transaction", () =>
-                    {
-                        var balances =
-                            OrderedBalanceChange
-                            .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
-                            .AsEnumerable();
-                        _Indexer.Index(balances);
-                        var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
-                    }, true);
-                }, false);
+                    _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
+                    var unused = Configuration.Topics.NeedIndexNewTransaction.AddAsync(tx);
+                });
             }
             if (message.Message.Payload is BlockPayload)
             {
                 var block = ((BlockPayload)message.Message.Payload).Object;
                 ListenerTrace.Info("Received block " + block.GetHash());
-                RunTask("New block", () =>
+
+                Async(() =>
                 {
                     var blockId = block.GetHash();
                     node.SynchronizeChain(_Chain);
@@ -260,22 +238,9 @@ namespace QBitNinja.Notifications
                     var header = _Chain.GetBlock(blockId);
                     if (header == null)
                         return;
-                    _Indexer.IndexWalletOrderedBalance(header.Height, block, _Wallets);
-
-                    RunTask("New block", () =>
-                    {
-                        _Indexer.Index(block);
-                        var unused = Configuration.Topics.NewBlocks.AddAsync(block.Header);
-                    }, false);
-                    RunTask("New block", () =>
-                    {
-                        _Indexer.IndexTransactions(header.Height, block);
-                    }, false);
-                    RunTask("New block", () =>
-                    {
-                        _Indexer.IndexOrderedBalance(header.Height, block);
-                    }, false);
-                }, true);
+                    _Indexer.Index(block);
+                    var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
+                });
             }
             if (message.Message.Payload is PongPayload)
             {
@@ -283,13 +248,9 @@ namespace QBitNinja.Notifications
             }
         }
 
-
-        WalletRuleEntryCollection _Wallets = null;
-
-
-        void RunTask(string name, Action act, bool commonThread)
+        void Async(Action act)
         {
-            new Task(() =>
+            Task.Factory.StartNew(() =>
             {
                 try
                 {
@@ -297,10 +258,9 @@ namespace QBitNinja.Notifications
                 }
                 catch (Exception ex)
                 {
-                    ListenerTrace.Error("Error during task : " + name, ex);
                     LastException = ex;
                 }
-            }).Start(commonThread ? _Scheduler : TaskScheduler.Default);
+            });
         }
 
         public Exception LastException
@@ -313,11 +273,6 @@ namespace QBitNinja.Notifications
 
         public void Dispose()
         {
-            if (_Scheduler != null)
-            {
-                _Scheduler.Dispose();
-                _Scheduler = null;
-            }
             if (_Node != null)
             {
                 _Node.Dispose();

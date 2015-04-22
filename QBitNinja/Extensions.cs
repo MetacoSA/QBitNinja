@@ -46,6 +46,32 @@ namespace QBitNinja
             return element;
         }
 
+
+        public static async Task<QueueDescription> EnsureQueueExistAsync(this NamespaceManager ns, QueueCreation queue)
+        {
+            var create = ChangeType<QueueCreation, QueueDescription>(queue);
+            create.Path = queue.Path;
+
+            QueueDescription result = null;
+            try
+            {
+                result = await ns.GetQueueAsync(queue.Path).ConfigureAwait(false);
+            }
+            catch (MessagingEntityNotFoundException)
+            {
+            }
+            if (result == null)
+            {
+                result = await ns.CreateQueueAsync(create).ConfigureAwait(false);
+            }
+            if (!queue.Validate(ChangeType<QueueDescription, QueueCreation>(result)))
+            {
+                await ns.DeleteTopicAsync(queue.Path).ConfigureAwait(false);
+                return await EnsureQueueExistAsync(ns, queue).ConfigureAwait(false);
+            }
+            return result;
+        }
+
         public static async Task<TopicDescription> EnsureTopicExistAsync(this NamespaceManager ns, TopicCreation topic)
         {
             var create = ChangeType<TopicCreation, TopicDescription>(topic);
