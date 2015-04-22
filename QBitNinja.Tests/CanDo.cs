@@ -246,7 +246,7 @@ namespace QBitNinja.Tests
             using (var tester = ServerTester.Create())
             {
                 var queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, "toto");
-                queue.EnsureSetupAsync().Wait();
+                queue.EnsureExistsAsync().Wait();
                 queue.CreateConsumer(new SubscriptionCreation()).EnsureSubscriptionExists();
                 queue.CreateConsumer(new SubscriptionCreation()
                 {
@@ -257,7 +257,7 @@ namespace QBitNinja.Tests
                 {
                     EnableExpress = true
                 });
-                queue.EnsureSetupAsync().Wait();
+                queue.EnsureExistsAsync().Wait();
             }
         }
 

@@ -4,8 +4,10 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,7 +23,7 @@ namespace QBitNinja.Notifications
 
         protected abstract Task SendAsync(BrokeredMessage brokered);
         protected abstract IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options);
-        public abstract Task EnsureSetupAsync();
+        
         protected abstract Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout);
 
         private readonly string _ConnectionString;
@@ -135,6 +137,51 @@ namespace QBitNinja.Notifications
         public NamespaceManager GetNamespace()
         {
             return NamespaceManager.CreateFromConnectionString(ConnectionString);
+        }
+
+
+        public async Task<TDescription> EnsureExistsAsync()
+        {
+            var create = ChangeType<TCreation, TDescription>(Creation);
+            InitDescription(create);
+
+            TDescription result = default(TDescription);
+            try
+            {
+                result = await GetAsync().ConfigureAwait(false);
+            }
+            catch (MessagingEntityNotFoundException)
+            {
+            }
+            if (result == null)
+            {
+                result = await CreateAsync(create).ConfigureAwait(false);
+            }
+            if (!Validate(ChangeType<TDescription,TCreation>(result)))
+            {
+                await DeleteAsync().ConfigureAwait(false);
+                return await EnsureExistsAsync().ConfigureAwait(false);
+            }
+            return result;
+        }
+
+        protected abstract Task DeleteAsync();
+
+        protected abstract Task<TDescription> CreateAsync(TDescription description);
+        protected abstract Task<TDescription> GetAsync();
+
+        protected abstract void InitDescription(TDescription description);
+
+        protected abstract bool Validate(TCreation other);
+
+        private static T2 ChangeType<T1, T2>(T1 input)
+        {
+            MemoryStream ms = new MemoryStream();
+            DataContractSerializer seria = new DataContractSerializer(typeof(T1));
+            seria.WriteObject(ms, input);
+            ms.Position = 0;
+            seria = new DataContractSerializer(typeof(T2));
+            return (T2)seria.ReadObject(ms);
         }
     }
 }

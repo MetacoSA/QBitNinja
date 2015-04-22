@@ -40,10 +40,84 @@ namespace QBitNinja.Notifications
             _Scheduled = date;
         }
     }
-    
+
     public class QBitNinjaTopic<T> : QBitNinjaQueueBase<T, TopicCreation, TopicDescription>
         where T : class
     {
+
+        class QBitNinjaTopicSubscription : QBitNinjaQueueBase<T, SubscriptionCreation, SubscriptionDescription>
+        {
+            private TopicCreation _Topic;
+            public QBitNinjaTopicSubscription(string connectionString, TopicCreation topic, SubscriptionCreation subscription)
+                : base(connectionString, subscription)
+            {
+                _Topic = topic;
+            }
+            protected override Task SendAsync(BrokeredMessage brokered)
+            {
+                throw new NotSupportedException();
+            }
+
+            protected override IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options)
+            {
+                var client = CreateSubscriptionClient();
+                client.OnMessage(act,options);
+                return new ActionDisposable(() => client.Close());
+            }
+
+            public SubscriptionClient CreateSubscriptionClient()
+            {
+                var client = SubscriptionClient.CreateFromConnectionString(ConnectionString, _Topic.Path, Creation.Name, ReceiveMode.ReceiveAndDelete);
+                return client;
+            }
+            internal TopicClient CreateTopicClient()
+            {
+                var client = TopicClient.CreateFromConnectionString(ConnectionString, _Topic.Path);
+                return client;
+            }
+
+            protected override Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout)
+            {
+                return CreateSubscriptionClient().ReceiveAsync(timeout);
+            }
+
+            protected override Task DeleteAsync()
+            {
+                return GetNamespace().DeleteSubscriptionAsync(_Topic.Path,Creation.Name);
+            }
+
+            protected override Task<SubscriptionDescription> CreateAsync(SubscriptionDescription description)
+            {
+                return GetNamespace().CreateSubscriptionAsync(description);
+            }
+
+            protected override Task<SubscriptionDescription> GetAsync()
+            {
+                return GetNamespace().GetSubscriptionAsync(Creation.TopicPath, Creation.Name);
+            }
+
+            protected override void InitDescription(SubscriptionDescription description)
+            {
+                description.TopicPath = Creation.TopicPath;
+                description.Name = Creation.Name;
+            }
+
+            protected override bool Validate(SubscriptionCreation other)
+            {
+                return Creation.Validate(other);
+            }
+
+            internal Task<BrokeredMessage> ReceiveAsyncCorePublic(TimeSpan timeout)
+            {
+                return ReceiveAsyncCore(timeout);
+            }
+
+            internal IDisposable OnMessageCorePublic(Action<BrokeredMessage> act, OnMessageOptions options)
+            {
+                return OnMessageCore(act, options);
+            }
+        }
+
         public QBitNinjaTopic(string connectionString, string topic)
             : this(connectionString, new TopicCreation()
             {
@@ -75,11 +149,7 @@ namespace QBitNinja.Notifications
         }
 
 
-        internal TopicClient CreateTopicClient()
-        {
-            var client = TopicClient.CreateFromConnectionString(ConnectionString, Topic);
-            return client;
-        }
+       
         public QBitNinjaTopic<T> CreateConsumer(string subscriptionName = null)
         {
             return CreateConsumer(new SubscriptionCreation()
@@ -115,14 +185,11 @@ namespace QBitNinja.Notifications
                 return Creation.Path;
             }
         }
-        public SubscriptionClient CreateSubscriptionClient()
+        
+        internal TopicClient CreateTopicClient()
         {
-            var client = SubscriptionClient.CreateFromConnectionString(ConnectionString, Creation.Path, Subscription.Name, ReceiveMode.ReceiveAndDelete);
+            var client = TopicClient.CreateFromConnectionString(ConnectionString, Topic);
             return client;
-        }
-        public override Task EnsureSetupAsync()
-        {
-            return GetNamespace().EnsureTopicExistAsync(Creation);
         }
 
         protected override Task SendAsync(BrokeredMessage brokered)
@@ -130,21 +197,24 @@ namespace QBitNinja.Notifications
             return CreateTopicClient().SendAsync(brokered);
         }
 
+        QBitNinjaTopicSubscription CreateSubscriptionClient()
+        {
+            return new QBitNinjaTopicSubscription(ConnectionString, Creation, Subscription);
+        }
+
         protected override IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options)
         {
-            var client = CreateSubscriptionClient();
-            client.OnMessage(act, options);
-            return new ActionDisposable(() => client.Close());
+            return CreateSubscriptionClient().OnMessageCorePublic(act, options);
         }
 
         protected override Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout)
         {
-            return CreateSubscriptionClient().ReceiveAsync(timeout);
+            return CreateSubscriptionClient().ReceiveAsyncCorePublic(timeout);
         }
 
         public async Task EnsureExistsAndDrainedAsync()
         {
-            var subscription = await GetNamespace().EnsureSubscriptionExistsAsync(Subscription).ConfigureAwait(false);
+            var subscription = await CreateSubscriptionClient().EnsureExistsAsync().ConfigureAwait(false);
             await DrainMessagesAsync().ConfigureAwait(false);
         }
 
@@ -152,14 +222,38 @@ namespace QBitNinja.Notifications
         {
             try
             {
-
-                GetNamespace().EnsureSubscriptionExistsAsync(Subscription).Wait();
+                CreateSubscriptionClient().EnsureExistsAsync().Wait();
             }
             catch (AggregateException aex)
             {
                 ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
             }
             return this;
+        }
+
+        protected override Task DeleteAsync()
+        {
+            return GetNamespace().DeleteTopicAsync(Topic);
+        }
+
+        protected override Task<TopicDescription> CreateAsync(TopicDescription description)
+        {
+            return GetNamespace().CreateTopicAsync(description);
+        }
+
+        protected override Task<TopicDescription> GetAsync()
+        {
+            return GetNamespace().GetTopicAsync(Topic);
+        }
+
+        protected override void InitDescription(TopicDescription description)
+        {
+            description.Path = Topic;
+        }
+
+        protected override bool Validate(TopicCreation other)
+        {
+            return Creation.Validate(other);
         }
     }
 }

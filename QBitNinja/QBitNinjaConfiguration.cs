@@ -125,13 +125,13 @@ namespace QBitNinja
 
         internal Task EnsureSetupAsync()
         {
-            return Task.WhenAll(new[] { 
-                BroadcastedTransactions.EnsureSetupAsync(), 
-                NewTransactions.EnsureSetupAsync(),
-                NewBlocks.EnsureSetupAsync(),
-                AddedAddresses.EnsureSetupAsync(),
-                NeedIndexNewBlock.EnsureSetupAsync(),
-                NeedIndexNewTransaction.EnsureSetupAsync()
+            return Task.WhenAll(new Task[] { 
+                BroadcastedTransactions.EnsureExistsAsync(), 
+                NewTransactions.EnsureExistsAsync(),
+                NewBlocks.EnsureExistsAsync(),
+                AddedAddresses.EnsureExistsAsync(),
+                NeedIndexNewBlock.EnsureExistsAsync(),
+                NeedIndexNewTransaction.EnsureExistsAsync()
             });
         }
     }

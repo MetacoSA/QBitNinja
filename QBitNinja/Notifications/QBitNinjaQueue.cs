@@ -45,10 +45,6 @@ namespace QBitNinja.Notifications
             }
         }
 
-        public override Task EnsureSetupAsync()
-        {
-            return GetNamespace().EnsureQueueExistAsync(Creation);
-        }
 
         protected override Task SendAsync(BrokeredMessage brokered)
         {
@@ -65,6 +61,31 @@ namespace QBitNinja.Notifications
         protected override Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout)
         {
             return CreateQueueClient().ReceiveAsync(timeout);
+        }
+
+        protected override Task DeleteAsync()
+        {
+            return GetNamespace().DeleteQueueAsync(Queue);
+        }
+
+        protected override Task<QueueDescription> CreateAsync(QueueDescription description)
+        {
+            return GetNamespace().CreateQueueAsync(description);
+        }
+
+        protected override Task<QueueDescription> GetAsync()
+        {
+            return GetNamespace().GetQueueAsync(Queue);
+        }
+
+        protected override void InitDescription(QueueDescription description)
+        {
+            description.Path = Creation.Path;
+        }
+
+        protected override bool Validate(QueueCreation other)
+        {
+            return Creation.Validate(other);
         }
     }
 }

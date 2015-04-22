@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace QBitNinja.Notifications
 {
     [DataContract(Name = "SubscriptionDescription", Namespace = "http://schemas.microsoft.com/netservices/2010/10/servicebus/connect")]
-    public class SubscriptionCreation
+    public class SubscriptionCreation : ICreation
     {
         public string Name
         {
@@ -152,6 +152,22 @@ namespace QBitNinja.Notifications
             set;
         }
 
-        
+
+
+        #region ICreation Members
+
+        bool? ICreation.RequiresDuplicateDetection
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+            set
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        #endregion
     }
 }
