@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace QBitNinja
+namespace QBitNinja.Notifications
 {
     public class BroadcastedTransaction
     {

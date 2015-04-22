@@ -291,24 +291,6 @@ namespace QBitNinja.Tests
             }
         }
 
-        [Fact]
-        public void CanSendCallback()
-        {
-            using (var tester = ServerTester.Create())
-            {
-                var callback = tester.CreateCallbackTester();
-                tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration(callback.Address));
-                var eventManager = new BlockEventManager(tester.Configuration);
-                var b = tester.ChainBuilder.EmitBlock();
-                var unused = eventManager.NewBlock(tester.ChainBuilder.Chain.Tip);
-                var result = callback.GetRequest<NewBlockEvent>();
-
-                Assert.True(b.GetHash() == result.BlockId);
-                Assert.True(result.Header.ToBytes().SequenceEqual(b.Header.ToBytes()));
-                Assert.True(result.Height == 1);
-            }
-        }
-
         public class TestData
         {
             public string Name
@@ -1545,23 +1527,6 @@ namespace QBitNinja.Tests
                 AssertEx.HttpError(404, () => tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys"));
                 AssertEx.HttpError(404, () => tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys"));
-            }
-        }
-
-        [Fact]
-        public void CanRegisterCallback()
-        {
-            using (var tester = ServerTester.Create())
-            {
-                var result = tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test1"));
-                Assert.True(result.Id != null);
-                var result2 = tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test1"));
-                Assert.True(result.Id == result2.Id);
-                tester.Send<CallbackRegistration>(HttpMethod.Post, "blocks/onnew", new CallbackRegistration("http://google.com/test2"));
-                var results = tester.SendGet<CallbackRegistration[]>("blocks/onnew");
-                Assert.True(results.Length == 2);
-                tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id);
-                AssertEx.HttpError(404, () => tester.Send<string>(HttpMethod.Delete, "blocks/onnew/" + results[0].Id));
             }
         }
 

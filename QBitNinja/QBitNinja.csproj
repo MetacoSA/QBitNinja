@@ -82,15 +82,15 @@
     </Reference>
     <Reference Include="Mono.Nat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.1.0.8.16\lib\net45\Mono.Nat.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.1.0.8.17\lib\net45\Mono.Nat.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin, Version=1.0.8.16, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin, Version=1.0.8.17, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.1.0.8.16\lib\net45\NBitcoin.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.1.0.8.17\lib\net45\NBitcoin.dll</HintPath>
     </Reference>
     <Reference Include="NBitcoin.BouncyCastle, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.1.0.8.16\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.1.0.8.17\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
     <Reference Include="NBitcoin.Indexer, Version=2.0.4.25, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -182,10 +182,7 @@
   <ItemGroup>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
-    <Compile Include="BlockEventManager.cs" />
-    <Compile Include="BroadcastedTransaction.cs" />
-    <Compile Include="CallbackRegistration.cs" />
-    <Compile Include="CallbackRepository.cs" />
+    <Compile Include="Notifications\BroadcastedTransaction.cs" />
     <Compile Include="ChainTable.cs" />
     <Compile Include="Controllers\HelpController.cs" />
     <Compile Include="Controllers\MainController.cs" />

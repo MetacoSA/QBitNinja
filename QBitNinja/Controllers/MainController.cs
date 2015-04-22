@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using QBitNinja.ModelBinders;
 using QBitNinja.Models;
+using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -419,32 +420,7 @@ namespace QBitNinja.Controllers
                 });
             }
             return Response(headerOnly ? (IBitcoinSerializable)block.Header : block);
-        }
-
-        [HttpPost]
-        [Route("blocks/onnew")]
-        public CallbackRegistration OnNewBlock(CallbackRegistration registration)
-        {
-            var repo = Configuration.CreateCallbackRepository();
-            return repo.CreateCallback("onnewblock", registration);
-        }
-
-        [HttpDelete]
-        [Route("blocks/onnew/{registrationId}")]
-        public void OnNewBlock(string registrationId)
-        {
-            var repo = Configuration.CreateCallbackRepository();
-            if (!repo.Delete("onnewblock", registrationId))
-                throw Error(404, "Registation does not exists");
-        }
-
-        [HttpGet]
-        [Route("blocks/onnew")]
-        public CallbackRegistration[] OnNewBlock()
-        {
-            var repo = Configuration.CreateCallbackRepository();
-            return repo.GetCallbacks("onnewblock");
-        }
+        }     
 
         [HttpGet]
         [Route("blocks/{blockFeature}")]

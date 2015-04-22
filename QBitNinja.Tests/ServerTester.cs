@@ -17,6 +17,7 @@ using Xunit;
 using System.Threading;
 using NBitcoin.OpenAsset;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace QBitNinja.Tests
 {
@@ -85,8 +86,12 @@ namespace QBitNinja.Tests
             {
                 Clean(Configuration.Indexer.GetBlocksContainer());
                 Clean(Configuration.Indexer.CreateTableClient());
-                Configuration.Topics.BroadcastedTransactions.CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
-                Configuration.Topics.AddedAddresses.CreateConsumer().EnsureExistsAndDrainedAsync().Wait();
+                Task.WaitAll(new Task[]{
+                Configuration.Topics.BroadcastedTransactions.CreateConsumer().EnsureExistsAndDrainedAsync(),
+                Configuration.Topics.AddedAddresses.CreateConsumer().EnsureExistsAndDrainedAsync(),
+                Configuration.Topics.NewBlocks.CreateConsumer().EnsureExistsAndDrainedAsync(),
+                Configuration.Topics.NewTransactions.CreateConsumer().EnsureExistsAndDrainedAsync()});
+                
             }
 
             foreach (var dispo in _disposables)

@@ -180,11 +180,7 @@ namespace QBitNinja
 
 
         //////TODO: These methods will need to be in a "RapidUserConfiguration" that need to know about the user for data isolation (using CrudTable.Scope)
-        public CallbackRepository CreateCallbackRepository()
-        {
-            return new CallbackRepository(new CrudTable<CallbackRegistration>(GetCallbackTable()));
-        }
-
+       
         public CrudTable<T> GetCacheTable<T>(Scope scope = null)
         {
             return GetCrudTableFactory(scope).GetTable<T>("cache");
