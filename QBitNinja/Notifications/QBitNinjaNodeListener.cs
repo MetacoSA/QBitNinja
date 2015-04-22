@@ -93,11 +93,7 @@ namespace QBitNinja.Notifications
                         if (_Broadcasting.Count > 1000)
                             _Broadcasting.Clear();
 
-                        if (!_Broadcasting.TryAdd(hash, tx.Transaction))
-                        {
-                            ListenerTrace.Info("Already broadcasting");
-                            return;
-                        }
+                        _Broadcasting.TryAdd(hash, tx.Transaction);
                         if (indexedTx == null || !indexedTx.BlockIds.Any(id => Chain.Contains(id)))
                         {
                             _SenderNode.SendMessage(new InvPayload(tx.Transaction));
