@@ -25,7 +25,7 @@ namespace QBitNinja.Tests
             Random rand = new Random();
             _Server = tester;
             _Server._disposables.Add(this);
-            _Listener = new QBitNinjaListener(_Server.Configuration);
+            _Listener = new QBitNinjaNodeListener(_Server.Configuration);
 
             _NodeServer = new NodeServer(_Server.Configuration.Indexer.Network, internalPort: rand.Next(20000, 50000));
             _NodeListener = new EventLoopMessageListener<IncomingMessage>(NewNodeMessage);
@@ -154,9 +154,9 @@ namespace QBitNinja.Tests
             }
         }
 
-        private readonly QBitNinjaListener _Listener;
+        private readonly QBitNinjaNodeListener _Listener;
         private EventLoopMessageListener<IncomingMessage> _NodeListener;
-        public QBitNinjaListener Listener
+        public QBitNinjaNodeListener Listener
         {
             get
             {

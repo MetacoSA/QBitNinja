@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
 {
-    public class QBitNinjaListener : IDisposable
+    public class QBitNinjaNodeListener : IDisposable
     {
         private readonly QBitNinjaConfiguration _Configuration;
         public QBitNinjaConfiguration Configuration
@@ -24,7 +24,7 @@ namespace QBitNinja.Notifications
                 return _Configuration;
             }
         }
-        public QBitNinjaListener(QBitNinjaConfiguration configuration)
+        public QBitNinjaNodeListener(QBitNinjaConfiguration configuration)
         {
             _Configuration = configuration;
         }
@@ -209,6 +209,8 @@ namespace QBitNinja.Notifications
                     {
                         Configuration.GetRejectTable().Create(txId.ToString(), reject);
                     }
+                    Transaction tx;
+                    _Broadcasting.TryRemove(txId, out tx);
                 }
             }
             if (message.Message.Payload is PongPayload)
@@ -224,6 +226,8 @@ namespace QBitNinja.Notifications
                 foreach (var inventory in inv.Inventory.Where(i => _Broadcasting.ContainsKey(i.Hash)))
                 {
                     ListenerTrace.Info("Broadcasted reached mempool " + inventory);
+                    Transaction tx;
+                    _Broadcasting.TryRemove(inventory.Hash, out tx);
                 }
                 node.SendMessage(new GetDataPayload(inv.Inventory.ToArray()));
             }
