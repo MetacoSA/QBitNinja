@@ -22,7 +22,7 @@ namespace QBitNinja
             _Subscription =
                 conf.Topics
                 .NewBlocks
-                .CreateConsumer()
+                .CreateConsumer("webchain",true)
                 .OnMessage(b =>
                 {
                     Resolver.UpdateChain();

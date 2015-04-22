@@ -150,11 +150,11 @@ namespace QBitNinja.Notifications
 
 
        
-        public QBitNinjaTopic<T> CreateConsumer(string subscriptionName = null)
+        public QBitNinjaTopic<T> CreateConsumer(string subscriptionName, bool machineScope)
         {
             return CreateConsumer(new SubscriptionCreation()
             {
-                Name = subscriptionName,
+                Name = machineScope ? GetMac() + subscriptionName : subscriptionName,
             });
         }
 

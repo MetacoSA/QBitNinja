@@ -71,7 +71,7 @@ namespace QBitNinja.Notifications
                 Configuration
                 .Topics
                 .BroadcastedTransactions
-                .CreateConsumer()
+                .CreateConsumer("listener", true)
                 .EnsureSubscriptionExists()
                 .OnMessage((tx, ctl) =>
                 {

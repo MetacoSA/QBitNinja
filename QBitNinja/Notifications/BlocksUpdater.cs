@@ -99,7 +99,7 @@ namespace QBitNinja.Notifications
             _Disposables.Add(Configuration
                .Topics
                .AddedAddresses
-               .CreateConsumer()
+               .CreateConsumer("updater", true)
                .EnsureSubscriptionExists()
                .OnMessage(evt =>
                {
