@@ -72,7 +72,7 @@ namespace QBitNinja.Notifications
                 .Topics
                 .BroadcastedTransactions
                 .CreateConsumer()
-                .EnsureExists()
+                .EnsureSubscriptionExists()
                 .OnMessage((tx, ctl) =>
                 {
                     uint256 hash = null;

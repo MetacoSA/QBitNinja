@@ -186,9 +186,10 @@ namespace QBitNinja.Tests
 
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
 
-                
+
+                var wait = listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions);
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
-                listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions).Wait();
+                wait.Wait();
 
                 var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Operations.Count == 1);
@@ -199,8 +200,10 @@ namespace QBitNinja.Tests
                 Assert.NotNull(savedTx);
                 Assert.True(savedTx.Block == null);
 
+
+                wait = listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks);
                 var block = tester.ChainBuilder.EmitBlock();
-                listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks).Wait();
+                wait.Wait();
 
                 tester.UpdateServerChain(true);
 
@@ -244,11 +247,11 @@ namespace QBitNinja.Tests
             {
                 var queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, "toto");
                 queue.EnsureSetupAsync().Wait();
-                queue.CreateConsumer(new SubscriptionCreation()).EnsureExists();
+                queue.CreateConsumer(new SubscriptionCreation()).EnsureSubscriptionExists();
                 queue.CreateConsumer(new SubscriptionCreation()
                 {
                     UserMetadata = "hello"
-                }).EnsureExists();
+                }).EnsureSubscriptionExists();
 
                 queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, new TopicCreation("toto")
                 {

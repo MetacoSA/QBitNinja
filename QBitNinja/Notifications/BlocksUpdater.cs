@@ -100,7 +100,7 @@ namespace QBitNinja.Notifications
                .Topics
                .AddedAddresses
                .CreateConsumer()
-               .EnsureExists()
+               .EnsureSubscriptionExists()
                .OnMessage(evt =>
                {
                    ListenerTrace.Info("New wallet rule");

@@ -40,103 +40,9 @@ namespace QBitNinja.Notifications
             _Scheduled = date;
         }
     }
-    public class QBitNinjaTopicConsumer<T> where T : class
-    {
-        private QBitNinjaTopic<T> _Parent;
-        private SubscriptionCreation subscriptionCreation;
-
-        internal QBitNinjaTopicConsumer(QBitNinjaTopic<T> parent, SubscriptionCreation subscriptionCreation)
-        {
-            if (subscriptionCreation.TopicPath == null || subscriptionCreation.Name == null)
-                throw new ArgumentException("Missing informations in subscription creation", "subscriptionCreation");
-            this._Parent = parent;
-            this.subscriptionCreation = subscriptionCreation;
-        }
-
-        public async Task DrainMessages()
-        {
-            while (await ReceiveAsync().ConfigureAwait(false) != null)
-            {
-            }
-        }
-
-        public async Task<T> ReceiveAsync(TimeSpan? timeout = null)
-        {
-            if (timeout == null)
-                timeout = TimeSpan.Zero;
-            var client = CreateSubscriptionClient();
-            BrokeredMessage message = null;
-            message = await client.ReceiveAsync(timeout.Value).ConfigureAwait(false);
-            return ToObject(message);
-        }
-
-        public SubscriptionClient CreateSubscriptionClient()
-        {
-            var client = SubscriptionClient.CreateFromConnectionString(_Parent.ConnectionString, subscriptionCreation.TopicPath, subscriptionCreation.Name, ReceiveMode.ReceiveAndDelete);
-            return client;
-        }
-
-        public async Task EnsureExistsAndDrainedAsync()
-        {
-            var subscription = await _Parent.GetNamespace().EnsureSubscriptionExistsAsync(subscriptionCreation).ConfigureAwait(false);
-            await DrainMessages().ConfigureAwait(false);
-        }
-
-        public QBitNinjaTopicConsumer<T> EnsureExists()
-        {
-            try
-            {
-
-                _Parent.GetNamespace().EnsureSubscriptionExistsAsync(subscriptionCreation).Wait();
-            }
-            catch (AggregateException aex)
-            {
-                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
-            }
-            return this;
-        }
-
-        public IDisposable OnMessage(Action<T> evt)
-        {
-            return OnMessage((a, b) => evt(a));
-        }
-        public IDisposable OnMessage(Action<T, MessageControl> evt)
-        {
-            var client = CreateSubscriptionClient();
-            client.OnMessage(bm =>
-            {
-                var control = new MessageControl();
-                var obj = ToObject(bm);
-                if (obj == null)
-                    return;
-                evt(obj, control);
-                if (control._Scheduled != null)
-                {
-                    BrokeredMessage message = new BrokeredMessage(Serializer.ToString(obj));
-                    message.MessageId = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
-                    message.ScheduledEnqueueTimeUtc = control._Scheduled.Value;
-                    _Parent.CreateTopicClient().Send(message);
-                }
-            }, new OnMessageOptions()
-            {
-                AutoComplete = true,
-                MaxConcurrentCalls = 1
-            });
-            return new ActionDisposable(() => client.Close());
-        }
-
-        private static T ToObject(BrokeredMessage bm)
-        {
-            if (bm == null)
-                return default(T);
-            var result = bm.GetBody<string>();
-            var obj = Serializer.ToObject<T>(result);
-            return obj;
-        }
-
-    }
-
-    public class QBitNinjaTopic<T> where T : class
+    
+    public class QBitNinjaTopic<T> : QBitNinjaQueueBase<T, TopicCreation, TopicDescription>
+        where T : class
     {
         public QBitNinjaTopic(string connectionString, string topic)
             : this(connectionString, new TopicCreation()
@@ -147,36 +53,34 @@ namespace QBitNinja.Notifications
 
         }
         public QBitNinjaTopic(string connectionString, TopicCreation topic, SubscriptionCreation defaultSubscription = null)
+            : base(connectionString, topic)
         {
-            _Topic = topic;
-            _DefaultSubscription = defaultSubscription;
-            _ConnectionString = connectionString;
+            _Subscription = defaultSubscription;
+            if (_Subscription == null)
+                _Subscription = new SubscriptionCreation()
+                {
+                    Name = GetMac()
+                };
+            _Subscription.TopicPath = topic.Path;
         }
 
-        SubscriptionCreation _DefaultSubscription;
 
-        public async Task<bool> AddAsync(T entity)
+        private readonly SubscriptionCreation _Subscription;
+        public SubscriptionCreation Subscription
         {
-            var client = CreateTopicClient();
-            var str = Serializer.ToString<T>(entity);
-            BrokeredMessage brokered = new BrokeredMessage(str);
-            if (_Topic.RequiresDuplicateDetection.HasValue &&
-                _Topic.RequiresDuplicateDetection.Value)
+            get
             {
-                if (GetMessageId == null)
-                    throw new InvalidOperationException("Requires Duplicate Detection is on, but the callback GetMessageId is not set");
-                brokered.MessageId = GetMessageId(entity);
+                return _Subscription;
             }
-            await client.SendAsync(brokered).ConfigureAwait(false);
-            return true;
         }
+
 
         internal TopicClient CreateTopicClient()
         {
             var client = TopicClient.CreateFromConnectionString(ConnectionString, Topic);
             return client;
         }
-        public QBitNinjaTopicConsumer<T> CreateConsumer(string subscriptionName = null)
+        public QBitNinjaTopic<T> CreateConsumer(string subscriptionName = null)
         {
             return CreateConsumer(new SubscriptionCreation()
             {
@@ -184,21 +88,16 @@ namespace QBitNinja.Notifications
             });
         }
 
-        public Func<T, string> GetMessageId
-        {
-            get;
-            set;
-        }
 
-        public QBitNinjaTopicConsumer<T> CreateConsumer(SubscriptionCreation subscriptionDescription)
+        public QBitNinjaTopic<T> CreateConsumer(SubscriptionCreation subscriptionDescription)
         {
             if (subscriptionDescription == null)
                 throw new ArgumentNullException("subscriptionDescription");
             if (subscriptionDescription.Name == null)
                 subscriptionDescription.Name = GetMac();
-            subscriptionDescription.TopicPath = _Topic.Path;
-            subscriptionDescription.Merge(_DefaultSubscription);
-            return new QBitNinjaTopicConsumer<T>(this, subscriptionDescription);
+            subscriptionDescription.TopicPath = Creation.Path;
+            subscriptionDescription.Merge(Subscription);
+            return new QBitNinjaTopic<T>(ConnectionString, Creation, subscriptionDescription);
         }
 
         private string GetMac()
@@ -209,33 +108,58 @@ namespace QBitNinja.Notifications
             return Encoders.Hex.EncodeData(bytes);
         }
 
-        private readonly TopicCreation _Topic;
         public string Topic
         {
             get
             {
-                return _Topic.Path;
+                return Creation.Path;
             }
         }
-        private readonly string _ConnectionString;
-        public string ConnectionString
+        public SubscriptionClient CreateSubscriptionClient()
         {
-            get
+            var client = SubscriptionClient.CreateFromConnectionString(ConnectionString, Creation.Path, Subscription.Name, ReceiveMode.ReceiveAndDelete);
+            return client;
+        }
+        public override Task EnsureSetupAsync()
+        {
+            return GetNamespace().EnsureTopicExistAsync(Creation);
+        }
+
+        protected override Task SendAsync(BrokeredMessage brokered)
+        {
+            return CreateTopicClient().SendAsync(brokered);
+        }
+
+        protected override IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options)
+        {
+            var client = CreateSubscriptionClient();
+            client.OnMessage(act, options);
+            return new ActionDisposable(() => client.Close());
+        }
+
+        protected override Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout)
+        {
+            return CreateSubscriptionClient().ReceiveAsync(timeout);
+        }
+
+        public async Task EnsureExistsAndDrainedAsync()
+        {
+            var subscription = await GetNamespace().EnsureSubscriptionExistsAsync(Subscription).ConfigureAwait(false);
+            await DrainMessagesAsync().ConfigureAwait(false);
+        }
+
+        public QBitNinjaTopic<T> EnsureSubscriptionExists()
+        {
+            try
             {
-                return _ConnectionString;
+
+                GetNamespace().EnsureSubscriptionExistsAsync(Subscription).Wait();
             }
-        }
-
-
-
-        internal Task EnsureSetupAsync()
-        {
-            return GetNamespace().EnsureTopicExistAsync(_Topic);
-        }
-
-        public NamespaceManager GetNamespace()
-        {
-            return NamespaceManager.CreateFromConnectionString(ConnectionString);
+            catch (AggregateException aex)
+            {
+                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+            }
+            return this;
         }
     }
 }

@@ -7,8 +7,16 @@ using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
 {
+    public interface ICreation
+    {
+        bool? RequiresDuplicateDetection
+        {
+            get;
+            set;
+        }
+    }
     [DataContract(Name = "QueueDescription", Namespace = "http://schemas.microsoft.com/netservices/2010/10/servicebus/connect")]
-    public class QueueCreation
+    public class QueueCreation : ICreation
     {
         public QueueCreation()
         {

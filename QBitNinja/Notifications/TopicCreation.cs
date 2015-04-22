@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace QBitNinja.Notifications
 {
     [DataContract(Name = "TopicDescription", Namespace = "http://schemas.microsoft.com/netservices/2010/10/servicebus/connect")]
-    public class TopicCreation
+    public class TopicCreation : ICreation
     {
         public TopicCreation(string path)
         {

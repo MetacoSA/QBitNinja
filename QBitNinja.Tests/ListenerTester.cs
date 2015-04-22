@@ -210,7 +210,9 @@ namespace QBitNinja.Tests
                 Name = "test",
                 DefaultMessageTimeToLive = TimeSpan.FromSeconds(1.0),
                 AutoDeleteOnIdle = TimeSpan.FromMinutes(5.0)
-            }).ReceiveAsync(TimeSpan.FromSeconds(10.0)).ConfigureAwait(false);
+            })
+            .EnsureSubscriptionExists()
+            .ReceiveAsync(TimeSpan.FromSeconds(10.0)).ConfigureAwait(false);
             if (message == null)
                 Assert.True(false, "No message received on topic");
         }
