@@ -34,20 +34,26 @@ namespace QBitNinja
 
             _NewBlocks = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newblocks").Name)
             {
-                EnableExpress = true,
-                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
+                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(1.0),
+                RequiresDuplicateDetection = true
             }, new SubscriptionCreation()
             {
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
             });
+            _NewBlocks.GetMessageId = (header) => header.GetHash().ToString();
+
+
             _NewTransactions = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newtransactions").Name)
             {
-                EnableExpress = true,
-                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
+                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(5.0),
+                RequiresDuplicateDetection = true
             }, new SubscriptionCreation()
             {
-                AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
+                AutoDeleteOnIdle = TimeSpan.FromHours(24.0),
             });
+            _NewTransactions.GetMessageId = (tx) => tx.GetHash().ToString();
         }
 
         private QBitNinjaQueue<Transaction> _NewTransactions;

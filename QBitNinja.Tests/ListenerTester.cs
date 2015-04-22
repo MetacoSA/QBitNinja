@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using NBitcoin.Indexer;
 using NBitcoin.Protocol;
+using QBitNinja.Notifications;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

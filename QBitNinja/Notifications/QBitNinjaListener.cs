@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QBitNinja
+namespace QBitNinja.Notifications
 {
     public class QBitNinjaListener : IDisposable
     {

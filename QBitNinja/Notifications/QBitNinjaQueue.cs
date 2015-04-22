@@ -177,6 +177,13 @@ namespace QBitNinja.Notifications
             var client = CreateTopicClient();
             var str = Serializer.ToString<T>(entity);
             BrokeredMessage brokered = new BrokeredMessage(str);
+            if (_Topic.RequiresDuplicateDetection.HasValue &&
+                _Topic.RequiresDuplicateDetection.Value)
+            {
+                if (GetMessageId == null)
+                    throw new InvalidOperationException("Requires Duplicate Detection is on, but the callback GetMessageId is not set");
+                brokered.MessageId = GetMessageId(entity);
+            }
             await client.SendAsync(brokered).ConfigureAwait(false);
             return true;
         }
@@ -192,6 +199,12 @@ namespace QBitNinja.Notifications
             {
                 Name = subscriptionName,
             });
+        }
+
+        public Func<T, string> GetMessageId
+        {
+            get;
+            set;
         }
 
         public QBitNinjaQueueConsumer<T> CreateConsumer(SubscriptionCreation subscriptionDescription)
