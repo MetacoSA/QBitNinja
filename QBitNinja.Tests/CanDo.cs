@@ -154,7 +154,7 @@ namespace QBitNinja.Tests
         {
             using (var tester = ServerTester.Create())
             {
-                var tx = new Transaction();
+                var tx = CreateRandomTx();
                 var bytes = Encoders.Hex.EncodeData(tx.ToBytes());
                 var listener = tester.CreateListenerTester();
                 var response = tester.Send<BroadcastResponse>(HttpMethod.Post, "transactions", bytes);
@@ -167,14 +167,23 @@ namespace QBitNinja.Tests
                     Code = RejectCode.INSUFFICIENTFEE
                 });
 
-                tx = new Transaction();
-                tx.Inputs.Add(new TxIn());
+                tx = CreateRandomTx();
                 bytes = Encoders.Hex.EncodeData(tx.ToBytes());
                 response = tester.Send<BroadcastResponse>(HttpMethod.Post, "transactions", bytes);
 
                 Assert.False(response.Success);
                 Assert.True(response.Error.ErrorCode == RejectCode.INSUFFICIENTFEE);
             }
+        }
+
+        private Transaction CreateRandomTx()
+        {
+            Transaction tx = new Transaction();
+            tx.Inputs.Add(new TxIn()
+            {
+                ScriptSig = new Script(Op.GetPushOp(RandomUtils.GetBytes(32)))
+            });
+            return tx;
         }
 
         [Fact]
