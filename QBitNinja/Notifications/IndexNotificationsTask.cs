@@ -1,0 +1,59 @@
+﻿using NBitcoin.Indexer;
+using NBitcoin.Indexer.IndexTasks;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QBitNinja.Notifications
+{
+    public class IndexNotificationsTask : IndexTask<Notification>
+    {
+        private SubscriptionCollection _Subscriptions;
+        private QBitNinjaConfiguration _Conf;
+        public IndexNotificationsTask(QBitNinjaConfiguration conf, SubscriptionCollection subscriptions)
+            : base(conf.Indexer)
+        {
+            _Subscriptions = subscriptions;
+            _Conf = conf;
+        }
+        protected override Task EnsureSetup()
+        {
+            return Task.FromResult(true);
+        }
+
+        protected override Task IndexCore(string partitionName, IEnumerable<Notification> items)
+        {
+            return _Conf
+                .Topics
+                .SendNotifications
+                .AddAsync(items.First());
+        }
+
+        protected override int PartitionSize
+        {
+            get
+            {
+                return 1;
+            }
+        }
+
+        protected override void ProcessBlock(NBitcoin.Indexer.BlockInfo block, BulkImport<Notification> bulk)
+        {
+            foreach (var newBlock in _Subscriptions.GetNewBlocks())
+            {
+                bulk.Add("o", new Notification()
+                {
+                    Subscription = newBlock,
+                    Data = new NewBlockNotificationData()
+                    {
+                        Header = block.Block.Header,
+                        BlockId = block.BlockId,
+                        Height = block.Height
+                    }
+                });
+            }
+        }
+    }
+}

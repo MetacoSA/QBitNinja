@@ -1,5 +1,6 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
+using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -71,7 +72,7 @@ namespace QBitNinja.Controllers
                     return new BroadcastResponse()
                     {
                         Success = true
-                    }; 
+                    };
                 var reject = await Configuration.GetRejectTable().ReadOneAsync(hash.ToString());
                 if (reject != null)
                     return new BroadcastResponse()
@@ -121,6 +122,27 @@ namespace QBitNinja.Controllers
             if (!repo.Create(wallet))
                 throw Error(409, "wallet already exist");
             return wallet;
+        }
+
+        [HttpPost]
+        [Route("subscriptions")]
+        public async Task<NewBlockSubscription> AddSubscription(NewBlockSubscription subscription)
+        {
+            if (subscription.Id == null)
+                subscription.Id = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
+
+            if (!await (Configuration
+            .GetSubscriptionsTable()
+            .CreateAsync(subscription.Id, subscription, false)))
+            {
+                throw Error(409, "notification already exist");
+            }
+
+            await Configuration
+                .Topics
+                .SubscriptionChanges
+                .AddAsync(new SubscriptionChange(subscription, true));
+            return subscription;
         }
 
         private void AssertValidUrlPart(string str, string fieldName)
@@ -186,7 +208,7 @@ namespace QBitNinja.Controllers
             if (walletRule == null)
                 throw Error(409, "This address already exist in the wallet");
 
-            
+
             var unused = Configuration.Topics.AddedAddresses.AddAsync(address);
             var rule = walletRule.Rule;
             bool merge = false;
@@ -420,7 +442,7 @@ namespace QBitNinja.Controllers
                 });
             }
             return Response(headerOnly ? (IBitcoinSerializable)block.Header : block);
-        }     
+        }
 
         [HttpGet]
         [Route("blocks/{blockFeature}")]

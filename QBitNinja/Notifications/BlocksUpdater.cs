@@ -1,11 +1,14 @@
-﻿using NBitcoin;
+﻿using Microsoft.ServiceBus.Messaging;
+using NBitcoin;
 using NBitcoin.Indexer;
 using NBitcoin.Indexer.IndexTasks;
 using NBitcoin.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
@@ -38,6 +41,8 @@ namespace QBitNinja.Notifications
                 return _Chain;
             }
         }
+
+        SubscriptionCollection _Subscriptions = null;
         public void Listen(ConcurrentChain chain = null)
         {
             var indexer = Configuration.Indexer.CreateIndexer();
@@ -56,15 +61,32 @@ namespace QBitNinja.Notifications
             _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
             ListenerTrace.Info("Wallet rules fetched");
 
+            ListenerTrace.Info("Fetching wallet subscriptions...");
+            _Subscriptions = new SubscriptionCollection(_Configuration.GetSubscriptionsTable().Read());
+            ListenerTrace.Info("Subscriptions fetched");
+
+
+            _Disposables.Add(_Configuration
+                .Topics
+                .SendNotifications
+                .OnMessageAsync((n, act) =>
+                {
+                    return SendAsync(n, act).ContinueWith(ErrorHandler);
+                }, new OnMessageOptions()
+                {
+                    MaxConcurrentCalls = 1000,
+                    AutoComplete = true,
+                }));
+
             _Disposables.Add(_Configuration
                 .Topics
                 .NeedIndexNewBlock
-                .OnMessage(header =>
+                .OnMessageAsync(async header =>
                 {
                     client.SynchronizeChain(_Chain);
                     var repo = new IndexerBlocksRepository(client);
 
-                    Task.WaitAll(new[]{
+                    await Task.WhenAll(new[]{
                     Async(() =>
                     {
                         lock (_Wallets)
@@ -91,9 +113,17 @@ namespace QBitNinja.Notifications
                                     EnsureIsSetup = false
                                 }
                                 .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
-                        })});
+                        }),
+                     Async(() =>
+                        {
+                            new IndexNotificationsTask(Configuration, _Subscriptions)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                        })}).ConfigureAwait(false);
 
-                    var unused = _Configuration.Topics.NewBlocks.AddAsync(header);
+                    await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
                 }));
 
             _Disposables.Add(Configuration
@@ -129,6 +159,61 @@ namespace QBitNinja.Notifications
                     });
                     var unused = _Configuration.Topics.NewTransactions.AddAsync(tx);
                 }));
+        }
+
+        void ErrorHandler(Task task)
+        {
+            if (task.Exception != null)
+            {
+                LastException = task.Exception;
+            }
+        }
+
+        private async Task SendAsync(Notification n, MessageControl act)
+        {
+            HttpClient http = new HttpClient();
+            var message = new HttpRequestMessage(HttpMethod.Post, n.Subscription.Url);
+            n.Tried++;
+            var content = new StringContent(n.ToString(), Encoding.UTF8, "application/json");
+            message.Content = content;
+            CancellationTokenSource tcs = new CancellationTokenSource();
+            tcs.CancelAfter(10000);
+
+            var subscription = await Configuration.GetSubscriptionsTable().ReadOneAsync(n.Subscription.Id).ConfigureAwait(false);
+            if (subscription == null)
+                return;
+
+            bool failed = false;
+            try
+            {
+                var response = await http.SendAsync(message, tcs.Token).ConfigureAwait(false);
+                failed = !response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                failed = true;
+            }
+            var tries = new[] 
+            { 
+                TimeSpan.FromSeconds(0.0),
+                TimeSpan.FromMinutes(1.0),
+                TimeSpan.FromMinutes(5.0),
+                TimeSpan.FromMinutes(30.0),
+                TimeSpan.FromMinutes(60.0),
+                TimeSpan.FromHours(7.0),
+                TimeSpan.FromHours(14.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0)
+            };
+
+            if (failed && (n.Tried - 1) <= tries.Length - 1)
+            {
+                var wait = tries[n.Tried - 1];
+                act.RescheduleIn(wait);
+            }
         }
 
         Task Async(Action act)

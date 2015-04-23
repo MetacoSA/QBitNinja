@@ -18,6 +18,8 @@ using System.Threading;
 using NBitcoin.OpenAsset;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
 
 namespace QBitNinja.Tests
 {
@@ -46,7 +48,7 @@ namespace QBitNinja.Tests
         public ServerTester(string ns)
         {
             CleanTable = true;
-            Address = "http://localhost:" + (ushort)RandomUtils.GetUInt32() + "/";
+            Address = "http://localhost:" + FindFreePort() + "/";
             Configuration = QBitNinjaConfiguration.FromConfiguration();
             Configuration.Indexer.StorageNamespace = ns;
             var server = WebApp.Start(Address, appBuilder =>
@@ -63,17 +65,28 @@ namespace QBitNinja.Tests
             ChainBuilder = new ChainBuilder(this);
             _resolver.Get<ConcurrentChain>(); //So ConcurrentChain load
         }
+
+        public static ushort FindFreePort()
+        {
+            while (true)
+            {
+                var port = (ushort)RandomUtils.GetUInt32();
+                try
+                {
+                    TcpListener tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
+                    tcpListener.Start();
+                    tcpListener.Stop();
+                    return port;
+                }
+                catch
+                {
+                }
+            }
+        }
         public bool CleanTable
         {
             get;
             set;
-        }
-
-        public CallbackTester CreateCallbackTester()
-        {
-            var tester = new CallbackTester();
-            _disposables.Add(tester);
-            return tester;
         }
 
         QBitNinjaDependencyResolver _resolver;
@@ -84,14 +97,14 @@ namespace QBitNinja.Tests
         {
             if (CleanTable)
             {
-                Clean(Configuration.Indexer.GetBlocksContainer());
-                Clean(Configuration.Indexer.CreateTableClient());
-                Task.WaitAll(new Task[]{
-                Configuration.Topics.BroadcastedTransactions.CreateConsumer().EnsureExistsAndDrainedAsync(),
-                Configuration.Topics.AddedAddresses.CreateConsumer().EnsureExistsAndDrainedAsync(),
-                Configuration.Topics.NewBlocks.CreateConsumer().EnsureExistsAndDrainedAsync(),
-                Configuration.Topics.NewTransactions.CreateConsumer().EnsureExistsAndDrainedAsync()});
-                
+
+                var tasks = new List<Task>();
+                tasks.Add(CleanAsync(Configuration.Indexer.GetBlocksContainer()));
+                tasks.Add(CleanAsync(Configuration.Indexer.CreateTableClient()));
+                tasks.AddRange(Configuration.Topics.All.Select(o=>o.EnsureExistsAndAllDrainedAsync()));
+
+                Task.WaitAll(tasks.ToArray());
+
             }
 
             foreach (var dispo in _disposables)
@@ -146,47 +159,51 @@ namespace QBitNinja.Tests
             return result;
         }
 
-        private static void Clean(CloudBlobContainer cloudBlobContainer)
+        private static async Task CleanAsync(CloudBlobContainer cloudBlobContainer)
         {
-            if (!cloudBlobContainer.Exists())
-                return;
-            foreach (var blob in cloudBlobContainer.ListBlobs(useFlatBlobListing: true).OfType<ICloudBlob>())
-            {
-                try
-                {
-                    blob.Delete();
-                }
-                catch (StorageException ex)
-                {
-                    if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 412)
-                    {
-                        try
-                        {
 
-                            blob.BreakLease(TimeSpan.Zero);
-                            blob.Delete();
-                        }
-                        catch
+            if (!await cloudBlobContainer.ExistsAsync().ConfigureAwait(false))
+                return;
+            var deletes = cloudBlobContainer.ListBlobs(useFlatBlobListing: true)
+                .OfType<ICloudBlob>()
+                .Select(async b =>
+                {
+                    bool breaklease = false;
+                    try
+                    {
+                        await b.DeleteAsync().ConfigureAwait(false);
+                        return;
+                    }
+                    catch (StorageException ex)
+                    {
+                        if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 412)
                         {
-                            Debugger.Break();
+                            breaklease = true;
                         }
                     }
-                }
-            }
+                    if (breaklease)
+                    {
+                        await b.BreakLeaseAsync(TimeSpan.Zero).ConfigureAwait(false);
+                        await b.DeleteAsync().ConfigureAwait(false);
+                    }
+                })
+                .ToArray();
+
+            await Task.WhenAll(deletes).ConfigureAwait(false);
         }
 
-        private void Clean(CloudTableClient client)
+        private Task CleanAsync(CloudTableClient client)
         {
-            foreach (var table in client.ListTables())
-            {
-                if (table.Name.StartsWith(Configuration.Indexer.StorageNamespace, StringComparison.InvariantCultureIgnoreCase))
+            var deletes = client.ListTables()
+                .Where(table => table.Name.StartsWith(Configuration.Indexer.StorageNamespace, StringComparison.InvariantCultureIgnoreCase))
+                .SelectMany(table => table.ExecuteQuery(new TableQuery()).Select(e => new
                 {
-                    foreach (var entity in table.ExecuteQuery(new TableQuery()))
-                    {
-                        table.Execute(TableOperation.Delete(entity));
-                    }
-                }
-            }
+                    Entity = e,
+                    Table = table
+                }))
+                .Select(table => table.Table.ExecuteAsync(TableOperation.Delete(table.Entity)))
+                .ToArray();
+            return Task.WhenAll(deletes);
         }
 
 
@@ -282,6 +299,13 @@ namespace QBitNinja.Tests
         public ListenerTester CreateListenerTester()
         {
             return new ListenerTester(this);
+        }
+
+        public NotificationTester CreateNotificationServer()
+        {
+            var tester = new NotificationTester();
+            _disposables.Add(tester);
+            return tester;
         }
     }
 }

@@ -39,6 +39,22 @@ namespace QBitNinja.Notifications
             date = date.ToUniversalTime();
             _Scheduled = date;
         }
+
+
+        public void Complete()
+        {
+            if (Options.AutoComplete)
+                throw new InvalidOperationException("Options.AutoComplete should be true for calling this method");
+            _Complete = true;
+        }
+        internal bool _Complete;
+
+
+        public OnMessageOptions Options
+        {
+            get;
+            set;
+        }
     }
 
     public class QBitNinjaTopic<T> : QBitNinjaQueueBase<T, TopicCreation, TopicDescription>
@@ -58,10 +74,10 @@ namespace QBitNinja.Notifications
                 throw new NotSupportedException();
             }
 
-            protected override IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options)
+            protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)
             {
                 var client = CreateSubscriptionClient();
-                client.OnMessage(act,options);
+                client.OnMessageAsync(act, options);
                 return new ActionDisposable(() => client.Close());
             }
 
@@ -83,7 +99,7 @@ namespace QBitNinja.Notifications
 
             protected override Task DeleteAsync()
             {
-                return GetNamespace().DeleteSubscriptionAsync(_Topic.Path,Creation.Name);
+                return GetNamespace().DeleteSubscriptionAsync(_Topic.Path, Creation.Name);
             }
 
             protected override Task<SubscriptionDescription> CreateAsync(SubscriptionDescription description)
@@ -112,9 +128,9 @@ namespace QBitNinja.Notifications
                 return ReceiveAsyncCore(timeout);
             }
 
-            internal IDisposable OnMessageCorePublic(Action<BrokeredMessage> act, OnMessageOptions options)
+            internal IDisposable OnMessageCoreAsyncPublic(Func<BrokeredMessage, Task> act, OnMessageOptions options)
             {
-                return OnMessageCore(act, options);
+                return OnMessageAsyncCore(act, options);
             }
         }
 
@@ -149,7 +165,7 @@ namespace QBitNinja.Notifications
         }
 
 
-       
+
         public QBitNinjaTopic<T> CreateConsumer(string subscriptionName, bool machineScope)
         {
             return CreateConsumer(new SubscriptionCreation()
@@ -185,7 +201,7 @@ namespace QBitNinja.Notifications
                 return Creation.Path;
             }
         }
-        
+
         internal TopicClient CreateTopicClient()
         {
             var client = TopicClient.CreateFromConnectionString(ConnectionString, Topic);
@@ -202,20 +218,26 @@ namespace QBitNinja.Notifications
             return new QBitNinjaTopicSubscription(ConnectionString, Creation, Subscription);
         }
 
-        protected override IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options)
+        protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)
         {
-            return CreateSubscriptionClient().OnMessageCorePublic(act, options);
+            return CreateSubscriptionClient().OnMessageCoreAsyncPublic(act, options);
         }
 
         protected override Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout)
         {
             return CreateSubscriptionClient().ReceiveAsyncCorePublic(timeout);
         }
-
-        public async Task EnsureExistsAndDrainedAsync()
+        
+        public override async Task DrainMessagesAsync()
         {
-            var subscription = await CreateSubscriptionClient().EnsureExistsAsync().ConfigureAwait(false);
-            await DrainMessagesAsync().ConfigureAwait(false);
+            var delete = (await GetNamespace().GetSubscriptionsAsync(Topic).ConfigureAwait(false))
+                .Select(s => GetNamespace().DeleteSubscriptionAsync(Topic, s.Name)).ToArray();
+            await Task.WhenAll(delete).ConfigureAwait(false);
+        }
+
+        public Task EnsureSubscriptionExistsAsync()
+        {
+            return CreateSubscriptionClient().EnsureExistsAsync();
         }
 
         public QBitNinjaTopic<T> EnsureSubscriptionExists()

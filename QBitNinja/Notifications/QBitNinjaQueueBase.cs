@@ -13,7 +13,12 @@ using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
 {
-    public abstract class QBitNinjaQueueBase<T, TCreation, TDescription> where TCreation : ICreation
+    public interface IQBitNinjaQueue
+    {
+        Task EnsureExistsAsync();
+        Task EnsureExistsAndAllDrainedAsync();
+    }
+    public abstract class QBitNinjaQueueBase<T, TCreation, TDescription> : IQBitNinjaQueue where TCreation : ICreation
     {
         public QBitNinjaQueueBase(string connectionString, TCreation creation)
         {
@@ -22,8 +27,8 @@ namespace QBitNinja.Notifications
         }
 
         protected abstract Task SendAsync(BrokeredMessage brokered);
-        protected abstract IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options);
-        
+        protected abstract IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options);
+
         protected abstract Task<BrokeredMessage> ReceiveAsyncCore(TimeSpan timeout);
 
         private readonly string _ConnectionString;
@@ -64,33 +69,56 @@ namespace QBitNinja.Notifications
             set;
         }
 
-
         public IDisposable OnMessage(Action<T> evt)
         {
             return OnMessage((a, b) => evt(a));
         }
-
-        public IDisposable OnMessage(Action<T, MessageControl> evt)
+        public IDisposable OnMessage(Action<T, MessageControl> evt, bool autoComplete = true)
         {
-            return OnMessageCore(bm =>
+            return OnMessageAsync((a, b) =>
+            {
+                evt(a, b);
+                return Task.FromResult(0);
+            }, new OnMessageOptions()
+            {
+                AutoComplete = autoComplete,
+                MaxConcurrentCalls = 1
+            });
+        }
+
+        public IDisposable OnMessageAsync(Func<T, Task> evt)
+        {
+            return OnMessageAsync((a, b) => evt(a));
+        }
+
+        public IDisposable OnMessageAsync(Func<T, MessageControl, Task> evt, OnMessageOptions options = null)
+        {
+            if (options == null)
+                options = new OnMessageOptions()
+                {
+                    AutoComplete = true,
+                    MaxConcurrentCalls = 1
+                };
+
+            return OnMessageAsyncCore(async bm =>
             {
                 var control = new MessageControl();
+                control.Options = options;
                 var obj = ToObject(bm);
                 if (obj == null)
                     return;
-                evt(obj, control);
+                await evt(obj, control).ConfigureAwait(false);
                 if (control._Scheduled != null)
                 {
                     BrokeredMessage message = new BrokeredMessage(Serializer.ToString(obj));
                     message.MessageId = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
                     message.ScheduledEnqueueTimeUtc = control._Scheduled.Value;
-                    Send(message);
+                    await SendAsync(message).ConfigureAwait(false);
+                    if (!options.AutoComplete)
+                        if (control._Complete)
+                            await bm.CompleteAsync().ConfigureAwait(false);
                 }
-            }, new OnMessageOptions()
-            {
-                AutoComplete = true,
-                MaxConcurrentCalls = 1
-            });
+            }, options);
         }
 
         public void Send(BrokeredMessage message)
@@ -106,12 +134,12 @@ namespace QBitNinja.Notifications
             }
         }
 
-        public async Task DrainMessagesAsync()
+        public virtual async Task DrainMessagesAsync()
         {
             while (await ReceiveAsync().ConfigureAwait(false) != null)
             {
             }
-        }        
+        }
 
         public async Task<T> ReceiveAsync(TimeSpan? timeout = null)
         {
@@ -122,7 +150,7 @@ namespace QBitNinja.Notifications
             return ToObject(message);
         }
 
-        
+
 
 
         private static T ToObject(BrokeredMessage bm)
@@ -157,7 +185,7 @@ namespace QBitNinja.Notifications
             {
                 result = await CreateAsync(create).ConfigureAwait(false);
             }
-            if (!Validate(ChangeType<TDescription,TCreation>(result)))
+            if (!Validate(ChangeType<TDescription, TCreation>(result)))
             {
                 await DeleteAsync().ConfigureAwait(false);
                 return await EnsureExistsAsync().ConfigureAwait(false);
@@ -183,5 +211,20 @@ namespace QBitNinja.Notifications
             seria = new DataContractSerializer(typeof(T2));
             return (T2)seria.ReadObject(ms);
         }
+
+        #region IQBitNinjaQueue Members
+
+        Task IQBitNinjaQueue.EnsureExistsAsync()
+        {
+            return EnsureExistsAsync();
+        }
+
+        async Task IQBitNinjaQueue.EnsureExistsAndAllDrainedAsync()
+        {
+            await EnsureExistsAsync().ConfigureAwait(false);
+            await DrainMessagesAsync().ConfigureAwait(false);
+        }
+
+        #endregion
     }
 }

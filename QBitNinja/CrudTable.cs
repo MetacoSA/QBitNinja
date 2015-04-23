@@ -62,7 +62,7 @@ namespace QBitNinja
             }
         }
 
-        public bool Create(string itemId, T item, bool orReplace = true)
+        public async Task<bool> CreateAsync(string itemId, T item, bool orReplace = true)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace QBitNinja
                     new KeyValuePair<string,EntityProperty>("data",new EntityProperty(callbackStr))
                 }
                 };
-                Table.Execute(orReplace ? TableOperation.InsertOrReplace(entity) : TableOperation.Insert(entity));
+                await Table.ExecuteAsync(orReplace ? TableOperation.InsertOrReplace(entity) : TableOperation.Insert(entity)).ConfigureAwait(false);
             }
             catch (StorageException ex)
             {
@@ -83,6 +83,19 @@ namespace QBitNinja
                 throw;
             }
             return true;
+        }
+
+        public bool Create(string itemId, T item, bool orReplace = true)
+        {
+            try
+            {
+                return CreateAsync(itemId, item, orReplace).Result;
+            }
+            catch (AggregateException aex)
+            {
+                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+                throw;
+            }
         }
 
         public void Delete()

@@ -1,0 +1,30 @@
+﻿using NBitcoin;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QBitNinja.Notifications
+{
+    public class NewBlockNotificationData
+    {
+        public BlockHeader Header
+        {
+            get;
+            set;
+        }
+
+        public uint256 BlockId
+        {
+            get;
+            set;
+        }
+
+        public int Height
+        {
+            get;
+            set;
+        }
+    }
+}

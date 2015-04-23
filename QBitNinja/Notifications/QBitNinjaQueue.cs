@@ -51,10 +51,10 @@ namespace QBitNinja.Notifications
             return CreateQueueClient().SendAsync(brokered);
         }
 
-        protected override IDisposable OnMessageCore(Action<BrokeredMessage> act, OnMessageOptions options)
+        protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)
         {
             var client = CreateQueueClient();
-            client.OnMessage(act, options);
+            client.OnMessageAsync(act, options);
             return new ActionDisposable(() => client.Close());
         }
 

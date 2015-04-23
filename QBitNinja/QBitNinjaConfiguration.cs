@@ -1,12 +1,15 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
+using NBitcoin.Crypto;
 using NBitcoin.Indexer;
 using NBitcoin.Protocol;
 using QBitNinja.Models;
 using QBitNinja.Notifications;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace QBitNinja
@@ -67,6 +70,28 @@ namespace QBitNinja
                 RequiresDuplicateDetection = true,
             });
             _NeedIndexNewTransaction.GetMessageId = (header) => header.GetHash().ToString();
+
+            _SubscriptionChanges = new QBitNinjaTopic<SubscriptionChange>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("subscriptionchanges").Name)
+            {
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
+                EnableExpress = true
+            });
+
+            _SendNotifications = new QBitNinjaQueue<Notification>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("sendnotifications").Name)
+            {
+                RequiresDuplicateDetection = true,
+                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
+            });
+            _SendNotifications.GetMessageId = (n) => Hashes.Hash256(Encoding.UTF32.GetBytes(n.ToString())).ToString();
+        }
+
+        private QBitNinjaQueue<Notification> _SendNotifications;
+        public QBitNinjaQueue<Notification> SendNotifications
+        {
+            get
+            {
+                return _SendNotifications;
+            }
         }
 
         private QBitNinjaTopic<Transaction> _NewTransactions;
@@ -84,6 +109,15 @@ namespace QBitNinja
             get
             {
                 return _NewBlocks;
+            }
+        }
+
+        QBitNinjaTopic<SubscriptionChange> _SubscriptionChanges;
+        public QBitNinjaTopic<SubscriptionChange> SubscriptionChanges
+        {
+            get
+            {
+                return _SubscriptionChanges;
             }
         }
 
@@ -123,16 +157,24 @@ namespace QBitNinja
             }
         }
 
+        public IEnumerable<IQBitNinjaQueue> All
+        {
+            get
+            {
+                yield return BroadcastedTransactions;
+                yield return NewTransactions;
+                yield return NewBlocks;
+                yield return AddedAddresses;
+                yield return SubscriptionChanges;
+                yield return NeedIndexNewTransaction;
+                yield return NeedIndexNewBlock;
+                yield return SendNotifications;
+            }
+        }
+
         internal Task EnsureSetupAsync()
         {
-            return Task.WhenAll(new Task[] { 
-                BroadcastedTransactions.EnsureExistsAsync(), 
-                NewTransactions.EnsureExistsAsync(),
-                NewBlocks.EnsureExistsAsync(),
-                AddedAddresses.EnsureExistsAsync(),
-                NeedIndexNewBlock.EnsureExistsAsync(),
-                NeedIndexNewTransaction.EnsureExistsAsync()
-            });
+            return Task.WhenAll(All.Select(a => a.EnsureExistsAsync()).ToArray());
         }
     }
     public class QBitNinjaConfiguration
@@ -173,7 +215,8 @@ namespace QBitNinja
                 GetCallbackTable(),
                 GetChainCacheCloudTable(),
                 GetCrudTable(),
-                GetRejectTable().Table
+                GetRejectTable().Table,
+                GetSubscriptionsTable().Table
             }.Select(t => t.CreateIfNotExistsAsync()).ToArray();
 
             var tasks2 = new Task[]
@@ -183,6 +226,12 @@ namespace QBitNinja
             Task.WaitAll(tasks.Concat(tasks2).ToArray());
         }
 
+
+
+        public CrudTable<NewBlockSubscription> GetSubscriptionsTable()
+        {
+            return GetCrudTableFactory().GetTable<NewBlockSubscription>("subscriptions");
+        }
 
         public CrudTable<RejectPayload> GetRejectTable()
         {

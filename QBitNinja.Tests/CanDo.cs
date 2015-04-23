@@ -187,6 +187,55 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
+        public void CanReceiveBlockNotification()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var notifications = tester.CreateNotificationServer();
+                tester.Send<string>(HttpMethod.Post, "subscriptions", new NewBlockSubscription()
+                {
+                    Id = "toto",
+                    Url = notifications.Address,
+                    Type = "new-blocks"
+                });
+
+                var listener = tester.CreateListenerTester();
+                var b = tester.ChainBuilder.EmitBlock();
+                var request = notifications.WaitRequest();
+                request.Complete(true);
+
+                var notification = request.GetBody<Notification>();
+                Assert.True(notification.Subscription.Id == "toto");
+                Assert.True(notification.Data.BlockId == b.Header.HashPrevBlock);
+                Assert.True(notification.Data.Height == 0);
+                Assert.True(notification.Data.Header.GetHash() == b.Header.HashPrevBlock);
+
+                request = notifications.WaitRequest();
+                request.Complete(true);
+                notification = request.GetBody<Notification>();
+                Assert.True(notification.Subscription.Id == "toto");
+                Assert.True(notification.Data.BlockId == b.Header.GetHash());
+                Assert.True(notification.Data.Height == 1);
+                Assert.True(notification.Tried == 1);
+                Assert.True(notification.Data.Header.GetHash() == b.Header.GetHash());
+
+                //Fail
+                b = tester.ChainBuilder.EmitBlock();
+                request = notifications.WaitRequest();
+                request.Complete(false);
+                notification = request.GetBody<Notification>();
+                Assert.True(notification.Data.Header.GetHash() == b.Header.GetHash());
+
+                //Check has retried
+                request = notifications.WaitRequest();
+                request.Complete(true);
+                notification = request.GetBody<Notification>();
+                Assert.True(notification.Data.Header.GetHash() == b.Header.GetHash());
+                Assert.True(notification.Tried == 2);
+            }
+        }
+
+        [Fact]
         public void CanListenBlockchain()
         {
             using (var tester = ServerTester.Create())
