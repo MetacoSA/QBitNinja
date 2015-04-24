@@ -183,6 +183,8 @@
     <Compile Include="ActionDisposable.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="JsonConverters\EnumAliasJsonConverter.cs" />
+    <Compile Include="JsonConverters\EnumTypeJsonConverter.cs" />
     <Compile Include="Models\NewBlockSubscription.cs" />
     <Compile Include="Notifications\BlocksUpdater.cs" />
     <Compile Include="Notifications\BroadcastedTransaction.cs" />
@@ -207,10 +209,13 @@
     <Compile Include="Notifications\IndexerBlocksRepository.cs" />
     <Compile Include="Notifications\IndexNotificationsTask.cs" />
     <Compile Include="Notifications\NewBlockNotificationData.cs" />
+    <Compile Include="Notifications\NewTransactionSubscription.cs" />
     <Compile Include="Notifications\Notification.cs" />
     <Compile Include="Notifications\QBitNinjaQueue.cs" />
     <Compile Include="Notifications\QBitNinjaQueueBase.cs" />
     <Compile Include="Notifications\QueueCreation.cs" />
+    <Compile Include="Notifications\Notify.cs" />
+    <Compile Include="Notifications\Subscription.cs" />
     <Compile Include="Notifications\SubscriptionChange.cs" />
     <Compile Include="Notifications\SubscriptionCollection.cs" />
     <Compile Include="Notifications\SubscriptionCreation.cs" />

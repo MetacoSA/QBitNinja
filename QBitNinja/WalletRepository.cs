@@ -236,10 +236,5 @@ namespace QBitNinja
         {
             return KeyDataTable.GetChild(walletName, keysetName).Read();
         }
-
-        public void AddNotification(NewBlockSubscription notification)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

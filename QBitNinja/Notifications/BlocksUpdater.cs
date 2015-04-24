@@ -169,8 +169,9 @@ namespace QBitNinja.Notifications
             }
         }
 
-        private async Task SendAsync(Notification n, MessageControl act)
+        private async Task SendAsync(Notify notify, MessageControl act)
         {
+            var n = notify.Notification;
             HttpClient http = new HttpClient();
             var message = new HttpRequestMessage(HttpMethod.Post, n.Subscription.Url);
             n.Tried++;
@@ -209,7 +210,7 @@ namespace QBitNinja.Notifications
                 TimeSpan.FromHours(24.0)
             };
 
-            if (failed && (n.Tried - 1) <= tries.Length - 1)
+            if (!notify.SendAndForget && failed && (n.Tried - 1) <= tries.Length - 1)
             {
                 var wait = tries[n.Tried - 1];
                 act.RescheduleIn(wait);

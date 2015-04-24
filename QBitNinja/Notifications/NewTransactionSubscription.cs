@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
 {
-    public class NewBlockSubscription : Subscription
+    public class NewTransactionSubscription : Subscription
     {
-        public NewBlockSubscription()
+        public NewTransactionSubscription()
         {
-            Type = SubscriptionType.NewBlock;
+            Type = SubscriptionType.NewTransaction;
         }
     }
 }

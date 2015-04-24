@@ -9,15 +9,15 @@ namespace QBitNinja.Notifications
 {
     public class SubscriptionCollection
     {
-        private NewBlockSubscription[] newBlockSubscription;
+        private Subscription[] newBlockSubscription;
 
-        public SubscriptionCollection(NewBlockSubscription[] subscriptions)
+        public SubscriptionCollection(Subscription[] subscriptions)
         {
             this.newBlockSubscription = subscriptions;
         }
         public IEnumerable<NewBlockSubscription> GetNewBlocks()
         {
-            return newBlockSubscription;
+            return newBlockSubscription.OfType<NewBlockSubscription>();
         }
     }
 }

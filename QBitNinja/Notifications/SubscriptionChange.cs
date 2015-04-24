@@ -13,12 +13,12 @@ namespace QBitNinja.Notifications
         {
 
         }
-        public SubscriptionChange(NewBlockSubscription subscription, bool added)
+        public SubscriptionChange(Subscription subscription, bool added)
         {
             Subscription = subscription;
             Added = added;
         }
-        public NewBlockSubscription Subscription
+        public Subscription Subscription
         {
             get;
             set;

@@ -187,6 +187,20 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
+        public void CanReceiveTransactionNotification()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var notifications = tester.CreateNotificationServer();
+                tester.Send<string>(HttpMethod.Post, "subscriptions", new NewTransactionSubscription()
+                {
+                    Id = "toto",
+                    Url = notifications.Address
+                });
+            }
+        }
+
+        [Fact]
         public void CanReceiveBlockNotification()
         {
             using (var tester = ServerTester.Create())
@@ -195,8 +209,7 @@ namespace QBitNinja.Tests
                 tester.Send<string>(HttpMethod.Post, "subscriptions", new NewBlockSubscription()
                 {
                     Id = "toto",
-                    Url = notifications.Address,
-                    Type = "new-blocks"
+                    Url = notifications.Address
                 });
 
                 var listener = tester.CreateListenerTester();

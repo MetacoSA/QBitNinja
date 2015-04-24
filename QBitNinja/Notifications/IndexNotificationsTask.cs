@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
 {
-    public class IndexNotificationsTask : IndexTask<Notification>
+    public class IndexNotificationsTask : IndexTask<Notify>
     {
         private SubscriptionCollection _Subscriptions;
         private QBitNinjaConfiguration _Conf;
@@ -23,7 +23,7 @@ namespace QBitNinja.Notifications
             return Task.FromResult(true);
         }
 
-        protected override Task IndexCore(string partitionName, IEnumerable<Notification> items)
+        protected override Task IndexCore(string partitionName, IEnumerable<Notify> items)
         {
             return _Conf
                 .Topics
@@ -39,11 +39,11 @@ namespace QBitNinja.Notifications
             }
         }
 
-        protected override void ProcessBlock(NBitcoin.Indexer.BlockInfo block, BulkImport<Notification> bulk)
+        protected override void ProcessBlock(NBitcoin.Indexer.BlockInfo block, BulkImport<Notify> bulk)
         {
             foreach (var newBlock in _Subscriptions.GetNewBlocks())
             {
-                bulk.Add("o", new Notification()
+                bulk.Add("o", new Notify(new Notification()
                 {
                     Subscription = newBlock,
                     Data = new NewBlockNotificationData()
@@ -52,7 +52,7 @@ namespace QBitNinja.Notifications
                         BlockId = block.BlockId,
                         Height = block.Height
                     }
-                });
+                }));
             }
         }
     }

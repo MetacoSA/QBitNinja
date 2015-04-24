@@ -126,7 +126,7 @@ namespace QBitNinja.Controllers
 
         [HttpPost]
         [Route("subscriptions")]
-        public async Task<NewBlockSubscription> AddSubscription(NewBlockSubscription subscription)
+        public async Task<Subscription> AddSubscription(Subscription subscription)
         {
             if (subscription.Id == null)
                 subscription.Id = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));

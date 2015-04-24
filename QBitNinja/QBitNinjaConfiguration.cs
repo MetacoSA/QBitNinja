@@ -77,16 +77,16 @@ namespace QBitNinja
                 EnableExpress = true
             });
 
-            _SendNotifications = new QBitNinjaQueue<Notification>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("sendnotifications").Name)
+            _SendNotifications = new QBitNinjaQueue<Notify>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("sendnotifications").Name)
             {
                 RequiresDuplicateDetection = true,
                 DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
             });
-            _SendNotifications.GetMessageId = (n) => Hashes.Hash256(Encoding.UTF32.GetBytes(n.ToString())).ToString();
+            _SendNotifications.GetMessageId = (n) => Hashes.Hash256(Encoding.UTF32.GetBytes(n.Notification.ToString())).ToString();
         }
 
-        private QBitNinjaQueue<Notification> _SendNotifications;
-        public QBitNinjaQueue<Notification> SendNotifications
+        private QBitNinjaQueue<Notify> _SendNotifications;
+        public QBitNinjaQueue<Notify> SendNotifications
         {
             get
             {
@@ -228,9 +228,9 @@ namespace QBitNinja
 
 
 
-        public CrudTable<NewBlockSubscription> GetSubscriptionsTable()
+        public CrudTable<Subscription> GetSubscriptionsTable()
         {
-            return GetCrudTableFactory().GetTable<NewBlockSubscription>("subscriptions");
+            return GetCrudTableFactory().GetTable<Subscription>("subscriptions");
         }
 
         public CrudTable<RejectPayload> GetRejectTable()
