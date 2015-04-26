@@ -200,8 +200,32 @@ namespace QBitNinja.Tests
             }
         }
 
+
         [Fact]
-        public void CanReceiveBlockNotification()
+        public void CanReceiveNewTransactionNotification()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var notifications = tester.CreateNotificationServer();
+                tester.Send<string>(HttpMethod.Post, "subscriptions", new NewTransactionSubscription()
+                {
+                    Id = "toto",
+                    Url = notifications.Address
+                });
+
+                var listener = tester.CreateListenerTester();
+
+                var bob = new Key();
+                var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
+
+                var request = notifications.WaitRequest();
+                request.Complete(true);
+                var data = (NewTransactionNotificationData)request.GetBody<Notification>().Data;
+                Assert.True(data.TransactionId == tx.GetHash());
+            }
+        }
+        [Fact]
+        public void CanReceiveNewBlockNotification()
         {
             using (var tester = ServerTester.Create())
             {
@@ -218,32 +242,36 @@ namespace QBitNinja.Tests
                 request.Complete(true);
 
                 var notification = request.GetBody<Notification>();
+                var data = (NewBlockNotificationData)notification.Data;
                 Assert.True(notification.Subscription.Id == "toto");
-                Assert.True(notification.Data.BlockId == b.Header.HashPrevBlock);
-                Assert.True(notification.Data.Height == 0);
-                Assert.True(notification.Data.Header.GetHash() == b.Header.HashPrevBlock);
+                Assert.True(data.BlockId == b.Header.HashPrevBlock);
+                Assert.True(data.Height == 0);
+                Assert.True(data.Header.GetHash() == b.Header.HashPrevBlock);
 
                 request = notifications.WaitRequest();
                 request.Complete(true);
                 notification = request.GetBody<Notification>();
+                data = (NewBlockNotificationData)notification.Data;
                 Assert.True(notification.Subscription.Id == "toto");
-                Assert.True(notification.Data.BlockId == b.Header.GetHash());
-                Assert.True(notification.Data.Height == 1);
+                Assert.True(data.BlockId == b.Header.GetHash());
+                Assert.True(data.Height == 1);
                 Assert.True(notification.Tried == 1);
-                Assert.True(notification.Data.Header.GetHash() == b.Header.GetHash());
+                Assert.True(data.Header.GetHash() == b.Header.GetHash());
 
                 //Fail
                 b = tester.ChainBuilder.EmitBlock();
                 request = notifications.WaitRequest();
                 request.Complete(false);
                 notification = request.GetBody<Notification>();
-                Assert.True(notification.Data.Header.GetHash() == b.Header.GetHash());
+                data = (NewBlockNotificationData)notification.Data;
+                Assert.True(data.Header.GetHash() == b.Header.GetHash());
 
                 //Check has retried
                 request = notifications.WaitRequest();
                 request.Complete(true);
                 notification = request.GetBody<Notification>();
-                Assert.True(notification.Data.Header.GetHash() == b.Header.GetHash());
+                data = (NewBlockNotificationData)notification.Data;
+                Assert.True(data.Header.GetHash() == b.Header.GetHash());
                 Assert.True(notification.Tried == 2);
             }
         }

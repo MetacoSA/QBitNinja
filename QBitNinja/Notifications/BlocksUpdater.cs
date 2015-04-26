@@ -143,21 +143,51 @@ namespace QBitNinja.Notifications
             _Disposables.Add(Configuration
                 .Topics
                 .NeedIndexNewTransaction
-                .OnMessage(tx =>
+                .OnMessageAsync(async (tx,ctl) =>
                 {
-                    Task.WaitAll(new[]{
+                    await Task.WhenAll(new[]{
                         Async(() => indexer.IndexOrderedBalance(tx)),
-                        Async(()=>{lock (_Wallets)
-                        {
-                            var balances =
-                                OrderedBalanceChange
-                                .ExtractWalletBalances(null, tx, null, null, int.MaxValue, _Wallets)
-                                .AsEnumerable();
-                            indexer.Index(balances);
-                        }})
+                        Async(()=>{
+                            var txId = tx.GetHash();
+                            lock (_Wallets)
+                            {
+                                var balances =
+                                    OrderedBalanceChange
+                                    .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
+                                    .AsEnumerable();
+                                indexer.Index(balances);
+                            }
+
+                            Task notify = null;
+                            lock(_Subscriptions)
+                            {
+                                var topic = Configuration.Topics.SendNotifications;
+
+                                notify = Task.WhenAll(_Subscriptions
+                                    .GetNewTransactions()
+                                    .Select(t => topic.AddAsync(new Notify()
+                                    {
+                                        SendAndForget = true,
+                                        Notification = new Notification()
+                                        {
+                                            Subscription = t,
+                                            Data = new NewTransactionNotificationData()
+                                            {
+                                                TransactionId = txId
+                                            }
+                                        }
+                                    })).ToArray());
+                                    
+                            }
+                            notify.Wait();
+                        })
 
                     });
                     var unused = _Configuration.Topics.NewTransactions.AddAsync(tx);
+                }, new OnMessageOptions()
+                {
+                    AutoComplete = true,
+                    MaxConcurrentCalls = 10
                 }));
         }
 

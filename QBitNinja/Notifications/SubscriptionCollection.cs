@@ -19,5 +19,10 @@ namespace QBitNinja.Notifications
         {
             return newBlockSubscription.OfType<NewBlockSubscription>();
         }
+
+        public IEnumerable<NewTransactionSubscription> GetNewTransactions()
+        {
+            return newBlockSubscription.OfType<NewTransactionSubscription>();
+        }
     }
 }

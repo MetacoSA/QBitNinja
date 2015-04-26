@@ -9,13 +9,13 @@ namespace QBitNinja.Notifications
 {
     public class Notification
     {
-        public NewBlockSubscription Subscription
+        public Subscription Subscription
         {
             get;
             set;
         }
 
-        public NewBlockNotificationData Data
+        public NotificationData Data
         {
             get;
             set;

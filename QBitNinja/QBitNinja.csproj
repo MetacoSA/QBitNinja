@@ -209,8 +209,10 @@
     <Compile Include="Notifications\IndexerBlocksRepository.cs" />
     <Compile Include="Notifications\IndexNotificationsTask.cs" />
     <Compile Include="Notifications\NewBlockNotificationData.cs" />
+    <Compile Include="Notifications\NewTransactionNotificationData.cs" />
     <Compile Include="Notifications\NewTransactionSubscription.cs" />
     <Compile Include="Notifications\Notification.cs" />
+    <Compile Include="Notifications\NotificationData.cs" />
     <Compile Include="Notifications\QBitNinjaQueue.cs" />
     <Compile Include="Notifications\QBitNinjaQueueBase.cs" />
     <Compile Include="Notifications\QueueCreation.cs" />

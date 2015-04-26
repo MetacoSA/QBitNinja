@@ -7,8 +7,12 @@ using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications
 {
-    public class NewBlockNotificationData
+    public class NewBlockNotificationData : NotificationData
     {
+        public NewBlockNotificationData()
+        {
+            Type = SubscriptionType.NewBlock;
+        }
         public BlockHeader Header
         {
             get;
