@@ -5,6 +5,7 @@ using QBitNinja.Notifications;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -19,12 +20,13 @@ namespace QBitNinja.Tests
         ServerTester _Server;
         internal Network _Network;
 
-        public ListenerTester(ServerTester tester)
+        public ListenerTester(ServerTester tester, bool nodeOnly)
         {
             _Network = tester.Configuration.Indexer.Network;
             Random rand = new Random();
             _Server = tester;
             _Server._disposables.Add(this);
+
             _Listener = new QBitNinjaNodeListener(_Server.Configuration);
 
             _NodeServer = new NodeServer(_Server.Configuration.Indexer.Network, internalPort: rand.Next(20000, 50000));
@@ -36,16 +38,21 @@ namespace QBitNinja.Tests
             _NodeServer.Listen();
 
             _Listener.Configuration.Indexer.Node = "127.0.0.1:" + _NodeServer.LocalEndpoint.Port;
-            _Listener.Listen();
+            if (!nodeOnly)
+                _Listener.Listen();
 
             _Updater = new BlocksUpdater(_Listener.Configuration);
-            _Updater.Listen();
+            if (!nodeOnly)
+                _Updater.Listen();
 
             _Server.Configuration.Indexer.CreateIndexer().Index(_Server.Configuration.Indexer.Network.GetGenesis());
 
             _Server.ChainBuilder.SkipIndexer = true;
             _Server.ChainBuilder.NewBlock += ChainBuilder_NewBlock;
             _Server.ChainBuilder.NewTransaction += ChainBuilder_NewTransaction;
+
+            var genesis = _Server.Configuration.Indexer.Network.GetGenesis();
+            _Blocks.AddOrReplace(genesis.Header.GetHash(), genesis);
         }
 
         private readonly BlocksUpdater _Updater;
@@ -113,6 +120,7 @@ namespace QBitNinja.Tests
                     .ToEnumerable(true)
                     .TakeWhile(f => f.HashBlock != fork.HashBlock && f.HashBlock != headers.HashStop)
                     .Select(f => f.Header)
+                    .Reverse()
                     .ToArray();
                 HeadersPayload res = new HeadersPayload();
                 res.Headers.AddRange(response);
@@ -136,6 +144,10 @@ namespace QBitNinja.Tests
                         if (_Blocks.TryGetValue(inv.Hash, out block))
                         {
                             message.Node.SendMessage(new BlockPayload(block));
+                        }
+                        else
+                        {
+                            
                         }
                     }
                 }

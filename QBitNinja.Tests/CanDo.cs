@@ -12,6 +12,7 @@ using QBitNinja.Models;
 using QBitNinja.Notifications;
 using System;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -105,9 +106,97 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
+        public void CanInitialIndex()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var bob = new Key();
+                var listener = tester.CreateListenerTester(true);
+                tester.ChainBuilder.EmitBlock(); //1
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), bob);
+                tester.ChainBuilder.EmitBlock(); // 5
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock(); //10
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.2m), bob);
+                var last = tester.ChainBuilder.EmitBlock(); //11
+
+                InitialIndexer indexer = new InitialIndexer(tester.Configuration);
+                indexer.BlockGranularity = 5;
+                indexer.TransactionsPerWork = 11;
+                Assert.Equal(4 * 2, indexer.Run());
+
+                var client = tester.Configuration.Indexer.CreateIndexerClient();
+                Assert.Equal(3, client.GetOrderedBalance(bob).Count());
+
+                Assert.Equal(last.GetHash(), tester.Configuration.Indexer.CreateIndexer().GetCheckpoint(IndexerCheckpoints.Balances).BlockLocator.Blocks[0]);
+            }
+        }
+
+        [Fact]
+        public void CanInitialIndexConcurrently()
+        {
+            using (var tester = ServerTester.Create())
+            {
+                var bob = new Key();
+                var listener = tester.CreateListenerTester(true);
+                tester.ChainBuilder.EmitBlock(); //1
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), bob);
+                tester.ChainBuilder.EmitBlock(); // 5
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock(); //10
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.2m), bob);
+                tester.ChainBuilder.EmitBlock(); //11
+
+                var processed = Enumerable
+                    .Range(0, 10)
+                    .Select(_ => Task.Run(() =>
+                    {
+                        InitialIndexer indexer = new InitialIndexer(tester.Configuration);
+                        indexer.BlockGranularity = 5;
+                        indexer.TransactionsPerWork = 11;
+                        return indexer.Run();
+                    }))
+                    .Select(s=>s.Result)
+                    .Sum();
+                
+                Assert.Equal(4 * 2, processed);
+
+                var client = tester.Configuration.Indexer.CreateIndexerClient();
+                Assert.Equal(3, client.GetOrderedBalance(bob).Count());
+            }
+        }
+
+        [Fact]
         public void Play()
         {
+            using (var fs = File.Open("c:/blocksize.csv", FileMode.Create))
+            {
+                StreamWriter writer = new StreamWriter(fs);
+                var node = Node.ConnectToLocal(Network.Main);
+                node.VersionHandshake();
+                var chain = node.GetChain();
 
+                foreach (var block in node.GetBlocks(chain.EnumerateAfter(chain.Genesis).Where(c => c.Height % 100 == 0).Select(c => c.HashBlock)))
+                {
+                    var blockinfo = chain.GetBlock(block.GetHash());
+                    writer.WriteLine(blockinfo.Height + "," + block.Transactions.Count);
+                }
+                writer.Flush();
+            }
             //var conf = IndexerConfiguration.FromConfiguration();
             //var client = conf.CreateIndexerClient();
             //var rules = client.GetAllWalletRules();

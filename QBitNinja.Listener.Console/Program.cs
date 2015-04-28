@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QBitNinja.Notifications;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,9 +14,15 @@ namespace QBitNinja.Listener.Console
         {
             var conf = QBitNinjaConfiguration.FromConfiguration();
             conf.EnsureSetup();
-            QBitNinjaListener listener = new QBitNinjaListener(conf);
-            listener.Listen();
-            listener.Wait();
+            using (QBitNinjaNodeListener listener = new QBitNinjaNodeListener(conf))
+            {
+                listener.Listen();
+                using (BlocksUpdater updater = new BlocksUpdater(conf))
+                {
+                    updater.Listen(listener.Chain);
+                }
+                listener.Wait();
+            }
         }
     }
 }

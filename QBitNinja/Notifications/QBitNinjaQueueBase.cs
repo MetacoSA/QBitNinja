@@ -17,6 +17,21 @@ namespace QBitNinja.Notifications
     {
         Task EnsureExistsAsync();
         Task EnsureExistsAndAllDrainedAsync();
+        Task DeleteAsync();
+    }
+
+    public class QBitNinjaMessage<T>
+    {
+        public BrokeredMessage Message
+        {
+            get;
+            set;
+        }
+        public T Body
+        {
+            get;
+            set;
+        }
     }
     public abstract class QBitNinjaQueueBase<T, TCreation, TDescription> : IQBitNinjaQueue where TCreation : ICreation
     {
@@ -136,18 +151,28 @@ namespace QBitNinja.Notifications
 
         public virtual async Task DrainMessagesAsync()
         {
-            while (await ReceiveAsync().ConfigureAwait(false) != null)
+            while (true)
             {
+                var message = await ReceiveAsync().ConfigureAwait(false);
+                if (message == null)
+                    break;
+                message.Message.Complete();
+                message.Message.Dispose();
             }
         }
 
-        public async Task<T> ReceiveAsync(TimeSpan? timeout = null)
+        public async Task<QBitNinjaMessage<T>> ReceiveAsync(TimeSpan? timeout = null)
         {
             if (timeout == null)
                 timeout = TimeSpan.Zero;
-            BrokeredMessage message = null;
-            message = await ReceiveAsyncCore(timeout.Value).ConfigureAwait(false);
-            return ToObject(message);
+            var message = await ReceiveAsyncCore(timeout.Value).ConfigureAwait(false);
+            if (message == null)
+                return null;
+            return new QBitNinjaMessage<T>()
+            {
+                Body = ToObject(message),
+                Message = message
+            };
         }
 
 
@@ -223,6 +248,11 @@ namespace QBitNinja.Notifications
         {
             await EnsureExistsAsync().ConfigureAwait(false);
             await DrainMessagesAsync().ConfigureAwait(false);
+        }
+
+        Task IQBitNinjaQueue.DeleteAsync()
+        {
+            return this.DeleteAsync();
         }
 
         #endregion

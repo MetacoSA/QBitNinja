@@ -101,7 +101,7 @@ namespace QBitNinja.Tests
                 var tasks = new List<Task>();
                 tasks.Add(CleanAsync(Configuration.Indexer.GetBlocksContainer()));
                 tasks.Add(CleanAsync(Configuration.Indexer.CreateTableClient()));
-                tasks.AddRange(Configuration.Topics.All.Select(o=>o.EnsureExistsAndAllDrainedAsync()));
+                tasks.AddRange(Configuration.Topics.All.Select(o => o.DeleteAsync()));
 
                 Task.WaitAll(tasks.ToArray());
 
@@ -296,9 +296,9 @@ namespace QBitNinja.Tests
             return unspent;
         }
 
-        public ListenerTester CreateListenerTester()
+        public ListenerTester CreateListenerTester(bool nodeOnly = false)
         {
-            return new ListenerTester(this);
+            return new ListenerTester(this, nodeOnly);
         }
 
         public NotificationTester CreateNotificationServer()

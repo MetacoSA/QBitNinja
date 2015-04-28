@@ -29,7 +29,7 @@ namespace QBitNinja.Notifications
 
         internal QueueClient CreateQueueClient()
         {
-            var client = QueueClient.CreateFromConnectionString(ConnectionString, Queue);
+            var client = QueueClient.CreateFromConnectionString(ConnectionString, Queue, ReceiveMode.PeekLock);
             return client;
         }
 

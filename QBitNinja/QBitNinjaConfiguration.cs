@@ -83,6 +83,25 @@ namespace QBitNinja
                 DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
             });
             _SendNotifications.GetMessageId = (n) => Hashes.Hash256(Encoding.UTF32.GetBytes(n.Notification.ToString())).ToString();
+
+
+            _InitialIndexing = new QBitNinjaQueue<BlockRange>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("intitialindexing").Name)
+            {
+                RequiresDuplicateDetection = true,
+                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
+                MaxDeliveryCount = int.MaxValue
+            });
+            _InitialIndexing.GetMessageId = (n) => n.ToString();
+        }
+
+
+        private QBitNinjaQueue<BlockRange> _InitialIndexing;
+        public QBitNinjaQueue<BlockRange> InitialIndexing
+        {
+            get
+            {
+                return _InitialIndexing;
+            }
         }
 
         private QBitNinjaQueue<Notify> _SendNotifications;
@@ -169,6 +188,7 @@ namespace QBitNinja
                 yield return NeedIndexNewTransaction;
                 yield return NeedIndexNewBlock;
                 yield return SendNotifications;
+                yield return InitialIndexing;
             }
         }
 
