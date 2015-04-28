@@ -41,6 +41,11 @@ namespace QBitNinja.Notifications
 
         protected override void ProcessBlock(NBitcoin.Indexer.BlockInfo block, BulkImport<Notify> bulk)
         {
+            if (_Subscriptions.Count == 0)
+            {
+                bulk.IsComplete = true;
+                return;
+            }
             foreach (var newBlock in _Subscriptions.GetNewBlocks())
             {
                 bulk.Add("o", new Notify(new Notification()

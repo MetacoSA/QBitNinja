@@ -4,6 +4,7 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using NBitcoin.Indexer.IndexTasks;
+using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,6 +78,8 @@ namespace QBitNinja
             AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Blocks), new IndexBlocksTask(_Conf.Indexer));
             AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Transactions), new IndexTransactionsTask(_Conf.Indexer));
             AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Wallets), new IndexBalanceTask(_Conf.Indexer, _Conf.Indexer.CreateIndexerClient().GetAllWalletRules()));
+            var subscription = indexer.GetCheckpointRepository().GetCheckpoint("subscriptions");
+            AddTaskIndex(subscription, new IndexNotificationsTask(_Conf, new SubscriptionCollection(_Conf.GetSubscriptionsTable().Read())));
         }
 
         Dictionary<string, Tuple<Checkpoint, IIndexTask>> _IndexTasks = new Dictionary<string, Tuple<Checkpoint, IIndexTask>>();
@@ -158,6 +161,7 @@ namespace QBitNinja
                         try
                         {
                             task.Item2.SaveProgression = false;
+                            task.Item2.EnsureIsSetup = totalProcessed == 0;
                             task.Item2.IndexAsync(fetcher).Wait();
                         }
                         catch (AggregateException aex)

@@ -130,7 +130,7 @@ namespace QBitNinja.Tests
                 InitialIndexer indexer = new InitialIndexer(tester.Configuration);
                 indexer.BlockGranularity = 5;
                 indexer.TransactionsPerWork = 11;
-                Assert.Equal(4 * 2, indexer.Run());
+                Assert.Equal(5 * 2, indexer.Run());
 
                 var client = tester.Configuration.Indexer.CreateIndexerClient();
                 Assert.Equal(3, client.GetOrderedBalance(bob).Count());
@@ -173,7 +173,7 @@ namespace QBitNinja.Tests
                     .Select(s=>s.Result)
                     .Sum();
                 
-                Assert.Equal(4 * 2, processed);
+                Assert.Equal(5 * 2, processed);
 
                 var client = tester.Configuration.Indexer.CreateIndexerClient();
                 Assert.Equal(3, client.GetOrderedBalance(bob).Count());

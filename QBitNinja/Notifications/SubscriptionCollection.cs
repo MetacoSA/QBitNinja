@@ -24,5 +24,13 @@ namespace QBitNinja.Notifications
         {
             return newBlockSubscription.OfType<NewTransactionSubscription>();
         }
+
+        public int Count
+        {
+            get
+            {
+                return newBlockSubscription.Length;
+            }
+        }
     }
 }
