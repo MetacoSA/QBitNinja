@@ -124,7 +124,7 @@ namespace QBitNinja
             foreach (var op in reader.ToEnumerable())
             {
                 hasOps = true;
-                if (op.IncompleteData || (op.Name == "OP_UNKNOWN" && op.PushData == null))
+                if (op.IsInvalid || (op.Name == "OP_UNKNOWN" && op.PushData == null))
                     return null;
             }
             return !hasOps ? null : script;

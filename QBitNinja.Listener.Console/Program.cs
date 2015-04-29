@@ -43,7 +43,6 @@ namespace QBitNinja.Listener.Console
     {
         static void Main(string[] args)
         {
-
             var options = new ListenerOptions();
             if (args.Length == 0)
                 System.Console.WriteLine(options.GetUsage());
