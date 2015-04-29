@@ -35,18 +35,18 @@ namespace QBitNinja.JsonConverters
     /// </summary>
     public class EnumTypeJsonConverter : JsonConverter
     {
-        Dictionary<string, Type> _Values = null;
-        Type _EnumType;
-        void EnsureInit(Type type)
+        Dictionary<string, TypeInfo> _Values = null;
+        TypeInfo _EnumType;
+        void EnsureInit(TypeInfo type)
         {
             if (_Values != null)
                 return;
-            _Values = new Dictionary<string, Type>();
+            _Values = new Dictionary<string, TypeInfo>();
             foreach (var attribute in type.GetCustomAttributes(typeof(EnumTypeAttribute)).OfType<EnumTypeAttribute>())
             {
                 var key = attribute.Value.ToString();
-                var value = attribute.Type;
-                _EnumType = attribute.Value.GetType();
+                var value = attribute.Type.GetTypeInfo();
+                _EnumType = attribute.Value.GetType().GetTypeInfo();
                 if (key != null)
                 {
                     _Values.Add(key, value);
@@ -63,11 +63,11 @@ namespace QBitNinja.JsonConverters
         {
             if (reader.TokenType == JsonToken.Null)
                 return null;
-            EnsureInit(objectType);
+            EnsureInit(objectType.GetTypeInfo());
             var jobj = serializer.Deserialize<JObject>(reader);
 
-            var typeEnum = serializer.Deserialize(jobj.Property("type").Value.CreateReader(), _EnumType).ToString();
-            Type type;
+            var typeEnum = serializer.Deserialize(jobj.Property("type").Value.CreateReader(), _EnumType.AsType()).ToString();
+            TypeInfo type;
             if (!_Values.TryGetValue(typeEnum, out type))
             {
                 throw new NotSupportedException(typeEnum.ToString());
@@ -77,14 +77,14 @@ namespace QBitNinja.JsonConverters
             return ReadJsonBase(serializer, type, jobjReader);
         }
 
-        private static object ReadJsonBase(JsonSerializer serializer, Type type, JsonReader reader)
+        private static object ReadJsonBase(JsonSerializer serializer, TypeInfo type, JsonReader reader)
         {
             if (reader.TokenType == JsonToken.None)
                 reader.Read();
-            var contract = serializer.ContractResolver.ResolveContract(type);
-            var getInternalSerializer = serializer.GetType().GetMethod("GetInternalSerializer", BindingFlags.NonPublic | BindingFlags.Instance);
+            var contract = serializer.ContractResolver.ResolveContract(type.AsType());
+            var getInternalSerializer = serializer.GetType().GetTypeInfo().GetDeclaredMethod("GetInternalSerializer");
             var internalSerializer = getInternalSerializer.Invoke(serializer, new object[0]);
-            var createValue = internalSerializer.GetType().GetMethod("CreateValueInternal", BindingFlags.NonPublic | BindingFlags.Instance);
+            var createValue = internalSerializer.GetType().GetTypeInfo().GetDeclaredMethod("CreateValueInternal");
             var result = createValue.Invoke(internalSerializer, new object[] { reader, type, contract, null, null, null, null });
             return result;
         }

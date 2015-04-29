@@ -32,7 +32,7 @@ namespace QBitNinja.JsonConverters
             if (_Values != null)
                 return;
             _Values = new Dictionary<string, object>();
-            foreach (var member in type.GetFields())
+            foreach (var member in type.GetTypeInfo().DeclaredFields)
             {
                 var alias = member.GetCustomAttribute<EnumAliasAttribute>();
                 if (alias != null)
@@ -43,7 +43,7 @@ namespace QBitNinja.JsonConverters
         }
         public override bool CanConvert(Type objectType)
         {
-            return objectType.IsEnum;
+            return objectType.GetTypeInfo().IsEnum;
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
