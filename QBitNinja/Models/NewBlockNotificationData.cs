@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace QBitNinja.Notifications
+namespace QBitNinja.Models
 {
     public class NewBlockNotificationData : NotificationData
     {

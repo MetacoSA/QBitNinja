@@ -10,7 +10,7 @@ using QBitNinja.Models;
 using System.IO;
 using Newtonsoft.Json.Linq;
 
-namespace QBitNinja.Notifications
+namespace QBitNinja.Models
 {    
     [JsonConverter(typeof(EnumAliasJsonConverter))]
     public enum SubscriptionType
