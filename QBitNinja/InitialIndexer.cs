@@ -157,20 +157,25 @@ namespace QBitNinja
                        .ReceiveAsync(TimeSpan.FromMilliseconds(1000))
                        .Result;
 
+                    var ns = _Conf.Topics.InitialIndexing.GetNamespace();
+                    var description = ns.GetQueue(_Conf.Topics.InitialIndexing.Queue);
+
+                    Console.WriteLine("Work remaining in the queue : " + description.MessageCountDetails.ActiveMessageCount);
                     if (msg == null)
                     {
                         var state = blobLock.DownloadText();
-                        if (state == "Enqueuing")
+                        if (state == "Enqueuing" || description.MessageCountDetails.ActiveMessageCount != 0)
                         {
                             ListenerTrace.Info("Additional work will be enqueued...");
+                            continue;
                         }
                         else
                         {
                             var locator = new BlockLocator();
                             locator.FromBytes(Encoders.Hex.DecodeData(state));
                             UpdateCheckpoints(locator);
+                            break;
                         }
-                        break;
                     }
 
                     using (msg.Message)
@@ -193,7 +198,7 @@ namespace QBitNinja
                             {
                                 task.Item2.Index(fetcher);
                             }, TaskCreationOptions.LongRunning);
-                            while(!index.Wait(TimeSpan.FromMinutes(4)))
+                            while (!index.Wait(TimeSpan.FromMinutes(4)))
                             {
                                 msg.Message.RenewLock();
                                 ListenerTrace.Info("Lock renewed");
