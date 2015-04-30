@@ -54,7 +54,7 @@ namespace QBitNinja
                 throw new ArgumentNullException("conf");
             _Conf = conf;
             BlockGranularity = 100;
-            TransactionsPerWork = 2000 * 1000;
+            TransactionsPerWork = 1000 * 1000;
             Init();
         }
 
@@ -189,7 +189,11 @@ namespace QBitNinja
                         {
                             task.Item2.SaveProgression = false;
                             task.Item2.EnsureIsSetup = totalProcessed == 0;
-                            task.Item2.IndexAsync(fetcher).Wait();
+                            var index = task.Item2.IndexAsync(fetcher);
+                            while(!index.Wait(4000))
+                            {
+                                msg.Message.RenewLock();
+                            }
                         }
                         catch (AggregateException aex)
                         {

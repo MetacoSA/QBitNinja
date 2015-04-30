@@ -89,7 +89,8 @@ namespace QBitNinja
             {
                 RequiresDuplicateDetection = true,
                 DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
-                MaxDeliveryCount = int.MaxValue
+                MaxDeliveryCount = int.MaxValue,
+                LockDuration = TimeSpan.FromMinutes(5.0)
             });
             _InitialIndexing.GetMessageId = (n) => n.ToString();
         }
