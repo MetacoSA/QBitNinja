@@ -189,10 +189,14 @@ namespace QBitNinja
                         {
                             task.Item2.SaveProgression = false;
                             task.Item2.EnsureIsSetup = totalProcessed == 0;
-                            var index = task.Item2.IndexAsync(fetcher);
-                            while(!index.Wait(4000))
+                            var index = Task.Factory.StartNew(() =>
+                            {
+                                task.Item2.Index(fetcher);
+                            }, TaskCreationOptions.LongRunning);
+                            while(!index.Wait(TimeSpan.FromMinutes(4)))
                             {
                                 msg.Message.RenewLock();
+                                ListenerTrace.Info("Lock renewed");
                             }
                         }
                         catch (AggregateException aex)
