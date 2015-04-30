@@ -13,8 +13,15 @@ namespace QBitNinja.Listener.Console
     public class ListenerOptions
     {
 
-        [Option("Listen", HelpText = "Listen the local node and index bitcoin transaction and blocks", Required = false, DefaultValue = false)]
+        [Option("Listen", HelpText = "Listen the local node and index bitcoin transaction and blocks. Can run on several boxes at the same time.", Required = false, DefaultValue = false)]
         public bool Listen
+        {
+            get;
+            set;
+        }
+
+        [Option("CancelInit", HelpText = "Cancel current initial indexation", Required = false, DefaultValue = false)]
+        public bool CancelInit
         {
             get;
             set;
@@ -50,6 +57,11 @@ namespace QBitNinja.Listener.Console
             {
                 var conf = QBitNinjaConfiguration.FromConfiguration();
                 conf.EnsureSetup();
+                if (options.CancelInit)
+                {
+                    var indexer = new InitialIndexer(conf);
+                    indexer.Cancel();
+                }
                 if (options.Init)
                 {
                     var indexer = new InitialIndexer(conf);

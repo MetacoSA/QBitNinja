@@ -136,6 +136,8 @@ namespace QBitNinja.Tests
                 Assert.Equal(3, client.GetOrderedBalance(bob).Count());
 
                 Assert.Equal(last.GetHash(), tester.Configuration.Indexer.CreateIndexer().GetCheckpoint(IndexerCheckpoints.Balances).BlockLocator.Blocks[0]);
+
+                indexer.Cancel();
             }
         }
 

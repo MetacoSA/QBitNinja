@@ -90,6 +90,34 @@ namespace QBitNinja
         }
 
 
+        public void Cancel()
+        {
+            var blobLock = GetInitBlob();
+            try
+            {
+                try
+                {
+                    blobLock.Delete();
+                }
+                catch
+                {
+                    blobLock.BreakLease();
+                    blobLock.Delete();
+                }
+            }
+            catch (StorageException ex)
+            {
+                if (ex.RequestInformation == null || ex.RequestInformation.HttpStatusCode != 404)
+                    throw;
+            }
+            ListenerTrace.Info("Init blob deleted");
+            ListenerTrace.Info("Deleting queue...");
+            _Conf.Topics
+                 .InitialIndexing
+                 .GetNamespace().DeleteQueue(_Conf.Topics.InitialIndexing.Queue);
+            ListenerTrace.Info("Queue deleted");
+        }
+
         public int Run(ChainBase chain = null)
         {
             ListenerTrace.Info("Start initial indexing");
@@ -104,8 +132,7 @@ namespace QBitNinja
                 ListenerTrace.Info("Current chain at height " + chain.Height);
                 var blockRepository = new NodeBlocksRepository(node);
 
-                var container = _Conf.Indexer.GetBlocksContainer();
-                var blobLock = container.GetBlockBlobReference("initialindexer/lock");
+                var blobLock = GetInitBlob();
                 string lease = null;
                 try
                 {
@@ -179,6 +206,13 @@ namespace QBitNinja
             return totalProcessed;
         }
 
+        private CloudBlockBlob GetInitBlob()
+        {
+            var container = _Conf.Indexer.GetBlocksContainer();
+            var blobLock = container.GetBlockBlobReference("initialindexer/lock");
+            return blobLock;
+        }
+
         private void UpdateCheckpoints(BlockLocator locator)
         {
             ListenerTrace.Info("Work finished, updating checkpoints");
@@ -207,6 +241,7 @@ namespace QBitNinja
                     EnqueueRange(chain, from, blockCount);
                     from = nextFrom;
                     blockCount = 0;
+                    cumul = 0;
                 }
             }
 
@@ -246,5 +281,6 @@ namespace QBitNinja
                 throw;
             }
         }
+
     }
 }
