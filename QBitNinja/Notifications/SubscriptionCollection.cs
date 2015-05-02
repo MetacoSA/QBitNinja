@@ -9,28 +9,38 @@ namespace QBitNinja.Notifications
 {
     public class SubscriptionCollection
     {
-        private Subscription[] newBlockSubscription;
+        private List<Subscription> _Subscriptions;
 
-        public SubscriptionCollection(Subscription[] subscriptions)
+        public SubscriptionCollection(IEnumerable<Subscription> subscriptions)
         {
-            this.newBlockSubscription = subscriptions;
+            this._Subscriptions = new List<Subscription>(subscriptions);
         }
         public IEnumerable<NewBlockSubscription> GetNewBlocks()
         {
-            return newBlockSubscription.OfType<NewBlockSubscription>();
+            return _Subscriptions.OfType<NewBlockSubscription>();
         }
 
         public IEnumerable<NewTransactionSubscription> GetNewTransactions()
         {
-            return newBlockSubscription.OfType<NewTransactionSubscription>();
+            return _Subscriptions.OfType<NewTransactionSubscription>();
         }
 
         public int Count
         {
             get
             {
-                return newBlockSubscription.Length;
+                return _Subscriptions.Count;
             }
+        }
+
+        internal void Add(Subscription subscription)
+        {
+            _Subscriptions.Add(subscription);
+        }
+
+        internal void Remove(string id)
+        {
+            _Subscriptions.RemoveAll(s => s.Id == id);
         }
     }
 }

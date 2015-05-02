@@ -69,6 +69,20 @@ namespace QBitNinja.Notifications
 
             _Disposables.Add(_Configuration
                 .Topics
+                .SubscriptionChanges
+                .OnMessage(c =>
+                {
+                    lock (_Subscriptions)
+                    {
+                        if (c.Added)
+                            _Subscriptions.Add(c.Subscription);
+                        else
+                            _Subscriptions.Remove(c.Subscription.Id);
+                    }
+                }));
+
+            _Disposables.Add(_Configuration
+                .Topics
                 .SendNotifications
                 .OnMessageAsync((n, act) =>
                 {
@@ -117,11 +131,15 @@ namespace QBitNinja.Notifications
                         }),
                      Async(() =>
                         {
+                            lock(_Subscriptions)
+                            {
+                                
                             new IndexNotificationsTask(Configuration, _Subscriptions)
                                 {
                                     EnsureIsSetup = false
                                 }
                                 .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                            }
                         })}).ConfigureAwait(false);
 
                     await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
@@ -144,7 +162,7 @@ namespace QBitNinja.Notifications
             _Disposables.Add(Configuration
                 .Topics
                 .NeedIndexNewTransaction
-                .OnMessageAsync(async (tx,ctl) =>
+                .OnMessageAsync(async (tx, ctl) =>
                 {
                     await Task.WhenAll(new[]{
                         Async(() => indexer.IndexOrderedBalance(tx)),
