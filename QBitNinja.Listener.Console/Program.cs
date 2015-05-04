@@ -1,12 +1,17 @@
 ﻿using CommandLine;
 using CommandLine.Text;
+using Microsoft.Owin.Hosting;
+using NBitcoin;
 using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Owin;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web.Http;
+using System.Runtime.ExceptionServices;
 
 namespace QBitNinja.Listener.Console
 {
@@ -15,6 +20,19 @@ namespace QBitNinja.Listener.Console
 
         [Option("Listen", HelpText = "Listen the local node and index bitcoin transaction and blocks. Can run on several boxes at the same time.", Required = false, DefaultValue = false)]
         public bool Listen
+        {
+            get;
+            set;
+        }
+
+        [Option("Web", HelpText = "Host QBit API in process", Required = false, DefaultValue = false)]
+        public bool Web
+        {
+            get;
+            set;
+        }
+        [Option("Port", HelpText = "The port used by the QBit API", Required = false, DefaultValue = 80)]
+        public int Port
         {
             get;
             set;
@@ -67,19 +85,74 @@ namespace QBitNinja.Listener.Console
                     var indexer = new InitialIndexer(conf);
                     indexer.Run();
                 }
-                if (options.Listen)
+
+                List<IDisposable> dispo = new List<IDisposable>();
+                List<Task> running = new List<Task>();
+                try
                 {
-                    using (QBitNinjaNodeListener listener = new QBitNinjaNodeListener(conf))
+
+                    if (options.Listen)
                     {
+                        QBitNinjaNodeListener listener = new QBitNinjaNodeListener(conf);
+                        dispo.Add(listener);
                         listener.Listen();
-                        using (BlocksUpdater updater = new BlocksUpdater(conf))
+                        running.Add(listener.Running);
+
+
+                        BlocksUpdater updater = new BlocksUpdater(conf);
+                        dispo.Add(updater);
+                        updater.Listen(listener.Chain);
+                    }
+
+                    if (options.Web)
+                    {
+                        System.Console.WriteLine("Trying to listen on http://*:" + options.Port + "/");
+                        var server = WebApp.Start("http://*:" + options.Port, appBuilder =>
                         {
-                            updater.Listen(listener.Chain);
+                            var config = new HttpConfiguration();
+                            var qbit = QBitNinjaConfiguration.FromConfiguration();
+                            qbit.EnsureSetup();
+                            WebApiConfig.Register(config, qbit);
+                            UpdateChainListener listener = new UpdateChainListener();
+                            dispo.Add(listener);
+                            listener.Listen(config);
+                            appBuilder.UseWebApi(config);
+                            running.Add(new TaskCompletionSource<int>().Task);
+                        });
+                        dispo.Add(server);
+                        System.Console.WriteLine("Server started");
+                        Process.Start("http://localhost:" + options.Port + "/blocks/tip");
+                    }
+
+                    if (running.Count != 0)
+                    {
+                        try
+                        {
+                            running.Add(WaitInput());
+                            Task.WaitAny(running.ToArray());
                         }
-                        listener.Wait();
+                        catch (AggregateException aex)
+                        {
+                            ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+                            throw;
+                        }
                     }
                 }
+                finally
+                {
+                    new CompositeDisposable(dispo.ToArray()).Dispose();
+                }
+
             }
+        }
+
+        private static Task WaitInput()
+        {
+            return Task.Factory.StartNew(() =>
+            {
+                System.Console.WriteLine("Hit a key to stop...");
+                System.Console.ReadLine();
+            });
         }
     }
 }

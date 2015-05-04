@@ -30,7 +30,7 @@ namespace QBitNinja
 
         public void Listen(HttpConfiguration config)
         {
-            Resolver = (QBitNinjaDependencyResolver)GlobalConfiguration.Configuration.DependencyResolver;
+            Resolver = (QBitNinjaDependencyResolver)config.DependencyResolver;
 
             Timer = new Timer(_ => Resolver.UpdateChain());
             Timer.Change(0, (int)TimeSpan.FromSeconds(30).TotalMilliseconds);
@@ -40,6 +40,7 @@ namespace QBitNinja
                 conf.Topics
                 .NewBlocks
                 .CreateConsumer("webchain", true)
+                .EnsureSubscriptionExists()
                 .OnMessage(b =>
                 {
                     Resolver.UpdateChain();

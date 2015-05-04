@@ -42,7 +42,6 @@ namespace QBitNinja.Notifications
         SingleThreadTaskScheduler _Scheduler;
         public void Listen()
         {
-            _Evt.Reset();
             _Scheduler = new SingleThreadTaskScheduler();
             ListenerTrace.Info("Connecting to node " + Configuration.Indexer.Node + "...");
             _Node = _Configuration.Indexer.ConnectToNode(true);
@@ -281,14 +280,20 @@ namespace QBitNinja.Notifications
             foreach (var dispo in _Disposables)
                 dispo.Dispose();
             _Disposables.Clear();
-            _Evt.Set();
+            if (LastException == null)
+                _Finished.SetResult(true);
+            else
+                _Finished.SetException(LastException);
         }
 
         #endregion
-        ManualResetEvent _Evt = new ManualResetEvent(true);
-        public void Wait()
+        TaskCompletionSource<bool> _Finished = new TaskCompletionSource<bool>();
+        public Task Running
         {
-            _Evt.WaitOne();
+            get
+            {
+                return _Finished.Task;
+            }
         }
     }
 }
