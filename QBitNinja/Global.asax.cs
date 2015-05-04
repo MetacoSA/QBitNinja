@@ -8,42 +8,20 @@ namespace QBitNinja
 {
     public class WebApiApplication : HttpApplication
     {
-        IDisposable _Subscription;
+        UpdateChainListener _Listener;
         protected void Application_Start()
         {
             GlobalConfiguration.Configure(WebApiConfig.Register);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
-            Resolver = (QBitNinjaDependencyResolver)GlobalConfiguration.Configuration.DependencyResolver;
-
-            Timer = new Timer(_ => Resolver.UpdateChain());
-            Timer.Change(0, (int)TimeSpan.FromSeconds(30).TotalMilliseconds);
-
-            var conf = Resolver.Get<QBitNinjaConfiguration>();
-            _Subscription =
-                conf.Topics
-                .NewBlocks
-                .CreateConsumer("webchain",true)
-                .OnMessage(b =>
-                {
-                    Resolver.UpdateChain();
-                });
+            _Listener = new UpdateChainListener();
+            _Listener.Listen(GlobalConfiguration.Configuration);
         }
         protected void Application_End()
         {
-            Timer.Dispose();
-            _Subscription.Dispose();
+            if (_Listener != null)
+                _Listener.Dispose();
         }
 
-        internal Timer Timer
-        {
-            get;
-            set;
-        }
-
-        internal QBitNinjaDependencyResolver Resolver
-        {
-            get;
-            set;
-        }
+       
     }
 }
