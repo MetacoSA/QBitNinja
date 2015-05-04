@@ -24,12 +24,12 @@ namespace QBitNinja.Notifications
             return Task.FromResult(true);
         }
 
-        protected override Task IndexCore(string partitionName, IEnumerable<Notify> items)
+        protected override void IndexCore(string partitionName, IEnumerable<Notify> items)
         {
-            return _Conf
+            _Conf
                 .Topics
                 .SendNotifications
-                .AddAsync(items.First());
+                .AddAsync(items.First()).Wait();
         }
 
         protected override int PartitionSize

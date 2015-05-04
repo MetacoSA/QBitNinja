@@ -70,6 +70,7 @@ namespace QBitNinja.Notifications
             _Disposables.Add(_Configuration
                 .Topics
                 .SubscriptionChanges
+                .EnsureSubscriptionExists()
                 .OnMessage(c =>
                 {
                     lock (_Subscriptions)
