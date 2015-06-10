@@ -21,16 +21,19 @@ namespace QBitNinja.JsonConverters
                 TransactionId = coin.Outpoint.Hash;
                 Index = coin.Outpoint.N;
                 ScriptPubKey = coin.TxOut.ScriptPubKey;
-                Value = coin.Amount;
                 if (coin is ScriptCoin)
                 {
                     RedeemScript = ((ScriptCoin)coin).Redeem;
+                }
+                if(coin is Coin)
+                {
+                    Value = ((Coin)coin).Amount;
                 }
                 if (coin is ColoredCoin)
                 {
                     var cc = (ColoredCoin)coin;
                     AssetId = cc.AssetId.GetWif(network);
-                    Quantity = cc.Asset.Quantity;
+                    Quantity = cc.Amount.Quantity;
                     Value = cc.Bearer.Amount;
                     var scc = cc.Bearer as ScriptCoin;
                     if (scc != null)
@@ -43,7 +46,7 @@ namespace QBitNinja.JsonConverters
             {
                 var coin = RedeemScript == null ? new Coin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey)) : new ScriptCoin(new OutPoint(TransactionId, Index), new TxOut(Value, ScriptPubKey), RedeemScript);
                 if (AssetId != null)
-                    return coin.ToColoredCoin(new Asset(AssetId.AssetId, Quantity));
+                    return coin.ToColoredCoin(new AssetMoney(AssetId, Quantity));
                 return coin;
             }
 
@@ -81,7 +84,7 @@ namespace QBitNinja.JsonConverters
                 set;
             }
             [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public ulong Quantity
+            public long Quantity
             {
                 get;
                 set;

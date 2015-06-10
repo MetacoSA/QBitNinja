@@ -26,38 +26,15 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void temp()
         {
-            var client = new QBitNinjaClient(Network.Main);
-            client.Colored = true;
-            var colored = new BitcoinColoredAddress("akDqb3L5hC2MRzzZNhhZyrRLJSS8HXysKrF");
-            var balance = client.GetBalance(colored).Result;
+            var client = new QBitNinjaClient(Network.TestNet);
+            var result = client.GetBalance(BitcoinAddress.Create("mnDQg9yvKQv3u88favjCfGtDhfD5tpq9wa")).Result;
+            var operation = result.Operations.FirstOrDefault(o => o.TransactionId == new uint256("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7"));
 
-            Money coins = new Money(0);
-            foreach (var op in balance.Operations)
-            {
-                var tx = client.GetTransaction(op.TransactionId).Result;
-                foreach (var i in op.ReceivedCoins)
-                {
-                    if (!(i.GetType() == typeof(ColoredCoin)))
-                        continue;
-                    var cc = (ColoredCoin)i;
-                    var dest = cc.ScriptPubKey.GetDestinationAddress(Network.Main).ToColoredAddress();
-                    coins += i.Amount;
-                    Debug.WriteLine("{0} to {1}", i.Amount.ToUnit(MoneyUnit.Bit), dest);
-                }
-                foreach (var s in op.SpentCoins)
-                {
-                    if (!(s.GetType() == typeof(ColoredCoin)))
-                        continue;
-                    var cc = (ColoredCoin)s;
-                    var dest = cc.ScriptPubKey.PaymentScript.PaymentScript.GetDestinationAddress(Network.Main).ToColoredAddress();
-                    coins -= s.Amount;
-                    // breakpoint here:
-                    Debug.WriteLine("-{0} to {1}", s.Amount.ToUnit(MoneyUnit.Bit), dest);
-                }
+            var includedCoins = operation.SpentCoins.ToDictionary(o => o.Outpoint);
+            var tx = client.GetTransaction(new uint256("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7")).Result;
 
-                Debug.WriteLine("balance: {0}", coins.ToUnit(MoneyUnit.Bit));
-            }
-
+            var rogue = tx.SpentCoins.Single(o => !includedCoins.ContainsKey(o.Outpoint));
+            var dest = rogue.ScriptPubKey.GetDestination().GetAddress(Network.TestNet); //mx97heA9c7o54YgZR7hVaYnpKkWFbmL6nr
         }
 
 

@@ -27,7 +27,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetTransaction()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key();
                 var alice = new Key();
@@ -108,7 +108,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanInitialIndex()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key();
                 var listener = tester.CreateListenerTester(true);
@@ -144,7 +144,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanInitialIndexConcurrently()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key();
                 var listener = tester.CreateListenerTester(true);
@@ -172,9 +172,9 @@ namespace QBitNinja.Tests
                         indexer.TransactionsPerWork = 11;
                         return indexer.Run();
                     }))
-                    .Select(s=>s.Result)
+                    .Select(s => s.Result)
                     .Sum();
-                
+
                 Assert.Equal(5 * 2, processed);
 
                 var client = tester.Configuration.Indexer.CreateIndexerClient();
@@ -182,17 +182,17 @@ namespace QBitNinja.Tests
             }
         }
 
-        [Fact]
+        //[Fact]
         public void Play()
         {
-            using (var fs = File.Open("c:/blocksize.csv", FileMode.Create))
+            using(var fs = File.Open("c:/blocksize.csv", FileMode.Create))
             {
                 StreamWriter writer = new StreamWriter(fs);
                 var node = Node.ConnectToLocal(Network.Main);
                 node.VersionHandshake();
                 var chain = node.GetChain();
 
-                foreach (var block in node.GetBlocks(chain.EnumerateAfter(chain.Genesis).Where(c => c.Height % 100 == 0).Select(c => c.HashBlock)))
+                foreach(var block in node.GetBlocks(chain.EnumerateAfter(chain.Genesis).Where(c => c.Height % 100 == 0).Select(c => c.HashBlock)))
                 {
                     var blockinfo = chain.GetBlock(block.GetHash());
                     writer.WriteLine(blockinfo.Height + "," + block.Transactions.Count);
@@ -243,7 +243,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanBroadcastTransaction()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var tx = CreateRandomTx();
                 var bytes = Encoders.Hex.EncodeData(tx.ToBytes());
@@ -280,7 +280,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanReceiveTransactionNotification()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var notifications = tester.CreateNotificationServer();
                 tester.Send<string>(HttpMethod.Post, "subscriptions", new NewTransactionSubscription()
@@ -295,7 +295,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanReceiveNewTransactionNotification()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var notifications = tester.CreateNotificationServer();
                 tester.Send<string>(HttpMethod.Post, "subscriptions", new NewTransactionSubscription()
@@ -318,7 +318,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanReceiveNewBlockNotification()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var notifications = tester.CreateNotificationServer();
                 tester.Send<string>(HttpMethod.Post, "subscriptions", new NewBlockSubscription()
@@ -370,7 +370,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanListenBlockchain()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var listener = tester.CreateListenerTester();
 
@@ -413,17 +413,17 @@ namespace QBitNinja.Tests
         void Insist(Action act)
         {
             int tried = 0;
-            while (true)
+            while(true)
             {
                 try
                 {
                     act();
                     break;
                 }
-                catch (Exception)
+                catch(Exception)
                 {
                     tried++;
-                    if (tried > 5)
+                    if(tried > 5)
                         throw;
                     Thread.Sleep(1000);
                 }
@@ -433,7 +433,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanRecreateSubscriptionsAndTopics()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, "toto");
                 queue.EnsureExistsAsync().Wait();
@@ -454,7 +454,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetBlock()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 tester.ChainBuilder.UploadBlock = true;
 
@@ -527,7 +527,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanUseCrudTable()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var facto = tester.Configuration.GetCrudTableFactory(new Scope(new[] { "test" }));
                 var table = facto.GetTable<TestData>("testdata");
@@ -560,7 +560,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanUseCacheTable()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var table = tester.Configuration.GetChainCacheTable<string>(new Scope(new[] { "test" }));
                 var a1 = tester.ChainBuilder.AddToChain();
@@ -607,7 +607,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetBalanceSummary3()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 tester.Configuration.CoinbaseMaturity = 5;
                 //Alice hit an invalid cached summary
@@ -833,7 +833,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetBalanceSummary2()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 tester.Configuration.CoinbaseMaturity = 5;
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
@@ -1139,7 +1139,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetWalletBalanceSummary()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var alice1 = new Key();
                 var alice2 = new Key();
@@ -1196,7 +1196,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetBalanceSummaryNoConcurrencyProblems()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
 
@@ -1252,7 +1252,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetBalanceSummary()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 var alice = new Key().GetBitcoinSecret(Network.TestNet);
@@ -1482,7 +1482,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void BalanceDoesNotIncludeNonStandardCoin()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
@@ -1515,7 +1515,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanManageWallet()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var alice1 = new Key().GetBitcoinSecret(Network.TestNet);
                 var alice2 = new Key().GetBitcoinSecret(Network.TestNet);
@@ -1584,7 +1584,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void GenerateKeysIsThreadSafe()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var alice = new ExtKey().GetWif(Network.TestNet);
                 var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
@@ -1611,7 +1611,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanManageKeyGenerationErrorCheck()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var alice = new ExtKey().GetWif(Network.TestNet);
                 var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
@@ -1652,7 +1652,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanManageKeyGeneration()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var alice = new ExtKey().GetWif(Network.TestNet);
                 var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
@@ -1757,7 +1757,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetColoredBalance()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var goldGuy = new Key();
                 var silverGuy = new Key();
@@ -1767,9 +1767,9 @@ namespace QBitNinja.Tests
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 var alice = new Key().GetBitcoinSecret(Network.TestNet);
 
-                tester.AssertTotal(bob.GetAddress(), 0, null);
-                tester.AssertTotal(bob.GetAddress(), 0, gold);
-                tester.AssertTotal(bob.GetAddress(), 0, silver);
+                tester.AssertTotal(bob.GetAddress(), new Money(0));
+                tester.AssertTotal(bob.GetAddress(), new AssetMoney(gold, 0));
+                tester.AssertTotal(bob.GetAddress(), new AssetMoney(silver, 0));
 
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(100), goldGuy);
                 var goldIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
@@ -1778,9 +1778,9 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitMoney(Money.Coins(90), bob);
                 tester.ChainBuilder.EmitMoney(Money.Coins(50), alice);
 
-                tester.AssertTotal(bob.GetAddress(), Money.Coins(90), null);
-                tester.AssertTotal(bob.GetAddress(), 0, gold);
-                tester.AssertTotal(bob.GetAddress(), 0, silver);
+                tester.AssertTotal(bob.GetAddress(), Money.Coins(90));
+                tester.AssertTotal(bob.GetAddress(), new AssetMoney(gold, 0));
+                tester.AssertTotal(bob.GetAddress(), new AssetMoney(silver, 0));
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1789,7 +1789,7 @@ namespace QBitNinja.Tests
                 tx = new TransactionBuilder()
                      .AddKeys(goldGuy)
                      .AddCoins(goldIssuance)
-                     .IssueAsset(bob, new Asset(gold, 1000))
+                     .IssueAsset(bob, new AssetMoney(gold, 1000))
                      .SetChange(goldGuy)
                      .Then()
                      .AddKeys(bob)
@@ -1799,15 +1799,15 @@ namespace QBitNinja.Tests
                      .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
-                tester.AssertTotal(bob, Money.Coins(85), null);
-                tester.AssertTotal(bob, 1000, gold);
-                tester.AssertTotal(bob, 0, silver);
+                tester.AssertTotal(bob, Money.Coins(85));
+                tester.AssertTotal(bob, new AssetMoney(gold, 1000));
+                tester.AssertTotal(bob, new AssetMoney(silver, 0));
 
                 //Send silver to Alice
                 tx = new TransactionBuilder()
                      .AddKeys(silverGuy)
                      .AddCoins(silverIssuance)
-                     .IssueAsset(alice, new Asset(silver, 100))
+                     .IssueAsset(alice, new AssetMoney(silver, 100))
                      .SetChange(silverGuy)
                      .Then()
                      .AddKeys(alice)
@@ -1817,9 +1817,9 @@ namespace QBitNinja.Tests
                      .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
-                tester.AssertTotal(alice, Money.Coins(47.5m), null);
-                tester.AssertTotal(alice, 0, gold);
-                tester.AssertTotal(alice, 100, silver);
+                tester.AssertTotal(alice, Money.Coins(47.5m));
+                tester.AssertTotal(alice, new AssetMoney(gold,0));
+                tester.AssertTotal(alice, new AssetMoney(silver,100));
 
                 tester.ChainBuilder.EmitBlock();
 
@@ -1827,34 +1827,34 @@ namespace QBitNinja.Tests
                 tx = new TransactionBuilder()
                      .AddKeys(alice)
                      .AddCoins(tester.GetUnspentCoins(alice))
-                     .SendAsset(bob, new Asset(silver, 9))
+                     .SendAsset(bob, new AssetMoney(silver, 9))
                      .Send(bob, Money.Coins(1.0m))
                      .SetChange(alice)
                      .Then()
                      .AddKeys(bob)
                      .AddCoins(tester.GetUnspentCoins(bob))
-                     .SendAsset(alice, new Asset(gold, 10))
+                     .SendAsset(alice, new AssetMoney(gold, 10))
                      .Send(alice, Money.Coins(1.5m))
                      .SetChange(bob)
                      .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
-                tester.AssertTotal(alice, Money.Coins(48m) - Money.Dust, null);
-                tester.AssertTotal(alice, 10, gold);
-                tester.AssertTotal(alice, 91, silver);
+                tester.AssertTotal(alice, Money.Coins(48m) - Money.Dust);
+                tester.AssertTotal(alice, new AssetMoney(gold,10));
+                tester.AssertTotal(alice, new AssetMoney(silver,91));
 
-                tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust, null);
-                tester.AssertTotal(bob, 990, gold);
-                tester.AssertTotal(bob, 9, silver);
+                tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust);
+                tester.AssertTotal(bob, new AssetMoney(gold,990));
+                tester.AssertTotal(bob, new AssetMoney(silver,9));
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                for (int i = 0 ; i < 2 ; i++)
+                for(int i = 0; i < 2; i++)
                 {
-                    tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust, null);
-                    tester.AssertTotal(bob, 990, gold);
-                    tester.AssertTotal(bob, 9, silver);
+                    tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust);
+                    tester.AssertTotal(bob, new AssetMoney(gold,990));
+                    tester.AssertTotal(bob, new AssetMoney(silver, 9));
                 }
                 var summary = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?colored=true");
                 Assert.NotNull(summary.Confirmed.Assets);
@@ -1864,7 +1864,7 @@ namespace QBitNinja.Tests
         [Fact]
         public void CanGetBalance()
         {
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
@@ -1941,7 +1941,7 @@ namespace QBitNinja.Tests
         public void CanWhatIsIt()
         {
             //TODO: These tests are fragile, a simple api change can break them. We should try to be more relax.
-            using (var tester = ServerTester.Create())
+            using(var tester = ServerTester.Create())
             {
                 tester.ChainBuilder.UploadBlock = true;
                 var bob = new BitcoinSecret("KxMVn7SRNkWTfVa78UXCmsc6Kyp3aQZydnyzGzNBrRg2T9X1u4er");
@@ -2091,7 +2091,7 @@ namespace QBitNinja.Tests
         private void AssertWhatIsIt(ServerTester tester, string data, string expected)
         {
             var actual = tester.SendGet<string>("whatisit/" + data);
-            if (expected == null)
+            if(expected == null)
             {
                 Assert.Equal("\"Good question Holmes !\"", actual);
             }
@@ -2113,12 +2113,12 @@ namespace QBitNinja.Tests
 
         private static JObject ToCamel(JObject data)
         {
-            foreach (var prop in data.Properties().ToList())
+            foreach(var prop in data.Properties().ToList())
             {
                 var name = prop.Name;
                 var first = prop.Name.Substring(0, 1).ToLowerInvariant();
                 name = first + name.Substring(1);
-                if (prop.Value is JObject)
+                if(prop.Value is JObject)
                     ToCamel((JObject)prop.Value);
                 prop.Replace(new JProperty(name, prop.Value));
             }

@@ -393,7 +393,11 @@ namespace QBitNinja.Controllers
                 IsCoinbase = tx.Transaction.IsCoinBase,
                 Fees = tx.Fees,
                 Block = FetchBlockInformation(tx.BlockIds),
-                SpentCoins = tx.SpentCoins == null ? null : tx.SpentCoins.Select(c => new Coin(c)).ToList()
+                SpentCoins = tx.SpentCoins == null ? null : tx.SpentCoins.Select(c => new Coin()
+                {
+                    Outpoint = c.OutPoint,
+                    TxOut = c.TxOut
+                }).ToList()
             };
         }
 

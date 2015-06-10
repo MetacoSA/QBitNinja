@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using System;
+using System.Reflection;
 using System.Web.Http.ModelBinding;
 using System.Web.Http.ValueProviders;
 
@@ -30,10 +31,17 @@ namespace QBitNinja.ModelBinders
                 return true;
             }
 
-            bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, key);
+            try
+            {
+                bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, key);
+            }
+            catch(TargetInvocationException ex)
+            {
+                throw ex.InnerException;
+            }
             if (bindingContext.Model is uint256 || bindingContext.Model is uint160)
             {
-                if (bindingContext.Model.ToString().StartsWith(new uint160("0").ToString()))
+                if (bindingContext.Model.ToString().StartsWith(new uint160(0).ToString()))
                     throw new FormatException("Invalid hash format");
             }
             return true;

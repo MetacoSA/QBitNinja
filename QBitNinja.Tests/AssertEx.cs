@@ -13,7 +13,7 @@ namespace QBitNinja.Tests
         {
             Assert.Equal(Serializer.ToString(expected), Serializer.ToString(actual));
         }
-        [DebuggerHidden]
+        //[DebuggerHidden]
         public static void HttpError(int code, Action act)
         {
             try

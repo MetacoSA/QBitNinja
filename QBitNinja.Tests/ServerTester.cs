@@ -226,58 +226,63 @@ namespace QBitNinja.Tests
 
         public void AssertTotal(IDestination dest, Money total)
         {
-            var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet);
+            var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
             Assert.Equal(total, summary.UnConfirmed.Amount + summary.Confirmed.Amount - summary.Immature.Amount);
 
             var balances = SendGet<BalanceModel>("balances/" + address);
-            var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).Select(c => c.Amount).Sum()
+            var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).OfType<Coin>().Select(c => c.Amount).Sum()
                         -
-                        balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Amount).Sum();
+                        balances.Operations.SelectMany(o => o.SpentCoins).OfType<Coin>().Select(c => c.Amount).Sum();
             Assert.Equal(total, actual);
         }
 
-        public void AssertTotal(IDestination dest, Money total, AssetId asset)
+        public void AssertTotal(IDestination dest, IMoney total)
         {
+            var zero = total.Sub(total);
             var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
-            Assert.Equal(total, SelectAmount(asset, summary.UnConfirmed) + SelectAmount(asset, summary.Confirmed) - SelectAmount(asset, summary.Immature));
+            Assert.Equal(total, SelectAmount(zero, summary.UnConfirmed).Add(SelectAmount(zero, summary.Confirmed)).Add(SelectAmount(zero, summary.Immature)));
 
             var balances = SendGet<BalanceModel>("balances/" + address);
-            var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).Select(c => SelectAmount(asset, c)).Sum()
-                        -
-                        balances.Operations.SelectMany(o => o.SpentCoins).Select(c => SelectAmount(asset, c)).Sum();
+            var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).Select(c => SelectAmount(zero, c))
+                        .Sum(zero)
+                        .Sub(
+                        balances.Operations.SelectMany(o => o.SpentCoins).Select(c => SelectAmount(zero, c))
+                        .Sum(zero));
             Assert.Equal(total, actual);
         }
 
-        private Money SelectAmount(AssetId asset, ICoin coin)
+        private IMoney SelectAmount(IMoney zero, ICoin coin)
         {
+            var asset = zero is AssetMoney ? ((AssetMoney)zero).Id : null;
             if (asset == null)
             {
                 var c = coin as Coin;
                 if (c == null)
-                    return Money.Zero;
+                    return zero;
                 return c.Amount;
             }
             else
             {
                 var cc = coin as ColoredCoin;
                 if (cc == null)
-                    return Money.Zero;
+                    return zero;
                 if (cc.AssetId != asset)
-                    return Money.Zero;
+                    return zero;
                 return cc.Amount;
             }
         }
 
-        private Money SelectAmount(AssetId asset, BalanceSummaryDetails balanceSummaryDetails)
+        private IMoney SelectAmount(IMoney zero, BalanceSummaryDetails balanceSummaryDetails)
         {
-            if (asset == null)
+            var cc = zero as AssetMoney;
+            if(cc == null)
                 return balanceSummaryDetails.Amount;
-            var assetDetails = balanceSummaryDetails.Assets.FirstOrDefault(a => a.Asset.AssetId == asset);
+            var assetDetails = balanceSummaryDetails.Assets.FirstOrDefault(a => a.Asset.AssetId == cc.Id);
             if (assetDetails == null)
-                return Money.Zero;
-            return assetDetails.Quantity;
+                return zero;
+            return new AssetMoney(assetDetails.Asset,assetDetails.Quantity);
         }
 
         public ICoin[] GetUnspentCoins(IDestination dest)

@@ -165,7 +165,7 @@ namespace QBitNinja.Models
         {
             var details = new BalanceSummaryDetails
             {
-                Amount = CalculateAmount(changes, c => c is Coin),
+                Amount = CalculateAmount(changes),
                 TransactionCount = changes.Count,
                 Received = changes.Select(_ => _.Amount < Money.Zero ? Money.Zero : _.Amount).Sum(),
             };
@@ -204,11 +204,11 @@ namespace QBitNinja.Models
             return details;
         }
 
-        static Money CalculateAmount(IEnumerable<OrderedBalanceChange> changes, Func<ICoin, bool> predicate)
+        static Money CalculateAmount(IEnumerable<OrderedBalanceChange> changes)
         {
-            return changes.SelectMany(c => c.ReceivedCoins.Where(predicate)).Select(c => c.Amount).Sum()
+            return changes.SelectMany(c => c.ReceivedCoins.OfType<Coin>()).Select(c => c.Amount).Sum()
                 -
-                changes.SelectMany(c => c.SpentCoins.Where(predicate)).Select(c => c.Amount).Sum();
+                changes.SelectMany(c => c.SpentCoins.OfType<Coin>()).Select(c => c.Amount).Sum();
         }
 #endif
     }
