@@ -41,15 +41,6 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="NBitcoin">
-      <HintPath>..\packages\NBitcoin.2.1.2.0\lib\portable-net45+win+wpa81+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.dll</HintPath>
-    </Reference>
-    <Reference Include="NBitcoin.BouncyCastle">
-      <HintPath>..\packages\NBitcoin.2.1.2.0\lib\portable-net45+win+wpa81+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.BouncyCastle.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\NBitcoin.2.1.2.0\lib\portable-net45+win+wpa81+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System.Net.Http">
       <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\portable-net40+sl4+win8+wp71+wpa81\System.Net.Http.dll</HintPath>
     </Reference>
