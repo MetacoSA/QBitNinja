@@ -16,7 +16,7 @@ namespace QBitNinja.JsonConverters
         {
             try
             {
-                return reader.TokenType == JsonToken.Null ? null : new KeyPath(reader.Value.ToString());
+                return reader.TokenType == JsonToken.Null ? null : KeyPath.Parse(reader.Value.ToString());
             }
             catch (FormatException)
             {

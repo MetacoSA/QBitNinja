@@ -53,7 +53,7 @@ namespace QBitNinja
 
             if (data.Length == 0x40)
             {
-                var tx = NoException(() => Controller.JsonTransaction(new uint256(data)));
+                var tx = NoException(() => Controller.JsonTransaction(uint256.Parse(data)));
                 if (tx != null)
                     return tx;
             }

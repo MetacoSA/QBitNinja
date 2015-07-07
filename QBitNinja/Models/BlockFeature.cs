@@ -104,7 +104,7 @@ namespace QBitNinja.Models
 
             if (str.Length == 0x40 && str.ToCharArray().All(c => HexEncoder.IsDigit(c) != -1))
             {
-                feature.BlockId = new uint256(str);
+                feature.BlockId = uint256.Parse(str);
                 return feature;
             }
 

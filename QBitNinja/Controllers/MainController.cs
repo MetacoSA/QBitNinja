@@ -49,7 +49,7 @@ namespace QBitNinja.Controllers
             switch (this.Request.Content.Headers.ContentType.MediaType)
             {
                 case "application/json":
-                    tx = new Transaction(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
+                    tx = NBitcoin.Transaction.Parse(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
                     break;
                 case "application/octet-stream":
                     {

@@ -140,7 +140,8 @@ namespace QBitNinja.Listener.Console
                 }
                 finally
                 {
-                    new CompositeDisposable(dispo.ToArray()).Dispose();
+                    foreach(var d in dispo)
+                        d.Dispose();
                 }
 
             }

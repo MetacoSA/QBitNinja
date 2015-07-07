@@ -41,13 +41,13 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="NBitcoin">
-      <HintPath>..\packages\NBitcoin.2.1.3.0\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.2.1.4.0\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.dll</HintPath>
     </Reference>
     <Reference Include="NBitcoin.BouncyCastle">
-      <HintPath>..\packages\NBitcoin.2.1.3.0\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.BouncyCastle.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.2.1.4.0\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\NBitcoin.2.1.3.0\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.2.1.4.0\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

@@ -28,10 +28,10 @@ namespace QBitNinja.Client.Tests
         {
             var client = new QBitNinjaClient(Network.TestNet);
             var result = client.GetBalance(BitcoinAddress.Create("mnDQg9yvKQv3u88favjCfGtDhfD5tpq9wa")).Result;
-            var operation = result.Operations.FirstOrDefault(o => o.TransactionId == new uint256("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7"));
+            var operation = result.Operations.FirstOrDefault(o => o.TransactionId == uint256.Parse("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7"));
 
             var includedCoins = operation.SpentCoins.ToDictionary(o => o.Outpoint);
-            var tx = client.GetTransaction(new uint256("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7")).Result;
+            var tx = client.GetTransaction(uint256.Parse("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7")).Result;
 
             var rogue = tx.SpentCoins.Single(o => !includedCoins.ContainsKey(o.Outpoint));
             var dest = rogue.ScriptPubKey.GetDestination().GetAddress(Network.TestNet); //mx97heA9c7o54YgZR7hVaYnpKkWFbmL6nr
@@ -91,10 +91,10 @@ namespace QBitNinja.Client.Tests
 
             var keyset = wallet.GetKeySetClient("main");
 
-            keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: new KeyPath("1/2/3")).Wait();
+            keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: KeyPath.Parse("1/2/3")).Wait();
             Assert.True(keyset.Delete().Result);
             Assert.False(keyset.Delete().Result);
-            keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: new KeyPath("1/2/3")).Wait();
+            keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: KeyPath.Parse("1/2/3")).Wait();
             var key = keyset.GenerateKey().Result;
 
             var sets = wallet.GetKeySets().Result;
@@ -133,7 +133,7 @@ namespace QBitNinja.Client.Tests
         public void CanGetTransaction()
         {
             var client = new QBitNinjaClient(Network.Main);
-            var tx = client.GetTransaction(new uint256("ce530f95b2b7f559292c60cefa340eaf7c83cde3e063c59bc43c108a3bd24360")).Result;
+            var tx = client.GetTransaction(uint256.Parse("ce530f95b2b7f559292c60cefa340eaf7c83cde3e063c59bc43c108a3bd24360")).Result;
             Assert.NotNull(tx);
         }
 

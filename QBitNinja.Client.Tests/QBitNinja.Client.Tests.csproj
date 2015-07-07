@@ -52,13 +52,11 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NBitcoin, Version=2.1.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.2.1.3.0\lib\net45\NBitcoin.dll</HintPath>
+    <Reference Include="NBitcoin">
+      <HintPath>..\packages\NBitcoin.2.1.4.0\lib\net45\NBitcoin.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.BouncyCastle, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.2.1.3.0\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
+    <Reference Include="NBitcoin.BouncyCastle">
+      <HintPath>..\packages\NBitcoin.2.1.4.0\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
