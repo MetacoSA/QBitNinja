@@ -16,7 +16,7 @@ namespace QBitNinja
         readonly CloudTable _cloudTable;
         public ChainTable(CloudTable cloudTable)
         {
-            if (cloudTable == null)
+            if(cloudTable == null)
                 throw new ArgumentNullException("cloudTable");
             _cloudTable = cloudTable;
         }
@@ -38,15 +38,12 @@ namespace QBitNinja
         public void Create(ConfirmedBalanceLocator locator, T item)
         {
             var str = Serializer.ToString(item);
-            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
-            {
-                Properties =
-                {
-                    new KeyValuePair<string,EntityProperty>("data",new EntityProperty(str))
-                }
-            };
+            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
+            PutData(entity, str);
             Table.Execute(TableOperation.InsertOrReplace(entity));
         }
+
+
 
         public void Delete(ConfirmedBalanceLocator locator)
         {
@@ -58,7 +55,7 @@ namespace QBitNinja
         }
         public void Delete()
         {
-            foreach (var entity in Table.ExecuteQuery(new TableQuery()
+            foreach(var entity in Table.ExecuteQuery(new TableQuery()
             {
                 FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
             }))
@@ -69,14 +66,49 @@ namespace QBitNinja
 
         public IEnumerable<T> Query(ChainBase chain, BalanceQuery query = null)
         {
-            if (query == null)
+            if(query == null)
                 query = new BalanceQuery();
             var tableQuery = query.CreateTableQuery(Escape(Scope), "");
             return ExecuteBalanceQuery(Table, tableQuery, query.PageSizes)
                    .Where(_ => chain.Contains(((ConfirmedBalanceLocator)UnEscapeLocator(_.RowKey)).BlockHash))
-                   .Select(_ => Serializer.ToObject<T>(_.Properties["data"].StringValue));
+                   .Select(_ => Serializer.ToObject<T>(ParseData(_)));
         }
 
+        private string ParseData(DynamicTableEntity entity)
+        {
+            int i = 0;
+            StringBuilder builder = new StringBuilder();
+            while(true)
+            {
+                string name = i == 0 ? "data" : "data" + i;
+                if(!entity.Properties.ContainsKey(name))
+                    break;
+                builder.Append(entity.Properties[name].StringValue);
+                i++;
+            }
+            return builder.ToString();
+        }
+        private void PutData(DynamicTableEntity entity, string str)
+        {
+            int i = 0;
+            foreach(var part in Split(str, 30000))
+            {
+                string name = i == 0 ? "data" : "data" + i;
+                entity.Properties.Add(name, new EntityProperty(part));
+                i++;
+            }
+        }
+
+        private IEnumerable<string> Split(string str, int charCount)
+        {
+            int index = 0;
+            while(index != str.Length)
+            {
+                var count = Math.Min(charCount, str.Length - index);
+                yield return str.Substring(index, count);
+                index += count;
+            }
+        }
 
         private IEnumerable<DynamicTableEntity> ExecuteBalanceQuery(CloudTable table, TableQuery tableQuery, IEnumerable<int> pages)
         {
@@ -88,11 +120,11 @@ namespace QBitNinja
                 tableQuery.TakeCount = pagesEnumerator.MoveNext() ? (int?)pagesEnumerator.Current : null;
                 var segment = table.ExecuteQuerySegmented(tableQuery, continuation);
                 continuation = segment.ContinuationToken;
-                foreach (var entity in segment)
+                foreach(var entity in segment)
                 {
                     yield return entity;
                 }
-            } while (continuation != null);
+            } while(continuation != null);
         }
 
         private static string Escape(ConfirmedBalanceLocator locator)
@@ -100,7 +132,7 @@ namespace QBitNinja
             locator = Normalize(locator);
             return "-" + locator.ToString(true);
         }
-        
+
         private static BalanceLocator UnEscapeLocator(string str)
         {
             return BalanceLocator.Parse(str.Substring(1), true);
