@@ -26,7 +26,7 @@ namespace QBitNinja.Notifications
         }
         public BlocksUpdater(QBitNinjaConfiguration configuration)
         {
-            if (configuration == null)
+            if(configuration == null)
                 throw new ArgumentNullException("configuration");
             _Configuration = configuration;
         }
@@ -43,12 +43,30 @@ namespace QBitNinja.Notifications
             }
         }
 
+        void TryLock(object obj, Action act)
+        {
+            if(Monitor.TryEnter(obj))
+            {
+                try
+                {
+                    act();
+                }
+                finally
+                {
+                    Monitor.Exit(obj);
+                }
+            }
+        }
+
         SubscriptionCollection _Subscriptions = null;
+        object _LockBalance = new object();
+        object _LockTransactions = new object();
+
         public void Listen(ConcurrentChain chain = null)
         {
             var indexer = Configuration.Indexer.CreateIndexer();
             ListenerTrace.Info("Handshaked");
-            if (chain == null)
+            if(chain == null)
             {
                 chain = new ConcurrentChain(_Configuration.Indexer.Network);
             }
@@ -73,9 +91,9 @@ namespace QBitNinja.Notifications
                 .EnsureSubscriptionExists()
                 .OnMessage(c =>
                 {
-                    lock (_Subscriptions)
+                    lock(_Subscriptions)
                     {
-                        if (c.Added)
+                        if(c.Added)
                             _Subscriptions.Add(c.Subscription);
                         else
                             _Subscriptions.Remove(c.Subscription.Id);
@@ -105,43 +123,40 @@ namespace QBitNinja.Notifications
                     await Task.WhenAll(new[]{
                     Async(() =>
                     {
-                        lock (_Wallets)
-                        {
-                            new IndexBalanceTask(Configuration.Indexer, _Wallets)
-                                {
-                                    EnsureIsSetup = false
-                                }
-                                .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
-                        }
-                    }),
-                    Async(() =>
-                        {
-                            new IndexBalanceTask(Configuration.Indexer, null)
-                                {
-                                    EnsureIsSetup = false
-                                }
-                                .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
-                        }),
-                    Async(() =>
+                        TryLock(_LockTransactions, () =>
                         {
                             new IndexTransactionsTask(Configuration.Indexer)
-                                {
-                                    EnsureIsSetup = false
-                                }
-                                .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
-                        }),
-                     Async(() =>
-                        {
-                            lock(_Subscriptions)
                             {
-                                
-                            new IndexNotificationsTask(Configuration, _Subscriptions)
-                                {
-                                    EnsureIsSetup = false
-                                }
-                                .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                                EnsureIsSetup = false
                             }
-                        })}).ConfigureAwait(false);
+                            .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
+                        });
+                        TryLock(_Wallets, () =>
+                        {
+                            new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                            {
+                                EnsureIsSetup = false
+                            }
+                            .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
+                        });
+                        TryLock(_LockBalance, () =>
+                        {
+                            new IndexBalanceTask(Configuration.Indexer, null)
+                            {
+                                EnsureIsSetup = false
+                            }
+                            .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
+                        });
+                        TryLock(_Subscriptions, () =>
+                        {
+                            new IndexNotificationsTask(Configuration, _Subscriptions)
+                            {
+                                EnsureIsSetup = false
+                            }
+                            .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                        });
+                    })})
+                    .ConfigureAwait(false);
 
                     await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
                 }));
@@ -154,7 +169,7 @@ namespace QBitNinja.Notifications
                .OnMessage(evt =>
                {
                    ListenerTrace.Info("New wallet rule");
-                   lock (_Wallets)
+                   lock(_Wallets)
                    {
                        _Wallets.Add(evt.CreateWalletRuleEntry());
                    }
@@ -213,7 +228,7 @@ namespace QBitNinja.Notifications
 
         void ErrorHandler(Task task)
         {
-            if (task.Exception != null)
+            if(task.Exception != null)
             {
                 LastException = task.Exception;
             }
@@ -231,7 +246,7 @@ namespace QBitNinja.Notifications
             tcs.CancelAfter(10000);
 
             var subscription = await Configuration.GetSubscriptionsTable().ReadOneAsync(n.Subscription.Id).ConfigureAwait(false);
-            if (subscription == null)
+            if(subscription == null)
                 return;
 
             bool failed = false;
@@ -260,7 +275,7 @@ namespace QBitNinja.Notifications
                 TimeSpan.FromHours(24.0)
             };
 
-            if (!notify.SendAndForget && failed && (n.Tried - 1) <= tries.Length - 1)
+            if(!notify.SendAndForget && failed && (n.Tried - 1) <= tries.Length - 1)
             {
                 var wait = tries[n.Tried - 1];
                 act.RescheduleIn(wait);
@@ -275,7 +290,7 @@ namespace QBitNinja.Notifications
                 {
                     act();
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
                     LastException = ex;
                     throw;
@@ -294,7 +309,7 @@ namespace QBitNinja.Notifications
 
         public void Dispose()
         {
-            foreach (var dispo in _Disposables)
+            foreach(var dispo in _Disposables)
                 dispo.Dispose();
         }
 
