@@ -8,6 +8,7 @@
 		<owners>QBitNinja</owners>
 		<iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
 		<description>Client library for QBitNinja server</description>
 		<summary>
 		</summary>
