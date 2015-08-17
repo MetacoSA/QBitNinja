@@ -120,8 +120,7 @@ namespace QBitNinja.Notifications
                     client.SynchronizeChain(_Chain);
                     var repo = new IndexerBlocksRepository(client);
 
-                    await Task.WhenAll(new[]{
-                    Async(() =>
+                    await Async(() =>
                     {
                         TryLock(_LockTransactions, () =>
                         {
@@ -155,8 +154,7 @@ namespace QBitNinja.Notifications
                             }
                             .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
                         });
-                    })})
-                    .ConfigureAwait(false);
+                    }).ConfigureAwait(false);
 
                     await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
                 }));
