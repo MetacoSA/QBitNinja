@@ -61,6 +61,8 @@ namespace QBitNinja.Notifications
         SubscriptionCollection _Subscriptions = null;
         object _LockBalance = new object();
         object _LockTransactions = new object();
+        object _LockWallets = new object();
+        object _LockSubscriptions = new object();
 
         public void Listen(ConcurrentChain chain = null)
         {
@@ -130,13 +132,16 @@ namespace QBitNinja.Notifications
                             }
                             .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
                         });
-                        TryLock(_Wallets, () =>
+                        TryLock(_LockWallets, () =>
                         {
-                            new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                            lock(_Wallets)
                             {
-                                EnsureIsSetup = false
+                                new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
                             }
-                            .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
                         });
                         TryLock(_LockBalance, () =>
                         {
@@ -146,13 +151,16 @@ namespace QBitNinja.Notifications
                             }
                             .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
                         });
-                        TryLock(_Subscriptions, () =>
+                        TryLock(_LockSubscriptions, () =>
                         {
-                            new IndexNotificationsTask(Configuration, _Subscriptions)
+                            lock(_Subscriptions)
                             {
-                                EnsureIsSetup = false
+                                new IndexNotificationsTask(Configuration, _Subscriptions)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
                             }
-                            .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
                         });
                     }).ConfigureAwait(false);
 
