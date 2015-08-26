@@ -224,7 +224,7 @@ namespace QBitNinja.Tests
                 AutoDeleteOnIdle = TimeSpan.FromMinutes(5.0)
             })
             .EnsureSubscriptionExists()
-            .ReceiveAsync(TimeSpan.FromSeconds(10.0)).ConfigureAwait(false);
+            .ReceiveAsync(TimeSpan.FromSeconds(20.0)).ConfigureAwait(false);
             if (message == null)
                 Assert.True(false, "No message received on topic");
         }

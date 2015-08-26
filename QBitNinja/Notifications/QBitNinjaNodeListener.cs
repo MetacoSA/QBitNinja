@@ -216,7 +216,7 @@ namespace QBitNinja.Notifications
                     {
                         _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
                         var unused = Configuration.Topics.NeedIndexNewTransaction.AddAsync(tx);
-                    }, false);                    
+                    }, false);
                 }, true);
             }
             if(message.Message.Payload is BlockPayload)
@@ -232,15 +232,14 @@ namespace QBitNinja.Notifications
                        node.SynchronizeChain(_Chain);
                        _Indexer.IndexChain(_Chain);
                        ListenerTrace.Info("New height : " + _Chain.Height);
-                   }, false);
-                    var header = _Chain.GetBlock(blockId);
-                    if(header == null)
-                        return;
-                    Async(() =>
-                    {
+
+                       var header = _Chain.GetBlock(blockId);
+                       if(header == null)
+                           return;
                        _Indexer.Index(block);
                        var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
-                    }, false);
+                   }
+                    , false);
                 }, true);
             }
             if(message.Message.Payload is GetDataPayload)
