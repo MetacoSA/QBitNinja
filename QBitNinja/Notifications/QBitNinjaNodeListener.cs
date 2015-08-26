@@ -24,7 +24,7 @@ namespace QBitNinja.Notifications
             public Behavior(QBitNinjaNodeListener listener)
             {
                 _Listener = listener;
-            }           
+            }
 
             protected override void AttachCore()
             {
@@ -87,15 +87,15 @@ namespace QBitNinja.Notifications
         {
             _Scheduler = new SingleThreadTaskScheduler();
             _Chain = new ConcurrentChain(_Configuration.Indexer.Network);
-                       
+
             _Indexer = Configuration.Indexer.CreateIndexer();
-            
+
             _Group = new NodesGroup(Configuration.Indexer.Network);
             _Disposables.Add(_Group);
             _Group.AllowSameGroup = true;
             _Group.MaximumNodeConnection = 2;
             AddressManager addrman = new AddressManager();
-            addrman.Add(new NetworkAddress(Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort)), 
+            addrman.Add(new NetworkAddress(Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort)),
                         IPAddress.Parse("127.0.0.1"));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
@@ -164,7 +164,7 @@ namespace QBitNinja.Notifications
         NodesGroup _Group;
         private async Task SendMessageAsync(Payload payload)
         {
-            int[] delays = new int[]{50, 100, 200, 300, 1000, 2000, 3000, 6000, 12000};
+            int[] delays = new int[] { 50, 100, 200, 300, 1000, 2000, 3000, 6000, 12000 };
             int i = 0;
             while(_Group.ConnectedNodes.Count != 2)
             {
@@ -188,18 +188,22 @@ namespace QBitNinja.Notifications
         }
 
         ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
+        ConcurrentDictionary<uint256, uint256> _KnownInvs = new ConcurrentDictionary<uint256, uint256>();
+
         void node_MessageReceived(Node node, IncomingMessage message)
         {
+            if(_KnownInvs.Count == 1000)
+                _KnownInvs.Clear();
             if(message.Message.Payload is InvPayload)
             {
                 var inv = (InvPayload)message.Message.Payload;
                 foreach(var inventory in inv.Inventory.Where(i => _Broadcasting.ContainsKey(i.Hash)))
                 {
-                    ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                     Transaction tx;
-                    _Broadcasting.TryRemove(inventory.Hash, out tx);
+                    if(_Broadcasting.TryRemove(inventory.Hash, out tx))
+                        ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
-                node.SendMessageAsync(new GetDataPayload(inv.Inventory.ToArray()));
+                node.SendMessageAsync(new GetDataPayload(inv.Inventory.Where(i => _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray()));
             }
             if(message.Message.Payload is TxPayload)
             {
@@ -208,8 +212,11 @@ namespace QBitNinja.Notifications
 
                 Async(() =>
                 {
-                    _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
-                    var unused = Configuration.Topics.NeedIndexNewTransaction.AddAsync(tx);
+                    Async(() =>
+                    {
+                        _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
+                        var unused = Configuration.Topics.NeedIndexNewTransaction.AddAsync(tx);
+                    }, false);                    
                 }, true);
             }
             if(message.Message.Payload is BlockPayload)
@@ -220,19 +227,21 @@ namespace QBitNinja.Notifications
                 Async(() =>
                 {
                     var blockId = block.GetHash();
-                    node.SynchronizeChain(_Chain);
-                    _Indexer.IndexChain(_Chain);
-                    ListenerTrace.Info("New height : " + _Chain.Height);
+                    Async(() =>
+                   {
+                       node.SynchronizeChain(_Chain);
+                       _Indexer.IndexChain(_Chain);
+                       ListenerTrace.Info("New height : " + _Chain.Height);
+                   }, false);
                     var header = _Chain.GetBlock(blockId);
                     if(header == null)
                         return;
-                    _Indexer.Index(block);
-                    var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
+                    Async(() =>
+                    {
+                       _Indexer.Index(block);
+                       var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
+                    }, false);
                 }, true);
-            }
-            if(message.Message.Payload is PongPayload)
-            {
-                ListenerTrace.Verbose("Pong");
             }
             if(message.Message.Payload is GetDataPayload)
             {
