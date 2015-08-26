@@ -81,14 +81,16 @@ namespace QBitNinja.Notifications
             }
         }
 
+        CustomThreadPoolTaskScheduler _IndexerScheduler;
+
         List<IDisposable> _Disposables = new List<IDisposable>();
-        SingleThreadTaskScheduler _Scheduler;
         public void Listen()
         {
-            _Scheduler = new SingleThreadTaskScheduler();
             _Chain = new ConcurrentChain(_Configuration.Indexer.Network);
 
             _Indexer = Configuration.Indexer.CreateIndexer();
+            _Disposables.Add(_IndexerScheduler = new CustomThreadPoolTaskScheduler(30, 20));
+            _Indexer.TaskScheduler = _IndexerScheduler;
 
             _Group = new NodesGroup(Configuration.Indexer.Network);
             _Disposables.Add(_Group);
@@ -251,7 +253,7 @@ namespace QBitNinja.Notifications
                     if(data.Type == InventoryType.MSG_TX && _Broadcasting.TryRemove(data.Hash, out tx))
                     {
                         var payload = new TxPayload(tx);
-                        node.SendMessage(payload);
+                        node.SendMessageAsync(payload);
                         ListenerTrace.Info("Broadcasted " + data.Hash);
                     }
                 }
