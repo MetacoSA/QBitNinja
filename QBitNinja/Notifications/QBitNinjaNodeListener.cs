@@ -4,10 +4,12 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using NBitcoin.Protocol;
+using NBitcoin.Protocol.Behaviors;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +18,46 @@ namespace QBitNinja.Notifications
 {
     public class QBitNinjaNodeListener : IDisposable
     {
+        class Behavior : NodeBehavior
+        {
+            QBitNinjaNodeListener _Listener;
+            public Behavior(QBitNinjaNodeListener listener)
+            {
+                _Listener = listener;
+            }           
+
+            protected override void AttachCore()
+            {
+                AttachedNode.StateChanged += AttachedNode_StateChanged;
+            }
+
+            void AttachedNode_StateChanged(Node node, NodeState oldState)
+            {
+                ListenerTrace.Info("Node handshaked");
+                ListenerTrace.Info("Fetching headers...");
+                AttachedNode.SynchronizeChain(_Listener._Chain);
+                _Listener._Indexer.IndexChain(_Listener._Chain);
+                ListenerTrace.Info("Headers fetched tip " + _Listener._Chain.Tip.Height);
+                AttachedNode.MessageReceived += _Listener.node_MessageReceived;
+                AttachedNode.Disconnected += AttachedNode_Disconnected;
+            }
+
+            void AttachedNode_Disconnected(Node node)
+            {
+                ListenerTrace.Info("Node Connection dropped : " + node.DisconnectReason);
+            }
+
+            protected override void DetachCore()
+            {
+                AttachedNode.StateChanged -= AttachedNode_StateChanged;
+                AttachedNode.MessageReceived -= _Listener.node_MessageReceived;
+            }
+
+            public override object Clone()
+            {
+                return new Behavior(_Listener);
+            }
+        }
         private readonly QBitNinjaConfiguration _Configuration;
         public QBitNinjaConfiguration Configuration
         {
@@ -24,6 +66,7 @@ namespace QBitNinja.Notifications
                 return _Configuration;
             }
         }
+        SingleThreadTaskScheduler _SingleThreadTaskScheduler;
         public QBitNinjaNodeListener(QBitNinjaConfiguration configuration)
         {
             _Configuration = configuration;
@@ -43,28 +86,24 @@ namespace QBitNinja.Notifications
         public void Listen()
         {
             _Scheduler = new SingleThreadTaskScheduler();
-            ListenerTrace.Info("Connecting to node " + Configuration.Indexer.Node + "...");
-            _Node = _Configuration.Indexer.ConnectToNode(true);
-            ListenerTrace.Info("Connected");
-            ListenerTrace.Info("Handshaking...");
-            _Node.VersionHandshake();
-            ListenerTrace.Info("Handshaked");
             _Chain = new ConcurrentChain(_Configuration.Indexer.Network);
-            ListenerTrace.Info("Fetching headers...");
-            _Node.SynchronizeChain(_Chain);
-            ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
+                       
             _Indexer = Configuration.Indexer.CreateIndexer();
-            ListenerTrace.Info("Indexing indexer chain...");
-            _Indexer.IndexChain(_Chain);
-            _Node.MessageReceived += node_MessageReceived;
-
-            ListenerTrace.Info("Connecting and handshaking for the sender node...");
-            _SenderNode = _Configuration.Indexer.ConnectToNode(false);
-            _SenderNode.VersionHandshake();
-            _SenderNode.MessageReceived += _SenderNode_MessageReceived;
-            ListenerTrace.Info("Sender node handshaked");
+            
+            _Group = new NodesGroup(Configuration.Indexer.Network);
+            _Disposables.Add(_Group);
+            _Group.AllowSameGroup = true;
+            _Group.MaximumNodeConnection = 2;
+            AddressManager addrman = new AddressManager();
+            addrman.Add(new NetworkAddress(Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort)), 
+                        IPAddress.Parse("127.0.0.1"));
+            _Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman));
+            _Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
+            _Group.Connect();
 
             ListenerTrace.Info("Fetching transactions to broadcast...");
+
+            _Disposables.Add(_SingleThreadTaskScheduler = new SingleThreadTaskScheduler());
 
             _Disposables.Add(
                 Configuration
@@ -83,19 +122,19 @@ namespace QBitNinja.Notifications
                         var indexedTx = repo.GetTransaction(hash);
                         ListenerTrace.Info("Broadcasting " + hash);
                         var reject = rejects.ReadOne(hash.ToString());
-                        if (reject != null)
+                        if(reject != null)
                         {
                             ListenerTrace.Info("Abort broadcasting of rejected");
                             return;
                         }
 
-                        if (_Broadcasting.Count > 1000)
+                        if(_Broadcasting.Count > 1000)
                             _Broadcasting.Clear();
 
                         _Broadcasting.TryAdd(hash, tx.Transaction);
-                        if (indexedTx == null || !indexedTx.BlockIds.Any(id => Chain.Contains(id)))
+                        if(indexedTx == null || !indexedTx.BlockIds.Any(id => Chain.Contains(id)))
                         {
-                            _SenderNode.SendMessage(new InvPayload(tx.Transaction));
+                            var unused = SendMessageAsync(new InvPayload(tx.Transaction));
                         }
 
                         var reschedule = new[]
@@ -106,13 +145,13 @@ namespace QBitNinja.Notifications
                             TimeSpan.FromHours(6),
                             TimeSpan.FromHours(24),
                         };
-                        if (tx.Tried <= reschedule.Length - 1)
+                        if(tx.Tried <= reschedule.Length - 1)
                         {
                             ctl.RescheduleIn(reschedule[tx.Tried]);
                             tx.Tried++;
                         }
                     }
-                    catch (Exception ex)
+                    catch(Exception ex)
                     {
                         LastException = ex;
                         ListenerTrace.Error("Error for new broadcasted transaction " + hash, ex);
@@ -120,36 +159,22 @@ namespace QBitNinja.Notifications
                     }
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
-
-
-
-            var ping = new Timer(Ping, null, 0, 1000 * 60);
-            _Disposables.Add(ping);
         }
 
-
-        void Ping(object state)
+        NodesGroup _Group;
+        private async Task SendMessageAsync(Payload payload)
         {
-            ListenerTrace.Verbose("Ping");
-            _Node.SendMessage(new PingPayload());
-            ListenerTrace.Verbose("Ping");
-            _SenderNode.SendMessage(new PingPayload());
-        }
-
-        private Node _Node;
-        public Node Node
-        {
-            get
+            int[] delays = new int[]{50, 100, 200, 300, 1000, 2000, 3000, 6000, 12000};
+            int i = 0;
+            while(_Group.ConnectedNodes.Count != 2)
             {
-                return _Node;
+                i++;
+                i = Math.Min(i, delays.Length - 1);
+                await Task.Delay(delays[i]).ConfigureAwait(false);
             }
-        }
-        private Node _SenderNode;
-        public Node SenderNode
-        {
-            get
+            foreach(var node in _Group.ConnectedNodes)
             {
-                return _SenderNode;
+                await node.SendMessageAsync(payload).ConfigureAwait(false);
             }
         }
 
@@ -163,56 +188,20 @@ namespace QBitNinja.Notifications
         }
 
         ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
-        void _SenderNode_MessageReceived(Node node, IncomingMessage message)
-        {
-            if (message.Message.Payload is GetDataPayload)
-            {
-                var getData = (GetDataPayload)message.Message.Payload;
-                foreach (var data in getData.Inventory)
-                {
-                    Transaction tx = null;
-                    if (data.Type == InventoryType.MSG_TX && _Broadcasting.TryRemove(data.Hash, out tx))
-                    {
-                        var payload = new TxPayload(tx);
-                        node.SendMessage(payload);
-                        ListenerTrace.Info("Broadcasted " + data.Hash);
-                    }
-                }
-            }
-            if (message.Message.Payload is RejectPayload)
-            {
-                var reject = (RejectPayload)message.Message.Payload;
-                uint256 txId = reject.Hash;
-                if (txId != null)
-                {
-                    ListenerTrace.Info("Broadcasted transaction rejected (" + reject.Code + ") " + txId);
-                    if (reject.Code != RejectCode.DUPLICATE)
-                    {
-                        Configuration.GetRejectTable().Create(txId.ToString(), reject);
-                    }
-                    Transaction tx;
-                    _Broadcasting.TryRemove(txId, out tx);
-                }
-            }
-            if (message.Message.Payload is PongPayload)
-            {
-                ListenerTrace.Verbose("Pong");
-            }
-        }
         void node_MessageReceived(Node node, IncomingMessage message)
         {
-            if (message.Message.Payload is InvPayload)
+            if(message.Message.Payload is InvPayload)
             {
                 var inv = (InvPayload)message.Message.Payload;
-                foreach (var inventory in inv.Inventory.Where(i => _Broadcasting.ContainsKey(i.Hash)))
+                foreach(var inventory in inv.Inventory.Where(i => _Broadcasting.ContainsKey(i.Hash)))
                 {
                     ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                     Transaction tx;
                     _Broadcasting.TryRemove(inventory.Hash, out tx);
                 }
-                node.SendMessage(new GetDataPayload(inv.Inventory.ToArray()));
+                node.SendMessageAsync(new GetDataPayload(inv.Inventory.ToArray()));
             }
-            if (message.Message.Payload is TxPayload)
+            if(message.Message.Payload is TxPayload)
             {
                 var tx = ((TxPayload)message.Message.Payload).Object;
                 ListenerTrace.Verbose("Received Transaction " + tx.GetHash());
@@ -221,9 +210,9 @@ namespace QBitNinja.Notifications
                 {
                     _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
                     var unused = Configuration.Topics.NeedIndexNewTransaction.AddAsync(tx);
-                });
+                }, true);
             }
-            if (message.Message.Payload is BlockPayload)
+            if(message.Message.Payload is BlockPayload)
             {
                 var block = ((BlockPayload)message.Message.Payload).Object;
                 ListenerTrace.Info("Received block " + block.GetHash());
@@ -235,31 +224,63 @@ namespace QBitNinja.Notifications
                     _Indexer.IndexChain(_Chain);
                     ListenerTrace.Info("New height : " + _Chain.Height);
                     var header = _Chain.GetBlock(blockId);
-                    if (header == null)
+                    if(header == null)
                         return;
                     _Indexer.Index(block);
                     var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
-                });
+                }, true);
             }
-            if (message.Message.Payload is PongPayload)
+            if(message.Message.Payload is PongPayload)
             {
                 ListenerTrace.Verbose("Pong");
             }
+            if(message.Message.Payload is GetDataPayload)
+            {
+                var getData = (GetDataPayload)message.Message.Payload;
+                foreach(var data in getData.Inventory)
+                {
+                    Transaction tx = null;
+                    if(data.Type == InventoryType.MSG_TX && _Broadcasting.TryRemove(data.Hash, out tx))
+                    {
+                        var payload = new TxPayload(tx);
+                        node.SendMessage(payload);
+                        ListenerTrace.Info("Broadcasted " + data.Hash);
+                    }
+                }
+            }
+            if(message.Message.Payload is RejectPayload)
+            {
+                var reject = (RejectPayload)message.Message.Payload;
+                uint256 txId = reject.Hash;
+                if(txId != null)
+                {
+                    ListenerTrace.Info("Broadcasted transaction rejected (" + reject.Code + ") " + txId);
+                    if(reject.Code != RejectCode.DUPLICATE)
+                    {
+                        Configuration.GetRejectTable().Create(txId.ToString(), reject);
+                    }
+                    Transaction tx;
+                    _Broadcasting.TryRemove(txId, out tx);
+                }
+            }
         }
 
-        void Async(Action act)
+        void Async(Action act, bool commonThread)
         {
-            Task.Factory.StartNew(() =>
+            new Task(() =>
             {
                 try
                 {
                     act();
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
+                    if(ex is ObjectDisposedException)
+                        return;
+                    ListenerTrace.Error("Error during task.", ex);
                     LastException = ex;
                 }
-            });
+            }).Start(commonThread ? _SingleThreadTaskScheduler : TaskScheduler.Default);
         }
 
         public Exception LastException
@@ -272,15 +293,10 @@ namespace QBitNinja.Notifications
 
         public void Dispose()
         {
-            if (_Node != null)
-            {
-                _Node.Dispose();
-                _Node = null;
-            }
-            foreach (var dispo in _Disposables)
+            foreach(var dispo in _Disposables)
                 dispo.Dispose();
             _Disposables.Clear();
-            if (LastException == null)
+            if(LastException == null)
                 _Finished.SetResult(true);
             else
                 _Finished.SetException(LastException);
