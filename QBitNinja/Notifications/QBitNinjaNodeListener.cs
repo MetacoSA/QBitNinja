@@ -196,13 +196,15 @@ namespace QBitNinja.Notifications
             if(message.Message.Payload is InvPayload)
             {
                 var inv = (InvPayload)message.Message.Payload;
-                foreach(var inventory in inv.Inventory.Where(i => _Broadcasting.ContainsKey(i.Hash)))
+                foreach(var inventory in inv.Inventory)
                 {
                     Transaction tx;
                     if(_Broadcasting.TryRemove(inventory.Hash, out tx))
                         ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
-                node.SendMessageAsync(new GetDataPayload(inv.Inventory.Where(i => _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray()));
+                var getdata = new GetDataPayload(inv.Inventory.Where(i => _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
+                if(getdata.Inventory.Count > 0)
+                    node.SendMessageAsync(getdata);
             }
             if(message.Message.Payload is TxPayload)
             {
@@ -247,7 +249,7 @@ namespace QBitNinja.Notifications
                 foreach(var data in getData.Inventory)
                 {
                     Transaction tx = null;
-                    if(data.Type == InventoryType.MSG_TX && _Broadcasting.TryRemove(data.Hash, out tx))
+                    if(data.Type == InventoryType.MSG_TX && _Broadcasting.TryGetValue(data.Hash, out tx))
                     {
                         var payload = new TxPayload(tx);
                         node.SendMessageAsync(payload);
