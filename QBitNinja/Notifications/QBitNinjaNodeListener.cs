@@ -174,10 +174,7 @@ namespace QBitNinja.Notifications
                 i = Math.Min(i, delays.Length - 1);
                 await Task.Delay(delays[i]).ConfigureAwait(false);
             }
-            foreach(var node in _Group.ConnectedNodes)
-            {
-                await node.SendMessageAsync(payload).ConfigureAwait(false);
-            }
+            await _Group.ConnectedNodes.First().SendMessageAsync(payload).ConfigureAwait(false);
         }
 
         private ConcurrentChain _Chain;
