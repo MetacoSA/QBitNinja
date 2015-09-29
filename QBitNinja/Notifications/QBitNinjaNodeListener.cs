@@ -33,13 +33,18 @@ namespace QBitNinja.Notifications
 
             void AttachedNode_StateChanged(Node node, NodeState oldState)
             {
-                ListenerTrace.Info("Node handshaked");
-                ListenerTrace.Info("Fetching headers...");
-                AttachedNode.SynchronizeChain(_Listener._Chain);
-                _Listener._Indexer.IndexChain(_Listener._Chain);
-                ListenerTrace.Info("Headers fetched tip " + _Listener._Chain.Tip.Height);
-                AttachedNode.MessageReceived += _Listener.node_MessageReceived;
-                AttachedNode.Disconnected += AttachedNode_Disconnected;
+                ListenerTrace.Info("State change " + node.State);
+                if(node.State == NodeState.HandShaked)
+                {
+                    ListenerTrace.Info("Node handshaked");
+                    ListenerTrace.Info("Fetching headers...");
+                    AttachedNode.SynchronizeChain(_Listener._Chain);
+                    _Listener._Indexer.IndexChain(_Listener._Chain);
+                    ListenerTrace.Info("Headers fetched tip " + _Listener._Chain.Tip.Height);
+                    AttachedNode.MessageReceived += _Listener.node_MessageReceived;
+                    AttachedNode.Disconnected += AttachedNode_Disconnected;
+                    ListenerTrace.Info("Connection count : " + NodesGroup.GetNodeGroup(node).ConnectedNodes.Count);
+                }
             }
 
             void AttachedNode_Disconnected(Node node)

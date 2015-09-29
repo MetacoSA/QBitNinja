@@ -67,7 +67,6 @@ namespace QBitNinja.Notifications
         public void Listen(ConcurrentChain chain = null)
         {
             var indexer = Configuration.Indexer.CreateIndexer();
-            ListenerTrace.Info("Handshaked");
             if(chain == null)
             {
                 chain = new ConcurrentChain(_Configuration.Indexer.Network);
