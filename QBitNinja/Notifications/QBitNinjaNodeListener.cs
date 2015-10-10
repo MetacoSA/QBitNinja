@@ -49,7 +49,14 @@ namespace QBitNinja.Notifications
 
             void AttachedNode_Disconnected(Node node)
             {
-                ListenerTrace.Info("Node Connection dropped : " + node.DisconnectReason);
+                ListenerTrace.Info("Node Connection dropped : " + ToString(node.DisconnectReason));
+            }
+
+            private string ToString(NodeDisconnectReason reason)
+            {
+                if(reason == null)
+                    return null;
+                return reason.Reason + " " + reason.Exception == null ? "" : Utils.ExceptionToString(reason.Exception);
             }
 
             protected override void DetachCore()
