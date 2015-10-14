@@ -5,6 +5,7 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using NBitcoin.OpenAsset;
+using NBitcoin.Policy;
 using NBitcoin.Protocol;
 using Newtonsoft.Json.Linq;
 using QBitNinja.Controllers;
@@ -1754,6 +1755,11 @@ namespace QBitNinja.Tests
             }
         }
 
+        static Money Dust = new Money(546);
+        static StandardTransactionPolicy Policy = new StandardTransactionPolicy()
+        {
+            MinRelayTxFee = new FeeRate(Money.Satoshis(1000))
+        };
         [Fact]
         public void CanGetColoredBalance()
         {
@@ -1787,6 +1793,9 @@ namespace QBitNinja.Tests
 
                 //Send gold to bob
                 tx = new TransactionBuilder()
+                {
+                    StandardTransactionPolicy = Policy
+                }
                      .AddKeys(goldGuy)
                      .AddCoins(goldIssuance)
                      .IssueAsset(bob, new AssetMoney(gold, 1000))
@@ -1805,6 +1814,9 @@ namespace QBitNinja.Tests
 
                 //Send silver to Alice
                 tx = new TransactionBuilder()
+                {
+                    StandardTransactionPolicy = Policy
+                }
                      .AddKeys(silverGuy)
                      .AddCoins(silverIssuance)
                      .IssueAsset(alice, new AssetMoney(silver, 100))
@@ -1818,13 +1830,16 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.Broadcast(tx);
 
                 tester.AssertTotal(alice, Money.Coins(47.5m));
-                tester.AssertTotal(alice, new AssetMoney(gold,0));
-                tester.AssertTotal(alice, new AssetMoney(silver,100));
+                tester.AssertTotal(alice, new AssetMoney(gold, 0));
+                tester.AssertTotal(alice, new AssetMoney(silver, 100));
 
                 tester.ChainBuilder.EmitBlock();
 
                 //Bob and alice swap
                 tx = new TransactionBuilder()
+                {
+                    StandardTransactionPolicy = Policy
+                }
                      .AddKeys(alice)
                      .AddCoins(tester.GetUnspentCoins(alice))
                      .SendAsset(bob, new AssetMoney(silver, 9))
@@ -1839,21 +1854,21 @@ namespace QBitNinja.Tests
                      .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
-                tester.AssertTotal(alice, Money.Coins(48m) - Money.Dust);
-                tester.AssertTotal(alice, new AssetMoney(gold,10));
-                tester.AssertTotal(alice, new AssetMoney(silver,91));
+                tester.AssertTotal(alice, Money.Coins(48m) - Dust);
+                tester.AssertTotal(alice, new AssetMoney(gold, 10));
+                tester.AssertTotal(alice, new AssetMoney(silver, 91));
 
-                tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust);
-                tester.AssertTotal(bob, new AssetMoney(gold,990));
-                tester.AssertTotal(bob, new AssetMoney(silver,9));
+                tester.AssertTotal(bob, Money.Coins(84.5m) - Dust);
+                tester.AssertTotal(bob, new AssetMoney(gold, 990));
+                tester.AssertTotal(bob, new AssetMoney(silver, 9));
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
                 for(int i = 0; i < 2; i++)
                 {
-                    tester.AssertTotal(bob, Money.Coins(84.5m) - Money.Dust);
-                    tester.AssertTotal(bob, new AssetMoney(gold,990));
+                    tester.AssertTotal(bob, Money.Coins(84.5m) - Dust);
+                    tester.AssertTotal(bob, new AssetMoney(gold, 990));
                     tester.AssertTotal(bob, new AssetMoney(silver, 9));
                 }
                 var summary = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?colored=true");
