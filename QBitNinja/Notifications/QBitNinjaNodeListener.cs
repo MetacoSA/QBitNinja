@@ -236,24 +236,28 @@ namespace QBitNinja.Notifications
             {
                 var block = ((BlockPayload)message.Message.Payload).Object;
                 ListenerTrace.Info("Received block " + block.GetHash());
-
-                Async(() =>
+                var blockId = block.GetHash();
+                if(_Chain.Tip.HashBlock == block.Header.HashPrevBlock)
                 {
-                    var blockId = block.GetHash();
-                    Async(() =>
+                    _Chain.SetTip(block.Header);
+                }
+                Async(() =>
                    {
-                       node.SynchronizeChain(_Chain);
+                       if(!_Chain.Contains(blockId))
+                       {
+                           node.SynchronizeChain(_Chain);
+                       }
+
                        _Indexer.IndexChain(_Chain);
                        ListenerTrace.Info("New height : " + _Chain.Height);
-
                        var header = _Chain.GetBlock(blockId);
                        if(header == null)
                            return;
                        _Indexer.Index(block);
                        var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
                    }
-                    , false);
-                }, true);
+                , false);
+
             }
             if(message.Message.Payload is GetDataPayload)
             {
