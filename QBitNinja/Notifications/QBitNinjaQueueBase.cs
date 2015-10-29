@@ -130,8 +130,17 @@ namespace QBitNinja.Notifications
                     message.ScheduledEnqueueTimeUtc = control._Scheduled.Value;
                     await SendAsync(message).ConfigureAwait(false);
                     if (!options.AutoComplete)
-                        if (control._Complete)
-                            await bm.CompleteAsync().ConfigureAwait(false);
+                        if(control._Complete)
+                        {
+                            try
+                            {
+                                await bm.CompleteAsync().ConfigureAwait(false);
+                            }
+                            catch(ObjectDisposedException)
+                            {
+                                ListenerTrace.Error("Brokered message already disposed", null);
+                            }
+                        }
                 }
             }, options);
         }

@@ -72,7 +72,7 @@ namespace QBitNinja.Notifications
                 chain = new ConcurrentChain(_Configuration.Indexer.Network);
             }
             _Chain = chain;
-            ListenerTrace.Info("Fetching headers from " + _Chain.Tip.Height);
+            ListenerTrace.Info("Fetching headers from " + _Chain.Tip.Height + " (from azure)");
             var client = Configuration.Indexer.CreateIndexerClient();
             client.SynchronizeChain(chain);
             ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
