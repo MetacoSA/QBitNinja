@@ -90,6 +90,7 @@ namespace QBitNinja.Notifications
                 .Topics
                 .SubscriptionChanges
                 .EnsureSubscriptionExists()
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                 .OnMessage(c =>
                 {
                     lock(_Subscriptions)
@@ -104,6 +105,7 @@ namespace QBitNinja.Notifications
             _Disposables.Add(_Configuration
                 .Topics
                 .SendNotifications
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                 .OnMessageAsync((n, act) =>
                 {
                     return SendAsync(n, act).ContinueWith(ErrorHandler);
@@ -116,6 +118,7 @@ namespace QBitNinja.Notifications
             _Disposables.Add(_Configuration
                 .Topics
                 .NeedIndexNewBlock
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                 .OnMessageAsync(async header =>
                 {
                     client.SynchronizeChain(_Chain);
@@ -171,6 +174,7 @@ namespace QBitNinja.Notifications
                .AddedAddresses
                .CreateConsumer("updater", true)
                .EnsureSubscriptionExists()
+               .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                .OnMessage(evt =>
                {
                    ListenerTrace.Info("New wallet rule");
@@ -183,6 +187,7 @@ namespace QBitNinja.Notifications
             _Disposables.Add(Configuration
                 .Topics
                 .NeedIndexNewTransaction
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                 .OnMessageAsync(async (tx, ctl) =>
                 {
                     await Task.WhenAll(new[]{
@@ -229,6 +234,11 @@ namespace QBitNinja.Notifications
                     AutoComplete = true,
                     MaxConcurrentCalls = 10
                 }));
+        }
+
+        void ExceptionOnMessagePump(Exception ex)
+        {
+            ListenerTrace.Error("Error on azure message pumped", ex);
         }
 
         void ErrorHandler(Task task)

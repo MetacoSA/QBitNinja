@@ -78,6 +78,20 @@ namespace QBitNinja.Notifications
             return true;
         }
 
+        protected void OnUnHandledException(Exception ex)
+        {
+            if(UnhandledException != null && ex != null)
+                UnhandledException(ex);
+        }
+
+        public QBitNinjaQueueBase<T,TCreation,TDescription> AddUnhandledExceptionHandler(Action<Exception> handler)
+        {
+            UnhandledException += handler;
+            return this;
+        }
+
+        public event Action<Exception> UnhandledException;
+
         public Func<T, string> GetMessageId
         {
             get;

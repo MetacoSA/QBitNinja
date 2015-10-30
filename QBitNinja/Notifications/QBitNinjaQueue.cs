@@ -54,7 +54,17 @@ namespace QBitNinja.Notifications
         protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)
         {
             var client = CreateQueueClient();
-            client.OnMessageAsync(act, options);
+            client.OnMessageAsync(async (bm) =>
+            {
+                try
+                {
+                    await act(bm).ConfigureAwait(false);
+                }
+                catch(Exception ex)
+                {
+                    OnUnHandledException(ex);
+                }
+            }, options);
             return new ActionDisposable(() => client.Close());
         }
 

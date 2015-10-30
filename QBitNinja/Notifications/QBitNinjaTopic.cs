@@ -43,7 +43,7 @@ namespace QBitNinja.Notifications
 
         public void Complete()
         {
-            if (Options.AutoComplete)
+            if(Options.AutoComplete)
                 throw new InvalidOperationException("Options.AutoComplete should be true for calling this method");
             _Complete = true;
         }
@@ -77,7 +77,17 @@ namespace QBitNinja.Notifications
             protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)
             {
                 var client = CreateSubscriptionClient();
-                client.OnMessageAsync(act, options);
+                client.OnMessageAsync(async (bm) =>
+                {
+                    try
+                    {
+                        await act(bm).ConfigureAwait(false);
+                    }
+                    catch(Exception ex)
+                    {
+                        OnUnHandledException(ex);
+                    }
+                }, options);
                 return new ActionDisposable(() => client.Close());
             }
 
@@ -146,7 +156,7 @@ namespace QBitNinja.Notifications
             : base(connectionString, topic)
         {
             _Subscription = defaultSubscription;
-            if (_Subscription == null)
+            if(_Subscription == null)
                 _Subscription = new SubscriptionCreation()
                 {
                     Name = GetMac()
@@ -177,9 +187,9 @@ namespace QBitNinja.Notifications
 
         public QBitNinjaTopic<T> CreateConsumer(SubscriptionCreation subscriptionDescription)
         {
-            if (subscriptionDescription == null)
+            if(subscriptionDescription == null)
                 throw new ArgumentNullException("subscriptionDescription");
-            if (subscriptionDescription.Name == null)
+            if(subscriptionDescription.Name == null)
                 subscriptionDescription.Name = GetMac();
             subscriptionDescription.TopicPath = Creation.Path;
             subscriptionDescription.Merge(Subscription);
@@ -227,7 +237,7 @@ namespace QBitNinja.Notifications
         {
             return CreateSubscriptionClient().ReceiveAsyncCorePublic(timeout);
         }
-        
+
         public override async Task DrainMessagesAsync()
         {
             var delete = (await GetNamespace().GetSubscriptionsAsync(Topic).ConfigureAwait(false))
@@ -246,7 +256,7 @@ namespace QBitNinja.Notifications
             {
                 CreateSubscriptionClient().EnsureExistsAsync().Wait();
             }
-            catch (AggregateException aex)
+            catch(AggregateException aex)
             {
                 ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
             }
