@@ -113,6 +113,7 @@ namespace QBitNinja.Notifications
                 {
                     MaxConcurrentCalls = 1000,
                     AutoComplete = true,
+                    AutoRenewTimeout = TimeSpan.Zero
                 }));
 
             _Disposables.Add(_Configuration
@@ -232,7 +233,8 @@ namespace QBitNinja.Notifications
                 }, new OnMessageOptions()
                 {
                     AutoComplete = true,
-                    MaxConcurrentCalls = 10
+                    MaxConcurrentCalls = 10,
+                    AutoRenewTimeout = TimeSpan.Zero
                 }));
         }
 

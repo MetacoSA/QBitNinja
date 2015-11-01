@@ -111,7 +111,8 @@ namespace QBitNinja.Notifications
             }, new OnMessageOptions()
             {
                 AutoComplete = autoComplete,
-                MaxConcurrentCalls = 1
+                MaxConcurrentCalls = 1,
+                
             });
         }
 
@@ -126,7 +127,8 @@ namespace QBitNinja.Notifications
                 options = new OnMessageOptions()
                 {
                     AutoComplete = true,
-                    MaxConcurrentCalls = 10
+                    MaxConcurrentCalls = 10,
+                    AutoRenewTimeout = TimeSpan.Zero
                 };
 
             return OnMessageAsyncCore(async bm =>
