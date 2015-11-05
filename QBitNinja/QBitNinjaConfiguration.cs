@@ -52,25 +52,6 @@ namespace QBitNinja
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0),
             });
 
-            _NeedIndexNewBlock = new QBitNinjaQueue<BlockHeader>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("newindexblocks").Name)
-            {
-                
-                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
-                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(5.0),
-                RequiresDuplicateDetection = true,
-            });
-            _NeedIndexNewBlock.GetMessageId = (header) => header.GetHash().ToString();
-
-
-            _NeedIndexNewTransaction = new QBitNinjaQueue<Transaction>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("newindextxs").Name)
-            {
-
-                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
-                DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(5.0),
-                RequiresDuplicateDetection = true,
-            });
-            _NeedIndexNewTransaction.GetMessageId = (header) => header.GetHash().ToString();
-
             _SubscriptionChanges = new QBitNinjaTopic<SubscriptionChange>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("subscriptionchanges").Name)
             {
                 DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
@@ -141,25 +122,6 @@ namespace QBitNinja
             }
         }
 
-        QBitNinjaQueue<BlockHeader> _NeedIndexNewBlock;
-        public QBitNinjaQueue<BlockHeader> NeedIndexNewBlock
-        {
-            get
-            {
-                return _NeedIndexNewBlock;
-            }
-        }
-
-        QBitNinjaQueue<Transaction> _NeedIndexNewTransaction;
-        public QBitNinjaQueue<Transaction> NeedIndexNewTransaction
-        {
-            get
-            {
-                return _NeedIndexNewTransaction;
-            }
-        }
-
-
         QBitNinjaTopic<BroadcastedTransaction> _BroadcastedTransactions;
         public QBitNinjaTopic<BroadcastedTransaction> BroadcastedTransactions
         {
@@ -186,8 +148,6 @@ namespace QBitNinja
                 yield return NewBlocks;
                 yield return AddedAddresses;
                 yield return SubscriptionChanges;
-                yield return NeedIndexNewTransaction;
-                yield return NeedIndexNewBlock;
                 yield return SendNotifications;
                 yield return InitialIndexing;
             }

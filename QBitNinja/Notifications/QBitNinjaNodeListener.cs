@@ -246,68 +246,6 @@ namespace QBitNinja.Notifications
                     AutoRenewTimeout = TimeSpan.Zero
                 }));
 
-            _Disposables.Add(_Configuration
-                .Topics
-                .NeedIndexNewBlock
-                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
-                .OnMessageAsync(async header =>
-                {
-                    using(var node = Configuration.Indexer.ConnectToNode(false))
-                    {
-                        var cancel = new CancellationTokenSource(10000);
-                        node.VersionHandshake(cancel.Token);
-                        node.SynchronizeChain(_Chain, cancellationToken: cancel.Token);
-                        Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
-                        var repo = new NodeBlocksRepository(node);
-
-                        TryLock(_LockBlocks, () =>
-                        {
-                            new IndexBlocksTask(Configuration.Indexer)
-                            {
-                                EnsureIsSetup = false
-                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
-                        });
-                        TryLock(_LockTransactions, () =>
-                        {
-                            new IndexTransactionsTask(Configuration.Indexer)
-                            {
-                                EnsureIsSetup = false
-                            }
-                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
-                        });
-                        TryLock(_LockWallets, () =>
-                        {
-                            using(_WalletsSlimLock.LockRead())
-                            {
-                                new IndexBalanceTask(Configuration.Indexer, _Wallets)
-                                {
-                                    EnsureIsSetup = false
-                                }
-                                .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
-                            }
-                        });
-                        TryLock(_LockBalance, () =>
-                        {
-                            new IndexBalanceTask(Configuration.Indexer, null)
-                            {
-                                EnsureIsSetup = false
-                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
-                        });
-                        TryLock(_LockSubscriptions, () =>
-                        {
-                            using(_SubscriptionSlimLock.LockRead())
-                            {
-                                new IndexNotificationsTask(Configuration, _Subscriptions)
-                                {
-                                    EnsureIsSetup = false
-                                }
-                                .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
-                            }
-                        });
-                    }
-                    await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
-                }));
-
             _Disposables.Add(Configuration
                .Topics
                .AddedAddresses
@@ -323,56 +261,6 @@ namespace QBitNinja.Notifications
                    }
                }));
 
-            _Disposables.Add(Configuration
-                .Topics
-                .NeedIndexNewTransaction
-                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
-                .OnMessageAsync(async (tx, ctl) =>
-                {
-                    await Task.WhenAll(new[]{
-                        Async(() => _Indexer.IndexOrderedBalance(tx), false),
-                        Async(()=>{
-                            var txId = tx.GetHash();
-                            using(_WalletsSlimLock.LockRead())
-                            {
-                                var balances =
-                                    OrderedBalanceChange
-                                    .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
-                                    .AsEnumerable();
-                                _Indexer.Index(balances);
-                            }
-
-                            Task notify = null;
-                            using(_SubscriptionSlimLock.LockRead())
-                            {
-                                var topic = Configuration.Topics.SendNotifications;
-
-                                notify = Task.WhenAll(_Subscriptions
-                                    .GetNewTransactions()
-                                    .Select(t => topic.AddAsync(new Notify()
-                                    {
-                                        SendAndForget = true,
-                                        Notification = new Notification()
-                                        {
-                                            Subscription = t,
-                                            Data = new NewTransactionNotificationData()
-                                            {
-                                                TransactionId = txId
-                                            }
-                                        }
-                                    })).ToArray());
-                                    
-                            }
-                            notify.Wait();
-                        }, false)
-                    });
-                    var unused = _Configuration.Topics.NewTransactions.AddAsync(tx);
-                }, new OnMessageOptions()
-                {
-                    AutoComplete = true,
-                    MaxConcurrentCalls = 10,
-                    AutoRenewTimeout = TimeSpan.Zero
-                }));
         }
 
         void ExceptionOnMessagePump(Exception ex)
@@ -469,7 +357,6 @@ namespace QBitNinja.Notifications
 
         ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
         ConcurrentDictionary<uint256, uint256> _KnownInvs = new ConcurrentDictionary<uint256, uint256>();
-        uint256 _LastBlock;
 
         void node_MessageReceived(Node node, IncomingMessage message)
         {
@@ -484,14 +371,10 @@ namespace QBitNinja.Notifications
                     if(_Broadcasting.TryRemove(inventory.Hash, out tx))
                         ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
-                var getdata = new GetDataPayload(inv.Inventory.Where(i => i.Type == InventoryType.MSG_TX && _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
+                var getdata = new GetDataPayload(inv.Inventory.Where(i => _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
 
                 if(getdata.Inventory.Count > 0)
                     node.SendMessageAsync(getdata);
-
-                _LastBlock = inv.Inventory
-                                .Where(i => i.Type == InventoryType.MSG_BLOCK)
-                                .Select(i => i.Hash).FirstOrDefault() ?? _LastBlock;
             }
             if(message.Message.Payload is TxPayload)
             {
@@ -500,21 +383,103 @@ namespace QBitNinja.Notifications
 
                 Async(() =>
                 {
-                    Async(() =>
+                    _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
+                }, false);
+                Async(() =>
+                {
+                    _Indexer.IndexOrderedBalance(tx);
+                }, false);
+                Async(() =>
+                {
+                    var txId = tx.GetHash();
+                    using(_WalletsSlimLock.LockRead())
                     {
-                        _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
-                        var unused = Configuration.Topics.NeedIndexNewTransaction.AddAsync(tx);
-                    }, false);
-                }, true);
+                        var balances =
+                            OrderedBalanceChange
+                            .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
+                            .AsEnumerable();
+                        _Indexer.Index(balances);
+                    }
+
+                    Task notify = null;
+                    using(_SubscriptionSlimLock.LockRead())
+                    {
+                        var topic = Configuration.Topics.SendNotifications;
+
+                        notify = Task.WhenAll(_Subscriptions
+                            .GetNewTransactions()
+                            .Select(t => topic.AddAsync(new Notify()
+                            {
+                                SendAndForget = true,
+                                Notification = new Notification()
+                                {
+                                    Subscription = t,
+                                    Data = new NewTransactionNotificationData()
+                                    {
+                                        TransactionId = txId
+                                    }
+                                }
+                            })).ToArray());
+
+                    }
+                    notify.Wait();
+                }, false);
+                var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
             }
 
-            if(message.Message.Payload is HeadersPayload)
+            if(message.Message.Payload is BlockPayload)
             {
-                var header = ((HeadersPayload)message.Message.Payload).Headers.FirstOrDefault(h => _LastBlock != null && h.GetHash() == _LastBlock);
-                if(header != null)
+                Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
+                var block = ((BlockPayload)(message.Message.Payload)).Object;
+                Async(() =>
                 {
-                    var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(header);
-                }
+                    var repo = new CacheBlocksRepository(new NodeBlocksRepository(node));
+                    TryLock(_LockBlocks, () =>
+                    {
+                        new IndexBlocksTask(Configuration.Indexer)
+                        {
+                            EnsureIsSetup = false
+                        }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
+                    });
+                    TryLock(_LockTransactions, () =>
+                    {
+                        new IndexTransactionsTask(Configuration.Indexer)
+                        {
+                            EnsureIsSetup = false
+                        }
+                        .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
+                    });
+                    TryLock(_LockWallets, () =>
+                    {
+                        using(_WalletsSlimLock.LockRead())
+                        {
+                            new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                            {
+                                EnsureIsSetup = false
+                            }
+                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
+                        }
+                    });
+                    TryLock(_LockBalance, () =>
+                    {
+                        new IndexBalanceTask(Configuration.Indexer, null)
+                        {
+                            EnsureIsSetup = false
+                        }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
+                    });
+                    TryLock(_LockSubscriptions, () =>
+                    {
+                        using(_SubscriptionSlimLock.LockRead())
+                        {
+                            new IndexNotificationsTask(Configuration, _Subscriptions)
+                            {
+                                EnsureIsSetup = false
+                            }
+                            .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                        }
+                    });
+                    var unused = _Configuration.Topics.NewBlocks.AddAsync(block.Header);
+                }, false);
             }
             if(message.Message.Payload is GetDataPayload)
             {
