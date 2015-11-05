@@ -400,7 +400,6 @@ namespace QBitNinja.Tests
                 Assert.NotNull(indexer.GetBlock(block.GetHash()));
                 tester.UpdateServerChain(true);
 
-
                 balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 1);

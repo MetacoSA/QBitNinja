@@ -203,9 +203,12 @@ namespace QBitNinja.Notifications
                     }
                     catch(Exception ex)
                     {
-                        LastException = ex;
-                        ListenerTrace.Error("Error for new broadcasted transaction " + hash, ex);
-                        throw;
+                        if(!_Disposed)
+                        {
+                            LastException = ex;
+                            ListenerTrace.Error("Error for new broadcasted transaction " + hash, ex);
+                            throw;
+                        }
                     }
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
@@ -234,9 +237,12 @@ namespace QBitNinja.Notifications
                 {
                     return SendAsync(n, act).ContinueWith(t =>
                     {
-                        if(t.Exception != null)
+                        if(!_Disposed)
                         {
-                            LastException = t.Exception;
+                            if(t.Exception != null)
+                            {
+                                LastException = t.Exception;
+                            }
                         }
                     });
                 }, new OnMessageOptions()
@@ -265,8 +271,11 @@ namespace QBitNinja.Notifications
 
         void ExceptionOnMessagePump(Exception ex)
         {
-            ListenerTrace.Error("Error on azure message pumped", ex);
-            LastException = ex;
+            if(!_Disposed)
+            {
+                ListenerTrace.Error("Error on azure message pumped", ex);
+                LastException = ex;
+            }
         }
 
         NodesGroup _Group;
@@ -522,10 +531,11 @@ namespace QBitNinja.Notifications
                 }
                 catch(Exception ex)
                 {
-                    if(ex is ObjectDisposedException)
-                        return;
-                    ListenerTrace.Error("Error during task.", ex);
-                    LastException = ex;
+                    if(!_Disposed)
+                    {
+                        ListenerTrace.Error("Error during task.", ex);
+                        LastException = ex;
+                    }
                 }
             });
             t.Start(commonThread ? _SingleThreadTaskScheduler : TaskScheduler.Default);
@@ -538,10 +548,12 @@ namespace QBitNinja.Notifications
             set;
         }
 
+        volatile bool _Disposed;
         #region IDisposable Members
 
         public void Dispose()
         {
+            _Disposed = true;
             foreach(var dispo in _Disposables)
                 dispo.Dispose();
             _Disposables.Clear();
