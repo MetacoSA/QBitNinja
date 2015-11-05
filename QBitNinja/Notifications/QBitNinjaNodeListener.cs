@@ -367,6 +367,8 @@ namespace QBitNinja.Notifications
         ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
         ConcurrentDictionary<uint256, uint256> _KnownInvs = new ConcurrentDictionary<uint256, uint256>();
 
+        uint256 _LastChainTip;
+
         void node_MessageReceived(Node node, IncomingMessage message)
         {
             if(_KnownInvs.Count == 1000)
@@ -380,7 +382,7 @@ namespace QBitNinja.Notifications
                     if(_Broadcasting.TryRemove(inventory.Hash, out tx))
                         ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
-                var getdata = new GetDataPayload(inv.Inventory.Where(i => _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
+                var getdata = new GetDataPayload(inv.Inventory.Where(i => i.Type == InventoryType.MSG_TX && _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
 
                 if(getdata.Inventory.Count > 0)
                     node.SendMessageAsync(getdata);
@@ -436,59 +438,65 @@ namespace QBitNinja.Notifications
                 var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
             }
 
-            if(message.Message.Payload is BlockPayload)
+            if(message.Message.Payload is HeadersPayload)
             {
-                Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
-                var block = ((BlockPayload)(message.Message.Payload)).Object;
-                Async(() =>
+                if(_Chain.Tip.HashBlock != _LastChainTip)
                 {
-                    var repo = new CacheBlocksRepository(new NodeBlocksRepository(node));
-                    TryLock(_LockBlocks, () =>
+                    var header = _Chain.Tip.Header;
+                    _LastChainTip = _Chain.Tip.HashBlock;
+
+                    Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
+
+                    Async(() =>
                     {
-                        new IndexBlocksTask(Configuration.Indexer)
+                        var repo = new CacheBlocksRepository(new NodeBlocksRepository(node));
+                        TryLock(_LockBlocks, () =>
                         {
-                            EnsureIsSetup = false
-                        }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
-                    });
-                    TryLock(_LockTransactions, () =>
-                    {
-                        new IndexTransactionsTask(Configuration.Indexer)
+                            new IndexBlocksTask(Configuration.Indexer)
+                            {
+                                EnsureIsSetup = false
+                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
+                        });
+                        TryLock(_LockTransactions, () =>
                         {
-                            EnsureIsSetup = false
-                        }
-                        .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
-                    });
-                    TryLock(_LockWallets, () =>
-                    {
-                        using(_WalletsSlimLock.LockRead())
-                        {
-                            new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                            new IndexTransactionsTask(Configuration.Indexer)
                             {
                                 EnsureIsSetup = false
                             }
-                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
-                        }
-                    });
-                    TryLock(_LockBalance, () =>
-                    {
-                        new IndexBalanceTask(Configuration.Indexer, null)
+                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
+                        });
+                        TryLock(_LockWallets, () =>
                         {
-                            EnsureIsSetup = false
-                        }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
-                    });
-                    TryLock(_LockSubscriptions, () =>
-                    {
-                        using(_SubscriptionSlimLock.LockRead())
+                            using(_WalletsSlimLock.LockRead())
+                            {
+                                new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
+                            }
+                        });
+                        TryLock(_LockBalance, () =>
                         {
-                            new IndexNotificationsTask(Configuration, _Subscriptions)
+                            new IndexBalanceTask(Configuration.Indexer, null)
                             {
                                 EnsureIsSetup = false
+                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
+                        });
+                        TryLock(_LockSubscriptions, () =>
+                        {
+                            using(_SubscriptionSlimLock.LockRead())
+                            {
+                                new IndexNotificationsTask(Configuration, _Subscriptions)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
                             }
-                            .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
-                        }
-                    });
-                    var unused = _Configuration.Topics.NewBlocks.AddAsync(block.Header);
-                }, false);
+                        });
+                        var unused = _Configuration.Topics.NewBlocks.AddAsync(header);
+                    }, false);
+                }
             }
             if(message.Message.Payload is GetDataPayload)
             {
