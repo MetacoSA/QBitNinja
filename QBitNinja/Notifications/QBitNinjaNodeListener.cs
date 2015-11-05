@@ -41,10 +41,6 @@ namespace QBitNinja.Notifications
                 if(node.State == NodeState.HandShaked)
                 {
                     ListenerTrace.Info("Node handshaked");
-                    ListenerTrace.Info("Fetching headers...");
-                    AttachedNode.SynchronizeChain(_Listener._Chain);
-                    _Listener._Indexer.IndexChain(_Listener._Chain);
-                    ListenerTrace.Info("Headers fetched tip " + _Listener._Chain.Tip.Height);
                     AttachedNode.MessageReceived += _Listener.node_MessageReceived;
                     AttachedNode.Disconnected += AttachedNode_Disconnected;
                     ListenerTrace.Info("Connection count : " + NodesGroup.GetNodeGroup(node).ConnectedNodes.Count);
@@ -454,7 +450,8 @@ namespace QBitNinja.Notifications
                         {
                             new IndexBlocksTask(Configuration.Indexer)
                             {
-                                EnsureIsSetup = false
+                                EnsureIsSetup = false,
+
                             }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
                         });
                         TryLock(_LockTransactions, () =>
@@ -489,7 +486,7 @@ namespace QBitNinja.Notifications
                             {
                                 new IndexNotificationsTask(Configuration, _Subscriptions)
                                 {
-                                    EnsureIsSetup = false
+                                    EnsureIsSetup = false,                                    
                                 }
                                 .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
                             }
