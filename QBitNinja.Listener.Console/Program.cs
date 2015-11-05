@@ -97,11 +97,6 @@ namespace QBitNinja.Listener.Console
                         dispo.Add(listener);
                         listener.Listen();
                         running.Add(listener.Running);
-
-
-                        BlocksUpdater updater = new BlocksUpdater(conf);
-                        dispo.Add(updater);
-                        updater.Listen(listener.Chain);
                     }
 
                     if (options.Web)

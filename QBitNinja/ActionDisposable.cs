@@ -13,6 +13,11 @@ namespace QBitNinja
         {
             _Act = act;
         }
+        public ActionDisposable(Action start, Action act)
+        {
+            start();
+            _Act = act;
+        }
         #region IDisposable Members
 
         public void Dispose()

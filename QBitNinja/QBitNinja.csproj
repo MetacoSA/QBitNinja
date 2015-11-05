@@ -179,7 +179,6 @@
     <Compile Include="JsonConverters\EnumAliasJsonConverter.cs" />
     <Compile Include="JsonConverters\EnumTypeJsonConverter.cs" />
     <Compile Include="Models\NewBlockSubscription.cs" />
-    <Compile Include="Notifications\BlocksUpdater.cs" />
     <Compile Include="Notifications\BroadcastedTransaction.cs" />
     <Compile Include="ChainTable.cs" />
     <Compile Include="Controllers\HelpController.cs" />
@@ -236,6 +235,7 @@
     <Compile Include="QBitNinjaConfiguration.cs" />
     <Compile Include="QBitNinjaDependencyResolver.cs" />
     <Compile Include="Notifications\QBitNinjaNodeListener.cs" />
+    <Compile Include="ReaderWriterLock.cs" />
     <Compile Include="Scope.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="SingleThreadTaskScheduler.cs" />

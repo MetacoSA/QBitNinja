@@ -1,15 +1,19 @@
-﻿using Microsoft.WindowsAzure.Storage;
+﻿using Microsoft.ServiceBus.Messaging;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
+using NBitcoin.Indexer.IndexTasks;
 using NBitcoin.Protocol;
 using NBitcoin.Protocol.Behaviors;
+using QBitNinja.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,6 +75,18 @@ namespace QBitNinja.Notifications
             }
         }
         private readonly QBitNinjaConfiguration _Configuration;
+        SubscriptionCollection _Subscriptions = null;
+        ReaderWriterLock _SubscriptionSlimLock = new ReaderWriterLock();
+
+        private NBitcoin.Indexer.WalletRuleEntryCollection _Wallets;
+        ReaderWriterLock _WalletsSlimLock = new ReaderWriterLock();
+
+        object _LockBalance = new object();
+        object _LockTransactions = new object();
+        object _LockBlocks = new object();
+        object _LockWallets = new object();
+        object _LockSubscriptions = new object();
+
         public QBitNinjaConfiguration Configuration
         {
             get
@@ -96,11 +112,20 @@ namespace QBitNinja.Notifications
         CustomThreadPoolTaskScheduler _IndexerScheduler;
 
         List<IDisposable> _Disposables = new List<IDisposable>();
-        public void Listen()
+        public void Listen(ConcurrentChain chain = null)
         {
             _Chain = new ConcurrentChain(_Configuration.Indexer.Network);
-
             _Indexer = Configuration.Indexer.CreateIndexer();
+            if(chain == null)
+            {
+                chain = new ConcurrentChain(_Configuration.Indexer.Network);
+            }
+            _Chain = chain;
+            ListenerTrace.Info("Fetching headers from " + _Chain.Tip.Height + " (from azure)");
+            var client = Configuration.Indexer.CreateIndexerClient();
+            client.SynchronizeChain(chain);
+            ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
+
             _Disposables.Add(_IndexerScheduler = new CustomThreadPoolTaskScheduler(30, 20));
             _Indexer.TaskScheduler = _IndexerScheduler;
 
@@ -115,6 +140,16 @@ namespace QBitNinja.Notifications
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new ChainBehavior(_Chain));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
             _Group.Connect();
+
+
+
+            ListenerTrace.Info("Fetching wallet rules...");
+            _Wallets = _Configuration.Indexer.CreateIndexerClient().GetAllWalletRules();
+            ListenerTrace.Info("Wallet rules fetched");
+
+            ListenerTrace.Info("Fetching wallet subscriptions...");
+            _Subscriptions = new SubscriptionCollection(_Configuration.GetSubscriptionsTable().Read());
+            ListenerTrace.Info("Subscriptions fetched");
 
             ListenerTrace.Info("Fetching transactions to broadcast...");
 
@@ -174,6 +209,176 @@ namespace QBitNinja.Notifications
                     }
                 }));
             ListenerTrace.Info("Transactions to broadcast fetched");
+
+            _Disposables.Add(_Configuration
+                .Topics
+                .SubscriptionChanges
+                .EnsureSubscriptionExists()
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
+                .OnMessage(c =>
+                {
+                    using(_SubscriptionSlimLock.LockWrite())
+                    {
+                        if(c.Added)
+                            _Subscriptions.Add(c.Subscription);
+                        else
+                            _Subscriptions.Remove(c.Subscription.Id);
+                    }
+                }));
+
+            _Disposables.Add(_Configuration
+                .Topics
+                .SendNotifications
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
+                .OnMessageAsync((n, act) =>
+                {
+                    return SendAsync(n, act).ContinueWith(t =>
+                    {
+                        if(t.Exception != null)
+                        {
+                            LastException = t.Exception;
+                        }
+                    });
+                }, new OnMessageOptions()
+                {
+                    MaxConcurrentCalls = 1000,
+                    AutoComplete = true,
+                    AutoRenewTimeout = TimeSpan.Zero
+                }));
+
+            _Disposables.Add(_Configuration
+                .Topics
+                .NeedIndexNewBlock
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
+                .OnMessageAsync(async header =>
+                {
+                    using(var node = Configuration.Indexer.ConnectToNode(false))
+                    {
+                        var cancel = new CancellationTokenSource(10000);
+                        node.VersionHandshake(cancel.Token);
+                        node.SynchronizeChain(_Chain, cancellationToken: cancel.Token);
+                        Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
+                        var repo = new NodeBlocksRepository(node);
+
+                        TryLock(_LockBlocks, () =>
+                        {
+                            new IndexBlocksTask(Configuration.Indexer)
+                            {
+                                EnsureIsSetup = false
+                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
+                        });
+                        TryLock(_LockTransactions, () =>
+                        {
+                            new IndexTransactionsTask(Configuration.Indexer)
+                            {
+                                EnsureIsSetup = false
+                            }
+                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
+                        });
+                        TryLock(_LockWallets, () =>
+                        {
+                            using(_WalletsSlimLock.LockRead())
+                            {
+                                new IndexBalanceTask(Configuration.Indexer, _Wallets)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
+                            }
+                        });
+                        TryLock(_LockBalance, () =>
+                        {
+                            new IndexBalanceTask(Configuration.Indexer, null)
+                            {
+                                EnsureIsSetup = false
+                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
+                        });
+                        TryLock(_LockSubscriptions, () =>
+                        {
+                            using(_SubscriptionSlimLock.LockRead())
+                            {
+                                new IndexNotificationsTask(Configuration, _Subscriptions)
+                                {
+                                    EnsureIsSetup = false
+                                }
+                                .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                            }
+                        });
+                    }
+                    await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
+                }));
+
+            _Disposables.Add(Configuration
+               .Topics
+               .AddedAddresses
+               .CreateConsumer("updater", true)
+               .EnsureSubscriptionExists()
+               .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
+               .OnMessage(evt =>
+               {
+                   ListenerTrace.Info("New wallet rule");
+                   using(_WalletsSlimLock.LockWrite())
+                   {
+                       _Wallets.Add(evt.CreateWalletRuleEntry());
+                   }
+               }));
+
+            _Disposables.Add(Configuration
+                .Topics
+                .NeedIndexNewTransaction
+                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
+                .OnMessageAsync(async (tx, ctl) =>
+                {
+                    await Task.WhenAll(new[]{
+                        Async(() => _Indexer.IndexOrderedBalance(tx), false),
+                        Async(()=>{
+                            var txId = tx.GetHash();
+                            using(_WalletsSlimLock.LockRead())
+                            {
+                                var balances =
+                                    OrderedBalanceChange
+                                    .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
+                                    .AsEnumerable();
+                                _Indexer.Index(balances);
+                            }
+
+                            Task notify = null;
+                            using(_SubscriptionSlimLock.LockRead())
+                            {
+                                var topic = Configuration.Topics.SendNotifications;
+
+                                notify = Task.WhenAll(_Subscriptions
+                                    .GetNewTransactions()
+                                    .Select(t => topic.AddAsync(new Notify()
+                                    {
+                                        SendAndForget = true,
+                                        Notification = new Notification()
+                                        {
+                                            Subscription = t,
+                                            Data = new NewTransactionNotificationData()
+                                            {
+                                                TransactionId = txId
+                                            }
+                                        }
+                                    })).ToArray());
+                                    
+                            }
+                            notify.Wait();
+                        }, false)
+                    });
+                    var unused = _Configuration.Topics.NewTransactions.AddAsync(tx);
+                }, new OnMessageOptions()
+                {
+                    AutoComplete = true,
+                    MaxConcurrentCalls = 10,
+                    AutoRenewTimeout = TimeSpan.Zero
+                }));
+        }
+
+        void ExceptionOnMessagePump(Exception ex)
+        {
+            ListenerTrace.Error("Error on azure message pumped", ex);
+            LastException = ex;
         }
 
         NodesGroup _Group;
@@ -189,6 +394,69 @@ namespace QBitNinja.Notifications
             }
             await _Group.ConnectedNodes.First().SendMessageAsync(payload).ConfigureAwait(false);
         }
+        private async Task SendAsync(Notify notify, MessageControl act)
+        {
+            var n = notify.Notification;
+            HttpClient http = new HttpClient();
+            var message = new HttpRequestMessage(HttpMethod.Post, n.Subscription.Url);
+            n.Tried++;
+            var content = new StringContent(n.ToString(), Encoding.UTF8, "application/json");
+            message.Content = content;
+            CancellationTokenSource tcs = new CancellationTokenSource();
+            tcs.CancelAfter(10000);
+
+            var subscription = await Configuration.GetSubscriptionsTable().ReadOneAsync(n.Subscription.Id).ConfigureAwait(false);
+            if(subscription == null)
+                return;
+
+            bool failed = false;
+            try
+            {
+                var response = await http.SendAsync(message, tcs.Token).ConfigureAwait(false);
+                failed = !response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                failed = true;
+            }
+            var tries = new[] 
+            { 
+                TimeSpan.FromSeconds(0.0),
+                TimeSpan.FromMinutes(1.0),
+                TimeSpan.FromMinutes(5.0),
+                TimeSpan.FromMinutes(30.0),
+                TimeSpan.FromMinutes(60.0),
+                TimeSpan.FromHours(7.0),
+                TimeSpan.FromHours(14.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0),
+                TimeSpan.FromHours(24.0)
+            };
+
+            if(!notify.SendAndForget && failed && (n.Tried - 1) <= tries.Length - 1)
+            {
+                var wait = tries[n.Tried - 1];
+                act.RescheduleIn(wait);
+            }
+        }
+
+        void TryLock(object obj, Action act)
+        {
+            if(Monitor.TryEnter(obj))
+            {
+                try
+                {
+                    act();
+                }
+                finally
+                {
+                    Monitor.Exit(obj);
+                }
+            }
+        }
+
 
         private ConcurrentChain _Chain;
         public ConcurrentChain Chain
@@ -223,7 +491,7 @@ namespace QBitNinja.Notifications
 
                 _LastBlock = inv.Inventory
                                 .Where(i => i.Type == InventoryType.MSG_BLOCK)
-                                .Select(i=>i.Hash).FirstOrDefault() ?? _LastBlock;
+                                .Select(i => i.Hash).FirstOrDefault() ?? _LastBlock;
             }
             if(message.Message.Payload is TxPayload)
             {
@@ -279,9 +547,9 @@ namespace QBitNinja.Notifications
             }
         }
 
-        void Async(Action act, bool commonThread)
+        Task Async(Action act, bool commonThread)
         {
-            new Task(() =>
+            var t = new Task(() =>
             {
                 try
                 {
@@ -294,7 +562,9 @@ namespace QBitNinja.Notifications
                     ListenerTrace.Error("Error during task.", ex);
                     LastException = ex;
                 }
-            }).Start(commonThread ? _SingleThreadTaskScheduler : TaskScheduler.Default);
+            });
+            t.Start(commonThread ? _SingleThreadTaskScheduler : TaskScheduler.Default);
+            return t;
         }
 
         public Exception LastException

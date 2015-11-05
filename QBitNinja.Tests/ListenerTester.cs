@@ -41,10 +41,6 @@ namespace QBitNinja.Tests
             if (!nodeOnly)
                 _Listener.Listen();
 
-            _Updater = new BlocksUpdater(_Listener.Configuration);
-            if (!nodeOnly)
-                _Updater.Listen();
-
             _Server.Configuration.Indexer.CreateIndexer().Index(_Server.Configuration.Indexer.Network.GetGenesis());
 
             _Server.ChainBuilder.SkipIndexer = true;
@@ -53,15 +49,6 @@ namespace QBitNinja.Tests
 
             var genesis = _Server.Configuration.Indexer.Network.GetGenesis();
             _Blocks.AddOrReplace(genesis.Header.GetHash(), genesis);
-        }
-
-        private readonly BlocksUpdater _Updater;
-        public BlocksUpdater Updater
-        {
-            get
-            {
-                return _Updater;
-            }
         }
 
         void ChainBuilder_NewBlock(Block obj)
@@ -195,14 +182,11 @@ namespace QBitNinja.Tests
         {
             if (_Listener != null)
                 _Listener.Dispose();
-            if (_Updater != null)
-                _Updater.Dispose();
             if (_NodeServer != null)
                 _NodeServer.Dispose();
             if (_NodeListener != null)
                 _NodeListener.Dispose();
             Assert.Null(Listener.LastException);
-            Assert.Null(Updater.LastException);
         }
 
         #endregion
