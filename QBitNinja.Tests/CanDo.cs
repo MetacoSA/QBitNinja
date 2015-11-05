@@ -374,6 +374,7 @@ namespace QBitNinja.Tests
             using(var tester = ServerTester.Create())
             {
                 var listener = tester.CreateListenerTester();
+                var indexer = tester.Configuration.Indexer.CreateIndexerClient();
 
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
 
@@ -392,10 +393,11 @@ namespace QBitNinja.Tests
                 Assert.True(savedTx.Block == null);
 
 
-                wait = listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks);
+                var waitBlock = listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks);
                 var block = tester.ChainBuilder.EmitBlock();
-                wait.Wait();
+                waitBlock.Wait();
 
+                Assert.NotNull(indexer.GetBlock(block.GetHash()));
                 tester.UpdateServerChain(true);
 
 

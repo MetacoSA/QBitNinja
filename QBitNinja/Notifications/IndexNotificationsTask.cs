@@ -50,17 +50,18 @@ namespace QBitNinja.Notifications
 
         protected override void ProcessBlock(NBitcoin.Indexer.BlockInfo block, BulkImport<Notify> bulk)
         {
+            var notif = new NewBlockNotificationData()
+                    {
+                        Header = block.Block.Header,
+                        BlockId = block.BlockId,
+                        Height = block.Height
+                    };
             foreach (var newBlock in _Subscriptions.GetNewBlocks())
             {
                 bulk.Add("o", new Notify(new Notification()
                 {
                     Subscription = newBlock,
-                    Data = new NewBlockNotificationData()
-                    {
-                        Header = block.Block.Header,
-                        BlockId = block.BlockId,
-                        Height = block.Height
-                    }
+                    Data = notif
                 }));
             }
         }

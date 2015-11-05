@@ -87,7 +87,7 @@ namespace QBitNinja.Tests
         public NotificationRequest WaitRequest()
         {
             CancellationTokenSource tcs = new CancellationTokenSource();
-            tcs.CancelAfter(30000);
+            tcs.CancelAfter(35000);
             var data = _Requests.GetConsumingEnumerable(tcs.Token).FirstOrDefault();
             if (data == null || tcs.Token.IsCancellationRequested)
                 Assert.True(false, "No request received");

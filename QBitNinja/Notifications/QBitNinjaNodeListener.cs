@@ -112,6 +112,7 @@ namespace QBitNinja.Notifications
             addrman.Add(new NetworkAddress(Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort)),
                         IPAddress.Parse("127.0.0.1"));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman));
+            _Group.NodeConnectionParameters.TemplateBehaviors.Add(new ChainBehavior(_Chain));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
             _Group.Connect();
 
@@ -200,6 +201,7 @@ namespace QBitNinja.Notifications
 
         ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
         ConcurrentDictionary<uint256, uint256> _KnownInvs = new ConcurrentDictionary<uint256, uint256>();
+        uint256 _LastBlock;
 
         void node_MessageReceived(Node node, IncomingMessage message)
         {
@@ -214,9 +216,14 @@ namespace QBitNinja.Notifications
                     if(_Broadcasting.TryRemove(inventory.Hash, out tx))
                         ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
-                var getdata = new GetDataPayload(inv.Inventory.Where(i => _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
+                var getdata = new GetDataPayload(inv.Inventory.Where(i => i.Type == InventoryType.MSG_TX && _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
+
                 if(getdata.Inventory.Count > 0)
                     node.SendMessageAsync(getdata);
+
+                _LastBlock = inv.Inventory
+                                .Where(i => i.Type == InventoryType.MSG_BLOCK)
+                                .Select(i=>i.Hash).FirstOrDefault() ?? _LastBlock;
             }
             if(message.Message.Payload is TxPayload)
             {
@@ -232,32 +239,14 @@ namespace QBitNinja.Notifications
                     }, false);
                 }, true);
             }
-            if(message.Message.Payload is BlockPayload)
+
+            if(message.Message.Payload is HeadersPayload)
             {
-                var block = ((BlockPayload)message.Message.Payload).Object;
-                ListenerTrace.Info("Received block " + block.GetHash());
-                var blockId = block.GetHash();
-                if(_Chain.Tip.HashBlock == block.Header.HashPrevBlock)
+                var header = ((HeadersPayload)message.Message.Payload).Headers.FirstOrDefault(h => _LastBlock != null && h.GetHash() == _LastBlock);
+                if(header != null)
                 {
-                    _Chain.SetTip(block.Header);
+                    var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(header);
                 }
-                Async(() =>
-                   {
-                       if(!_Chain.Contains(blockId))
-                       {
-                           node.SynchronizeChain(_Chain);
-                       }
-
-                       _Indexer.IndexChain(_Chain);
-                       ListenerTrace.Info("New height : " + _Chain.Height);
-                       var header = _Chain.GetBlock(blockId);
-                       if(header == null)
-                           return;
-                       _Indexer.Index(block);
-                       var unused = Configuration.Topics.NeedIndexNewBlock.AddAsync(block.Header);
-                   }
-                , false);
-
             }
             if(message.Message.Payload is GetDataPayload)
             {

@@ -215,7 +215,7 @@ namespace QBitNinja.Tests
 
 
 
-        internal async Task WaitMessageAsync<T>(QBitNinjaTopic<T> topic) where T : class
+        internal async Task<T> WaitMessageAsync<T>(QBitNinjaTopic<T> topic) where T : class
         {
             var message = await topic.CreateConsumer(new SubscriptionCreation()
             {
@@ -227,6 +227,7 @@ namespace QBitNinja.Tests
             .ReceiveAsync(TimeSpan.FromSeconds(20.0)).ConfigureAwait(false);
             if (message == null)
                 Assert.True(false, "No message received on topic");
+            return message.Body;
         }
     }
 }

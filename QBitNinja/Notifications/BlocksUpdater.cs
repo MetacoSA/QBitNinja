@@ -58,9 +58,12 @@ namespace QBitNinja.Notifications
             }
         }
 
+        NodesGroup _Group;
+
         SubscriptionCollection _Subscriptions = null;
         object _LockBalance = new object();
         object _LockTransactions = new object();
+        object _LockBlocks = new object();
         object _LockWallets = new object();
         object _LockSubscriptions = new object();
 
@@ -122,11 +125,23 @@ namespace QBitNinja.Notifications
                 .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                 .OnMessageAsync(async header =>
                 {
-                    client.SynchronizeChain(_Chain);
-                    var repo = new IndexerBlocksRepository(client);
-
-                    await Async(() =>
+                    using(var node = Configuration.Indexer.ConnectToNode(false))
                     {
+                        var cancel = new CancellationTokenSource(10000);
+                        node.VersionHandshake(cancel.Token);
+                        node.SynchronizeChain(_Chain, cancellationToken: cancel.Token);
+                        Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
+                        var repo = new NodeBlocksRepository(node);
+
+                        TryLock(_LockBlocks, () =>
+                        {
+                            var t = new IndexBlocksTask(Configuration.Indexer)
+                            {
+                                EnsureIsSetup = false
+                            };
+                            t.Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
+                            var bb = t.IndexedBlocks;
+                        });
                         TryLock(_LockTransactions, () =>
                         {
                             new IndexTransactionsTask(Configuration.Indexer)
@@ -151,8 +166,7 @@ namespace QBitNinja.Notifications
                             new IndexBalanceTask(Configuration.Indexer, null)
                             {
                                 EnsureIsSetup = false
-                            }
-                            .Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
+                            }.Index(new BlockFetcher(indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
                         });
                         TryLock(_LockSubscriptions, () =>
                         {
@@ -165,8 +179,7 @@ namespace QBitNinja.Notifications
                                 .Index(new BlockFetcher(indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
                             }
                         });
-                    }).ConfigureAwait(false);
-
+                    }
                     await _Configuration.Topics.NewBlocks.AddAsync(header).ConfigureAwait(false);
                 }));
 
