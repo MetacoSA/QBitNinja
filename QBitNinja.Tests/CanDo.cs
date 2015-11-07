@@ -103,6 +103,79 @@ namespace QBitNinja.Tests
                 Assert.True(bytes.SequenceEqual(tx.ToBytes()));
                 response = tester.SendGet<GetTransactionResponse>("transactions/" + txId + "?format=json");
                 /////
+
+                //Colored version
+                var goldGuy = new Key();
+                var silverGuy = new Key();
+                var gold = new AssetId(goldGuy);
+                var silver = new AssetId(silverGuy);
+
+                tx = tester.ChainBuilder.EmitMoney(Money.Coins(200), bob);
+                tx = tester.ChainBuilder.EmitMoney(Money.Coins(100), goldGuy);
+                var goldIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
+                tx = tester.ChainBuilder.EmitMoney(Money.Coins(95), silverGuy);
+                var silverIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
+
+                tx = new TransactionBuilder()
+                {
+                    StandardTransactionPolicy = Policy
+                }
+                     .AddKeys(goldGuy)
+                     .AddCoins(goldIssuance)
+                     .IssueAsset(bob, new AssetMoney(gold, 1000))
+                     .SetChange(goldGuy)
+                     .Then()
+                     .AddKeys(bob)
+                     .AddCoins(tester.GetUnspentCoins(bob))
+                     .Send(goldGuy, Money.Coins(5.0m))
+                     .Send(silverGuy, Money.Coins(31.0m))
+                     .SetChange(bob)
+                     .Shuffle()
+                     .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+
+                response = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash() + "?colored=true");
+                //Bob receives 1000 gold
+                Assert.True(response.ReceivedCoins.OfType<ColoredCoin>().Any(c => c.Amount == new AssetMoney(gold, 1000) && c.TxOut.ScriptPubKey == bob.ScriptPubKey));
+
+                //Goldguy receives 5BTC
+                Assert.True(response.ReceivedCoins.OfType<Coin>().Any(c => c.Amount == Money.Coins(5.0m) && c.TxOut.ScriptPubKey == goldGuy.ScriptPubKey));
+
+                //SilverGuy receives 31BTC
+                Assert.True(response.ReceivedCoins.OfType<Coin>().Any(c => c.Amount == Money.Coins(31.0m) && c.TxOut.ScriptPubKey == silverGuy.ScriptPubKey));
+
+                tx = new TransactionBuilder()
+                {
+                    StandardTransactionPolicy = Policy
+                }
+                     .AddKeys(silverGuy)
+                     .AddCoins(silverIssuance)
+                     .IssueAsset(bob, new AssetMoney(silver, 1500))
+                     .SetChange(goldGuy)
+                     .Then()
+                     .AddKeys(bob)
+                     .AddCoins(tester.GetUnspentCoins(bob))
+                     .Send(silverGuy, Money.Coins(37.0m))
+                     .Send(silverGuy, new AssetMoney(gold, 600))
+                     .SetChange(bob)
+                     .Shuffle()
+                     .BuildTransaction(true);
+                tester.ChainBuilder.Broadcast(tx);
+
+                response = tester.SendGet<GetTransactionResponse>("transactions/" + tx.GetHash() + "?colored=true");
+                //Bob spent previous 1000 gold
+                Assert.True(response.SpentCoins.OfType<ColoredCoin>().Any(c => c.Amount == new AssetMoney(gold, 1000) && c.TxOut.ScriptPubKey == bob.ScriptPubKey));
+
+                //Bob received 1500 silver
+                Assert.True(response.ReceivedCoins.OfType<ColoredCoin>().Any(c => c.Amount == new AssetMoney(silver, 1500) && c.TxOut.ScriptPubKey == bob.ScriptPubKey));
+
+                //Silverguy received 600 gold
+                Assert.True(response.ReceivedCoins.OfType<ColoredCoin>().Any(c => c.Amount == new AssetMoney(gold, 600) && c.TxOut.ScriptPubKey == silverGuy.ScriptPubKey));
+                //Bob received 400 gold
+                Assert.True(response.ReceivedCoins.OfType<ColoredCoin>().Any(c => c.Amount == new AssetMoney(gold, 400) && c.TxOut.ScriptPubKey == bob.ScriptPubKey));
+
+                //Silverguy received 37BTC
+                Assert.True(response.ReceivedCoins.OfType<Coin>().Any(c => c.Amount == Money.Coins(37.0m) && c.TxOut.ScriptPubKey == silverGuy.ScriptPubKey));
             }
         }
 

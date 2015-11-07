@@ -46,7 +46,7 @@ namespace QBitNinja.Controllers
         public async Task<BroadcastResponse> Broadcast()
         {
             Transaction tx = null;
-            switch (this.Request.Content.Headers.ContentType.MediaType)
+            switch(this.Request.Content.Headers.ContentType.MediaType)
             {
                 case "application/json":
                     tx = NBitcoin.Transaction.Parse(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
@@ -65,16 +65,16 @@ namespace QBitNinja.Controllers
                 .AddAsync(new BroadcastedTransaction(tx));
 
             var hash = tx.GetHash();
-            for (int i = 0 ; i < 10 ; i++)
+            for(int i = 0; i < 10; i++)
             {
                 var indexed = await Configuration.Indexer.CreateIndexerClient().GetTransactionAsync(hash);
-                if (indexed != null)
+                if(indexed != null)
                     return new BroadcastResponse()
                     {
                         Success = true
                     };
                 var reject = await Configuration.GetRejectTable().ReadOneAsync(hash.ToString());
-                if (reject != null)
+                if(reject != null)
                     return new BroadcastResponse()
                     {
                         Success = false,
@@ -99,27 +99,28 @@ namespace QBitNinja.Controllers
 
         [HttpGet]
         [Route("transactions/{txId}")]
-        public object Transaction(
+        public async Task<object> Transaction(
             [ModelBinder(typeof(BitcoinSerializableModelBinder))]
             uint256 txId,
-            DataFormat format = DataFormat.Json
+            DataFormat format = DataFormat.Json,
+            bool colored = false
             )
         {
-            if (format == DataFormat.Json)
-                return JsonTransaction(txId);
+            if(format == DataFormat.Json)
+                return await JsonTransaction(txId, colored);
 
-            return RawTransaction(txId);
+            return await RawTransaction(txId);
         }
 
         [HttpPost]
         [Route("wallets")]
         public WalletModel CreateWallet(WalletModel wallet)
         {
-            if (string.IsNullOrEmpty(wallet.Name))
+            if(string.IsNullOrEmpty(wallet.Name))
                 throw new FormatException("Invalid wallet name");
             AssertValidUrlPart(wallet.Name, "wallet name");
             var repo = Configuration.CreateWalletRepository();
-            if (!repo.Create(wallet))
+            if(!repo.Create(wallet))
                 throw Error(409, "wallet already exist");
             return wallet;
         }
@@ -128,10 +129,10 @@ namespace QBitNinja.Controllers
         [Route("subscriptions")]
         public async Task<Subscription> AddSubscription(Subscription subscription)
         {
-            if (subscription.Id == null)
+            if(subscription.Id == null)
                 subscription.Id = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
 
-            if (!await (Configuration
+            if(!await (Configuration
             .GetSubscriptionsTable()
             .CreateAsync(subscription.Id, subscription, false)))
             {
@@ -147,7 +148,7 @@ namespace QBitNinja.Controllers
 
         private void AssertValidUrlPart(string str, string fieldName)
         {
-            if (str.Contains('/') || str.Contains('?'))
+            if(str.Contains('/') || str.Contains('?'))
                 throw Error(400, "A field contains illegal characters (" + fieldName + ")");
         }
 
@@ -185,16 +186,16 @@ namespace QBitNinja.Controllers
 
         private WalletAddress AddWalletAddressesCore(string walletName, InsertWalletAddress insertAddress, Dictionary<string, JObject> additionalProperties)
         {
-            if (additionalProperties == null)
+            if(additionalProperties == null)
                 additionalProperties = new Dictionary<string, JObject>();
-            if (insertAddress.RedeemScript != null && insertAddress.Address == null)
+            if(insertAddress.RedeemScript != null && insertAddress.Address == null)
             {
                 insertAddress.Address = insertAddress.RedeemScript.GetScriptAddress(Network);
             }
-            if (insertAddress.Address == null || !((insertAddress.Address) is IDestination))
+            if(insertAddress.Address == null || !((insertAddress.Address) is IDestination))
                 throw Error(400, "Address is missing");
 
-            if (!insertAddress.IsCoherent())
+            if(!insertAddress.IsCoherent())
                 throw Error(400, "The provided redeem script does not correspond to the given address");
 
             var address = new WalletAddress();
@@ -205,21 +206,21 @@ namespace QBitNinja.Controllers
 
             var repo = Configuration.CreateWalletRepository();
             var walletRule = repo.AddAddress(address);
-            if (walletRule == null)
+            if(walletRule == null)
                 throw Error(409, "This address already exist in the wallet");
 
 
             var unused = Configuration.Topics.AddedAddresses.AddAsync(address);
             var rule = walletRule.Rule;
             bool merge = false;
-            if (insertAddress.MergePast)
+            if(insertAddress.MergePast)
             {
                 var index = Configuration.Indexer.CreateIndexerClient();
                 CancellationTokenSource cancel = new CancellationTokenSource();
                 cancel.CancelAfter(10000);
                 merge = index.MergeIntoWallet(walletName, address, rule, cancel.Token);
             }
-            if (merge)
+            if(merge)
             {
                 GetBalanceSummaryCacheTable(new BalanceId(walletName), true).Delete();
                 GetBalanceSummaryCacheTable(new BalanceId(walletName), false).Delete();
@@ -232,7 +233,7 @@ namespace QBitNinja.Controllers
         {
             JObject obj = new JObject();
             obj.Add("userData", address.UserData ?? new JValue(""));
-            foreach (var kv in properties)
+            foreach(var kv in properties)
             {
                 obj.Add(kv.Key, kv.Value);
             }
@@ -252,7 +253,7 @@ namespace QBitNinja.Controllers
         public bool DeleteKeyset(string walletName, string keyset)
         {
             var repo = Configuration.CreateWalletRepository();
-            if (!repo.DeleteKeySet(walletName, keyset))
+            if(!repo.DeleteKeySet(walletName, keyset))
             {
                 throw Error(404, "keyset not found");
             }
@@ -264,14 +265,14 @@ namespace QBitNinja.Controllers
         public HDKeySet CreateKeyset(string walletName, [FromBody]HDKeySet keyset)
         {
             AssertValidUrlPart(keyset.Name, "Keyset name");
-            if (keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
+            if(keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
                 throw Error(400, "ExtPubKeys not specified");
-            if (keyset.ExtPubKeys.Length < keyset.SignatureCount)
+            if(keyset.ExtPubKeys.Length < keyset.SignatureCount)
                 throw Error(400, "SignatureCount should not be higher than the number of HD Keys");
-            if (keyset.Path != null && keyset.Path.ToString().Contains("'"))
+            if(keyset.Path != null && keyset.Path.ToString().Contains("'"))
                 throw Error(400, "The keypath should not contains hardened children");
             var repo = Configuration.CreateWalletRepository();
-            if (!repo.AddKeySet(walletName, keyset))
+            if(!repo.AddKeySet(walletName, keyset))
                 throw Error(409, "Keyset already exists");
             return keyset;
         }
@@ -282,7 +283,7 @@ namespace QBitNinja.Controllers
         {
             var repo = Configuration.CreateWalletRepository();
             var sets = repo.GetKeysets(walletName);
-            if (sets.Length == 0)
+            if(sets.Length == 0)
                 AssetWalletAndKeysetExists(walletName, null);
             return sets;
         }
@@ -294,7 +295,7 @@ namespace QBitNinja.Controllers
             var repo = Configuration.CreateWalletRepository();
             var keyset = repo.GetKeySetData(walletName, keysetName);
             var key = repo.NewKey(walletName, keysetName);
-            if (key != null)
+            if(key != null)
             {
                 keyset.State = new HDKeyState()
                 {
@@ -319,12 +320,12 @@ namespace QBitNinja.Controllers
         {
             var repo = Configuration.CreateWalletRepository();
             var wallet = repo.GetWallet(walletName);
-            if (wallet == null)
+            if(wallet == null)
                 throw Error(404, "wallet does not exists");
-            if (keysetName != null)
+            if(keysetName != null)
             {
                 var keyset = repo.GetKeySetData(walletName, keysetName);
-                if (keyset == null)
+                if(keyset == null)
                 {
                     throw Error(404, "keyset does not exists");
                 }
@@ -336,7 +337,7 @@ namespace QBitNinja.Controllers
         {
             var repo = Configuration.CreateWalletRepository();
             var keys = repo.GetKeys(walletName, keysetName);
-            if (keys.Length == 0)
+            if(keys.Length == 0)
             {
                 AssetWalletAndKeysetExists(walletName, keysetName);
             }
@@ -371,40 +372,60 @@ namespace QBitNinja.Controllers
         {
             var repo = Configuration.CreateWalletRepository();
             var result = repo.GetWallet(walletName);
-            if (result == null)
+            if(result == null)
                 throw Error(404, "Wallet not found");
             return result;
         }
 
-        internal GetTransactionResponse JsonTransaction(uint256 txId)
+        internal async Task<GetTransactionResponse> JsonTransaction(uint256 txId, bool colored)
         {
             var client = Configuration.Indexer.CreateIndexerClient();
-            var tx = client.GetTransaction(txId);
-            if (tx == null)
+            var tx = await client.GetTransactionAsync(true, colored, txId);
+            if(tx == null || (tx.ColoredTransaction == null && colored) || tx.SpentCoins == null)
                 throw new HttpResponseException(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
                     ReasonPhrase = "Transaction not found"
                 });
-            return new GetTransactionResponse()
+
+            var response = new GetTransactionResponse()
             {
                 TransactionId = tx.TransactionId,
                 Transaction = tx.Transaction,
                 IsCoinbase = tx.Transaction.IsCoinBase,
                 Fees = tx.Fees,
-                Block = FetchBlockInformation(tx.BlockIds),
-                SpentCoins = tx.SpentCoins == null ? null : tx.SpentCoins.Select(c => new Coin()
-                {
-                    Outpoint = c.OutPoint,
-                    TxOut = c.TxOut
-                }).ToList()
+                Block = FetchBlockInformation(tx.BlockIds)
             };
+            for(int i = 0; i < tx.Transaction.Outputs.Count; i++)
+            {
+                var txout = tx.Transaction.Outputs[i];
+                ICoin coin = new Coin(tx.Transaction, txout);
+                if(colored)
+                {
+                    var entry = tx.ColoredTransaction.GetColoredEntry((uint)i);
+                    if(entry != null)
+                        coin = new ColoredCoin(entry.Asset, (Coin)coin);
+                }
+                response.ReceivedCoins.Add(coin);
+            }
+            for(int i = 0; i < tx.Transaction.Inputs.Count; i++)
+            {
+                ICoin coin = new Coin(tx.SpentCoins[i].OutPoint, tx.SpentCoins[i].TxOut);
+                if(colored)
+                {
+                    var entry = tx.ColoredTransaction.Inputs.FirstOrDefault(ii => ii.Index == i);
+                    if(entry != null)
+                        coin = new ColoredCoin(entry.Asset, (Coin)coin);
+                }
+                response.SpentCoins.Add(coin);
+            }
+            return response;
         }
 
         private BlockInformation FetchBlockInformation(uint256[] blockIds)
         {
             var confirmed = blockIds.Select(b => Chain.GetBlock(b)).FirstOrDefault();
-            if (confirmed == null)
+            if(confirmed == null)
             {
                 return null;
             }
@@ -417,13 +438,13 @@ namespace QBitNinja.Controllers
             };
         }
 
-        public HttpResponseMessage RawTransaction(
+        public async Task<HttpResponseMessage> RawTransaction(
             uint256 txId
             )
         {
             var client = Configuration.Indexer.CreateIndexerClient();
-            var tx = client.GetTransaction(txId);
-            if (tx == null)
+            var tx = await client.GetTransactionAsync(txId);
+            if(tx == null)
                 throw new HttpResponseException(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.NotFound,
@@ -437,7 +458,7 @@ namespace QBitNinja.Controllers
             BlockFeature blockFeature, bool headerOnly)
         {
             var block = GetBlock(blockFeature, headerOnly);
-            if (block == null)
+            if(block == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage
                 {
@@ -454,7 +475,7 @@ namespace QBitNinja.Controllers
             [ModelBinder(typeof(BlockFeatureModelBinder))]
             BlockFeature blockFeature, bool headerOnly = false, DataFormat format = DataFormat.Json)
         {
-            if (format == DataFormat.Json)
+            if(format == DataFormat.Json)
                 return JsonBlock(blockFeature, headerOnly);
 
             return RawBlock(blockFeature, headerOnly);
@@ -500,7 +521,7 @@ namespace QBitNinja.Controllers
 
             var query = new BalanceQuery();
             //query.From = null;
-            if (at != null)
+            if(at != null)
                 query.From = ToBalanceLocator(atBlock);
 
             //if (query.From == null)
@@ -514,7 +535,7 @@ namespace QBitNinja.Controllers
                                                                                    ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)));
 
             var cachedLocator = cachedSummary == null ? null : (ConfirmedBalanceLocator)cachedSummary.Locator;
-            if (cachedSummary != null && at != null && cachedLocator.Height == atBlock.Height)
+            if(cachedSummary != null && at != null && cachedLocator.Height == atBlock.Height)
             {
                 cachedSummary.CacheHit = CacheHit.FullCache;
                 cachedSummary.PrepareForSend(at, debug);
@@ -529,7 +550,7 @@ namespace QBitNinja.Controllers
             };
 
             int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedLocator.Height;
-            if (at == null) //Need more block to find the unconfs
+            if(at == null) //Need more block to find the unconfs
                 stopAtHeight = stopAtHeight - 12;
 
             var client = Configuration.Indexer.CreateIndexerClient();
@@ -543,7 +564,7 @@ namespace QBitNinja.Controllers
                 .TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight)
                 .AsBalanceSheet(Chain);
 
-            if (cancel.Token.IsCancellationRequested)
+            if(cancel.Token.IsCancellationRequested)
             {
                 throw new HttpResponseException(new HttpResponseMessage()
                 {
@@ -573,7 +594,7 @@ namespace QBitNinja.Controllers
 
             var newCachedLocator = (ConfirmedBalanceLocator)summary.Locator;
 
-            if (
+            if(
                 cachedSummary.Locator == null ||
                 newCachedLocator.BlockHash != cachedLocator.BlockHash)
             {
@@ -586,7 +607,7 @@ namespace QBitNinja.Controllers
                     OlderImmature = Math.Min(cachedSummary.OlderImmature, olderImmature)
                 };
                 var checkpointBlock = Chain.GetBlock(checkpoint.BlockLocator.Blocks[0]);
-                if (checkpointBlock != null && checkpointBlock.Height >= atBlock.Height)
+                if(checkpointBlock != null && checkpointBlock.Height >= atBlock.Height)
                     cacheTable.Create(newCachedLocator, newCachedSummary);
             }
 
@@ -615,10 +636,10 @@ namespace QBitNinja.Controllers
         private ChainedBlock AtBlock(BlockFeature at)
         {
             var atBlock = Chain.Tip;
-            if (at != null)
+            if(at != null)
             {
                 var chainedBlock = at.GetChainedBlock(Chain);
-                if (chainedBlock == null)
+                if(chainedBlock == null)
                     throw new FormatException("'at' not found in the blockchain");
                 atBlock = chainedBlock;
             }
@@ -670,13 +691,13 @@ namespace QBitNinja.Controllers
             BalanceQuery query = new BalanceQuery();
             query.From = null;
 
-            if (from != null)
+            if(from != null)
             {
                 query.From = ToBalanceLocator(from);
                 query.FromIncluded = true;
             }
 
-            if (continuation != null)
+            if(continuation != null)
             {
                 query = new BalanceQuery
                 {
@@ -685,18 +706,18 @@ namespace QBitNinja.Controllers
                 };
             }
 
-            if (query.From == null)
+            if(query.From == null)
             {
                 query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
             }
 
-            if (until != null)
+            if(until != null)
             {
                 query.To = ToBalanceLocator(until);
                 query.FromIncluded = true;
             }
 
-            if (query.To.IsGreaterThan(query.From))
+            if(query.To.IsGreaterThan(query.From))
                 throw InvalidParameters("Invalid agurment : from < until");
 
             var client = Configuration.Indexer.CreateIndexerClient();
@@ -710,22 +731,22 @@ namespace QBitNinja.Controllers
                 .AsBalanceSheet(Chain);
 
             var balanceChanges = balance.All;
-            if (until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
+            if(until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
             {
-                for (int i = balanceChanges.Count - 1 ; i >= 0 ; i--)
+                for(int i = balanceChanges.Count - 1; i >= 0; i--)
                 {
                     var last = balanceChanges[i];
-                    if (last.BlockId == null)
+                    if(last.BlockId == null)
                         balanceChanges.RemoveAt(i);
                     else
                         break;
                 }
             }
-            if (unspentOnly)
+            if(unspentOnly)
             {
                 var changeByTxId = balanceChanges.ToDictionary(_ => _.TransactionId);
                 var spentOutpoints = changeByTxId.Values.SelectMany(b => b.SpentCoins.Select(c => c.Outpoint)).ToDictionary(_ => _);
-                foreach (var change in changeByTxId.Values.ToArray())
+                foreach(var change in changeByTxId.Values.ToArray())
                 {
                     change.SpentCoins.Clear();
                     change.ReceivedCoins.RemoveAll(c => spentOutpoints.ContainsKey(c.Outpoint));
@@ -733,9 +754,9 @@ namespace QBitNinja.Controllers
             }
 
             var result = new BalanceModel(balanceChanges, Chain);
-            if (cancel.IsCancellationRequested)
+            if(cancel.IsCancellationRequested)
             {
-                if (balanceChanges.Count > 0)
+                if(balanceChanges.Count > 0)
                 {
                     var lastop = balanceChanges[balanceChanges.Count - 1];
                     result.Continuation = lastop.CreateBalanceLocator();
@@ -772,7 +793,7 @@ namespace QBitNinja.Controllers
         internal GetBlockResponse JsonBlock(BlockFeature blockFeature, bool headerOnly)
         {
             var block = GetBlock(blockFeature, headerOnly);
-            if (block == null)
+            if(block == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage()
                 {
@@ -791,7 +812,7 @@ namespace QBitNinja.Controllers
         {
             var chainedBlock = blockFeature.GetChainedBlock(Chain);
             var hash = chainedBlock == null ? blockFeature.BlockId : chainedBlock.HashBlock;
-            if (hash == null)
+            if(hash == null)
                 return null;
             var client = Configuration.Indexer.CreateIndexerClient();
             return headerOnly ? GetHeader(hash, client) : client.GetBlock(hash);
@@ -800,10 +821,10 @@ namespace QBitNinja.Controllers
         private Block GetHeader(uint256 hash, IndexerClient client)
         {
             var header = Chain.GetBlock(hash);
-            if (header == null)
+            if(header == null)
             {
                 var b = client.GetBlock(hash);
-                if (b == null)
+                if(b == null)
                     return null;
                 return new Block(b.Header);
             }

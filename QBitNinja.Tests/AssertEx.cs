@@ -21,9 +21,9 @@ namespace QBitNinja.Tests
                 act();
                 Assert.False(true, "Should have thrown error " + code);
             }
-            catch (HttpRequestException ex)
+            catch(HttpRequestException ex)
             {
-                Assert.True(ex.Message.Contains(code.ToString(CultureInfo.InvariantCulture)));
+                Assert.True(ex.Message.Contains(code.ToString(CultureInfo.InvariantCulture)), "expected error " + code + " but got " + ex.Message);
             }
         }
     }

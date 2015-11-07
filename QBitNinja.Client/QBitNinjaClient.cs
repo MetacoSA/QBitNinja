@@ -367,7 +367,7 @@ namespace QBitNinja.Client
 
         public Task<GetTransactionResponse> GetTransaction(uint256 transactionId)
         {
-            return Get<GetTransactionResponse>("transactions/" + EscapeUrlPart(transactionId.ToString()));
+            return Get<GetTransactionResponse>("transactions/" + EscapeUrlPart(transactionId.ToString()) + CreateParameters());
         }
 
         public async Task<bool> CreateWalletIfNotExists(string name)
