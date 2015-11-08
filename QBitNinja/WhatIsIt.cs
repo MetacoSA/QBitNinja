@@ -4,6 +4,7 @@ using QBitNinja.Controllers;
 using QBitNinja.Models;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace QBitNinja
 {
@@ -37,7 +38,7 @@ namespace QBitNinja
         }
 
 
-        public object Find(string data)
+        public async Task<object> Find(string data)
         {
             data = data.Trim();
             var b58 = NoException(() => WhatIsBase58.GetFromBase58Data(data));
@@ -53,9 +54,13 @@ namespace QBitNinja
 
             if (data.Length == 0x40)
             {
-                var tx = NoException(() => Controller.JsonTransaction(uint256.Parse(data), false));
-                if (tx != null)
-                    return tx;
+                try
+                {
+                    return await Controller.JsonTransaction(uint256.Parse(data), false);
+                }
+                catch
+                {
+                }
             }
             var b = NoException(() => Controller.JsonBlock(BlockFeature.Parse(data), true));
             if (b != null)

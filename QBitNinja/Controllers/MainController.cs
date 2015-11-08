@@ -776,10 +776,10 @@ namespace QBitNinja.Controllers
 
         [HttpGet]
         [Route("whatisit/{data}")]
-        public object WhatIsIt(string data)
+        public async Task<object> WhatIsIt(string data)
         {
             WhatIsIt finder = new WhatIsIt(this);
-            return finder.Find(data) ?? "Good question Holmes !";
+            return (await finder.Find(data)) ?? "Good question Holmes !";
         }
 
         public Network Network

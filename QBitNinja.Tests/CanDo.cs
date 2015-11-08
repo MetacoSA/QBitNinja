@@ -2061,7 +2061,7 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     tx.GetHash().ToString(),
-                    "{  \"Transaction\": \"01000000000100e1f505000000001976a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac00000000\",  \"TransactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",  \"IsCoinbase\": false,  \"Block\": null,  \"SpentCoins\": [],  \"Fees\": -100000000}"
+                    "{  \"transaction\": \"01000000000100e1f505000000001976a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac00000000\",  \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",  \"isCoinbase\": false,  \"block\": null,  \"spentCoins\": [],  \"receivedCoins\": [    {      \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",      \"index\": 0,      \"value\": 100000000,      \"scriptPubKey\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"redeemScript\": null    }  ],  \"fees\": -100000000}"
                     );
                 /////
 
