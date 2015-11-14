@@ -394,7 +394,8 @@ namespace QBitNinja.Controllers
                 Transaction = tx.Transaction,
                 IsCoinbase = tx.Transaction.IsCoinBase,
                 Fees = tx.Fees,
-                Block = FetchBlockInformation(tx.BlockIds)
+                Block = FetchBlockInformation(tx.BlockIds),
+                FirstSeen = tx.FirstSeen
             };
             for(int i = 0; i < tx.Transaction.Outputs.Count; i++)
             {

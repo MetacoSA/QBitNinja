@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NBitcoin;
 using NBitcoin.Indexer;
+using System.Threading;
 
 namespace QBitNinja.Notifications
 {
@@ -18,7 +19,7 @@ namespace QBitNinja.Notifications
         }
         #region IBlocksRepository Members
 
-        public IEnumerable<NBitcoin.Block> GetBlocks(IEnumerable<NBitcoin.uint256> hashes)
+        public IEnumerable<NBitcoin.Block> GetBlocks(IEnumerable<NBitcoin.uint256> hashes, CancellationToken cancellation)
         {
             foreach (var h in hashes)
             {

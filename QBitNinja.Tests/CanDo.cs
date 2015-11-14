@@ -65,6 +65,8 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.Broadcast(tx);
                 txId = tx.GetHash();
                 response = tester.SendGet<GetTransactionResponse>("transactions/" + txId);
+                var firstSeen = response.FirstSeen;
+                Assert.True(DateTimeOffset.UtcNow - firstSeen < TimeSpan.FromMinutes(1.0));
                 Assert.Equal(txId.ToString(), response.TransactionId.ToString());
                 Assert.Equal(tx.ToString(), response.Transaction.ToString());
                 Assert.Null(response.Block);
@@ -80,6 +82,7 @@ namespace QBitNinja.Tests
                 tester.UpdateServerChain();
 
                 response = tester.SendGet<GetTransactionResponse>("transactions/" + txId);
+                Assert.Equal(firstSeen, response.FirstSeen);
                 Assert.NotNull(response.Block);
                 Assert.True(response.Block.BlockId == block.GetHash());
                 Assert.True(response.Block.Confirmations == 1);
@@ -2061,7 +2064,7 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     tx.GetHash().ToString(),
-                    "{  \"transaction\": \"01000000000100e1f505000000001976a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac00000000\",  \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",  \"isCoinbase\": false,  \"block\": null,  \"spentCoins\": [],  \"receivedCoins\": [    {      \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",      \"index\": 0,      \"value\": 100000000,      \"scriptPubKey\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"redeemScript\": null    }  ],  \"fees\": -100000000}"
+                    "{  \"transaction\": \"01000000000100e1f505000000001976a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac00000000\",  \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",  \"isCoinbase\": false,  \"block\": null,  \"spentCoins\": [],  \"receivedCoins\": [    {      \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",      \"index\": 0,      \"value\": 100000000,      \"scriptPubKey\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"redeemScript\": null    }  ], \"firstSeen\": 0, \"fees\": -100000000}"
                     );
                 /////
 
@@ -2187,7 +2190,12 @@ namespace QBitNinja.Tests
             else
             {
                 expected = ToCamel(expected);
-                actual = JObject.Parse(actual).ToString().Replace("\r\n", "").Replace("\"", "\\\"");
+
+                var actualJObj = JObject.Parse(actual);
+                var prop = actualJObj.Property("firstSeen"); //Change non deterministic data
+                if(prop != null)
+                    prop.Value = new JValue(0);
+                actual = actualJObj.ToString().Replace("\r\n", "").Replace("\"", "\\\"");
                 expected = JObject.Parse(expected).ToString().Replace("\r\n", "").Replace("\"", "\\\"");
                 Assert.Equal(expected, actual);
             }

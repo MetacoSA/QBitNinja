@@ -242,7 +242,7 @@ namespace QBitNinja
             int cumul = 0;
             ChainedBlock from = chain.Genesis;
             int blockCount = 0;
-            foreach (var block in repo.GetBlocks(new[] { chain.Genesis }.Concat(chain.EnumerateAfter(chain.Genesis)).Where(c => c.Height % BlockGranularity == 0).Select(c => c.HashBlock)))
+            foreach (var block in repo.GetBlocks(new[] { chain.Genesis }.Concat(chain.EnumerateAfter(chain.Genesis)).Where(c => c.Height % BlockGranularity == 0).Select(c => c.HashBlock), default(CancellationToken)))
             {
                 cumul += block.Transactions.Count * BlockGranularity;
                 blockCount += BlockGranularity;

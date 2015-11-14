@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using System;
 using System.Collections.Generic;
 
 namespace QBitNinja.Models
@@ -76,6 +77,12 @@ namespace QBitNinja.Models
         }
 
         public List<ICoin> ReceivedCoins
+        {
+            get;
+            set;
+        }
+
+        public DateTimeOffset FirstSeen
         {
             get;
             set;

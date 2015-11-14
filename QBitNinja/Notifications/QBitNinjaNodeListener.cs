@@ -445,6 +445,7 @@ namespace QBitNinja.Notifications
 
                     Async(() =>
                     {
+                        CancellationTokenSource cancel = new CancellationTokenSource(TimeSpan.FromMinutes(30));
                         var repo = new CacheBlocksRepository(new NodeBlocksRepository(node));
                         TryLock(_LockBlocks, () =>
                         {
@@ -452,7 +453,10 @@ namespace QBitNinja.Notifications
                             {
                                 EnsureIsSetup = false,
 
-                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain));
+                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain)
+                            {
+                                CancellationToken = cancel.Token
+                            });
                         });
                         TryLock(_LockTransactions, () =>
                         {
@@ -460,7 +464,10 @@ namespace QBitNinja.Notifications
                             {
                                 EnsureIsSetup = false
                             }
-                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain));
+                            .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain)
+                            {
+                                CancellationToken = cancel.Token
+                            });
                         });
                         TryLock(_LockWallets, () =>
                         {
@@ -470,7 +477,10 @@ namespace QBitNinja.Notifications
                                 {
                                     EnsureIsSetup = false
                                 }
-                                .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain));
+                                .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain)
+                                {
+                                    CancellationToken = cancel.Token
+                                });
                             }
                         });
                         TryLock(_LockBalance, () =>
@@ -478,7 +488,10 @@ namespace QBitNinja.Notifications
                             new IndexBalanceTask(Configuration.Indexer, null)
                             {
                                 EnsureIsSetup = false
-                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain));
+                            }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain)
+                            {
+                                CancellationToken = cancel.Token
+                            });
                         });
                         TryLock(_LockSubscriptions, () =>
                         {
@@ -486,11 +499,15 @@ namespace QBitNinja.Notifications
                             {
                                 new IndexNotificationsTask(Configuration, _Subscriptions)
                                 {
-                                    EnsureIsSetup = false,                                    
+                                    EnsureIsSetup = false,
                                 }
-                                .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain));
+                                .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain)
+                                {
+                                    CancellationToken = cancel.Token
+                                });
                             }
                         });
+                        cancel.Dispose();
                         var unused = _Configuration.Topics.NewBlocks.AddAsync(header);
                     }, false);
                 }
