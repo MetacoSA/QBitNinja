@@ -409,17 +409,18 @@ namespace QBitNinja.Controllers
                 }
                 response.ReceivedCoins.Add(coin);
             }
-            for(int i = 0; i < tx.Transaction.Inputs.Count; i++)
-            {
-                ICoin coin = new Coin(tx.SpentCoins[i].OutPoint, tx.SpentCoins[i].TxOut);
-                if(colored)
+            if(!response.IsCoinbase)
+                for(int i = 0; i < tx.Transaction.Inputs.Count; i++)
                 {
-                    var entry = tx.ColoredTransaction.Inputs.FirstOrDefault(ii => ii.Index == i);
-                    if(entry != null)
-                        coin = new ColoredCoin(entry.Asset, (Coin)coin);
+                    ICoin coin = new Coin(tx.SpentCoins[i].OutPoint, tx.SpentCoins[i].TxOut);
+                    if(colored)
+                    {
+                        var entry = tx.ColoredTransaction.Inputs.FirstOrDefault(ii => ii.Index == i);
+                        if(entry != null)
+                            coin = new ColoredCoin(entry.Asset, (Coin)coin);
+                    }
+                    response.SpentCoins.Add(coin);
                 }
-                response.SpentCoins.Add(coin);
-            }
             return response;
         }
 
