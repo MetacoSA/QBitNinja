@@ -90,7 +90,6 @@ namespace QBitNinja.Notifications
                 return _Configuration;
             }
         }
-        SingleThreadTaskScheduler _SingleThreadTaskScheduler;
         public QBitNinjaNodeListener(QBitNinjaConfiguration configuration)
         {
             _Configuration = configuration;
@@ -122,7 +121,7 @@ namespace QBitNinja.Notifications
             client.SynchronizeChain(chain);
             ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
 
-            _Disposables.Add(_IndexerScheduler = new CustomThreadPoolTaskScheduler(30, 20));
+            _Disposables.Add(_IndexerScheduler = new CustomThreadPoolTaskScheduler(50, 100, "Indexing Threads"));
             _Indexer.TaskScheduler = _IndexerScheduler;
 
             _Group = new NodesGroup(Configuration.Indexer.Network);
@@ -148,8 +147,6 @@ namespace QBitNinja.Notifications
             ListenerTrace.Info("Subscriptions fetched");
 
             ListenerTrace.Info("Fetching transactions to broadcast...");
-
-            _Disposables.Add(_SingleThreadTaskScheduler = new SingleThreadTaskScheduler());
 
             _Disposables.Add(
                 Configuration
@@ -391,11 +388,11 @@ namespace QBitNinja.Notifications
                 Async(() =>
                 {
                     _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
-                }, false);
+                });
                 Async(() =>
                 {
                     _Indexer.IndexOrderedBalance(tx);
-                }, false);
+                });
                 Async(() =>
                 {
                     var txId = tx.GetHash();
@@ -430,7 +427,7 @@ namespace QBitNinja.Notifications
 
                     }
                     notify.Wait();
-                }, false);
+                });
                 var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
             }
 
@@ -456,7 +453,7 @@ namespace QBitNinja.Notifications
                             }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Blocks), repo, _Chain)
                             {
                                 CancellationToken = cancel.Token
-                            });
+                            }, _Indexer.TaskScheduler);
                         });
                         TryLock(_LockTransactions, () =>
                         {
@@ -467,7 +464,7 @@ namespace QBitNinja.Notifications
                             .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Transactions), repo, _Chain)
                             {
                                 CancellationToken = cancel.Token
-                            });
+                            }, _Indexer.TaskScheduler);
                         });
                         TryLock(_LockWallets, () =>
                         {
@@ -480,7 +477,7 @@ namespace QBitNinja.Notifications
                                 .Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Wallets), repo, _Chain)
                                 {
                                     CancellationToken = cancel.Token
-                                });
+                                }, _Indexer.TaskScheduler);
                             }
                         });
                         TryLock(_LockBalance, () =>
@@ -491,7 +488,7 @@ namespace QBitNinja.Notifications
                             }.Index(new BlockFetcher(_Indexer.GetCheckpoint(IndexerCheckpoints.Balances), repo, _Chain)
                             {
                                 CancellationToken = cancel.Token
-                            });
+                            }, _Indexer.TaskScheduler);
                         });
                         TryLock(_LockSubscriptions, () =>
                         {
@@ -504,12 +501,12 @@ namespace QBitNinja.Notifications
                                 .Index(new BlockFetcher(_Indexer.GetCheckpointRepository().GetCheckpoint("subscriptions"), repo, _Chain)
                                 {
                                     CancellationToken = cancel.Token
-                                });
+                                }, _Indexer.TaskScheduler);
                             }
                         });
                         cancel.Dispose();
                         var unused = _Configuration.Topics.NewBlocks.AddAsync(header);
-                    }, false);
+                    });
                 }
             }
             if(message.Message.Payload is GetDataPayload)
@@ -543,7 +540,7 @@ namespace QBitNinja.Notifications
             }
         }
 
-        Task Async(Action act, bool commonThread)
+        Task Async(Action act)
         {
             var t = new Task(() =>
             {
@@ -560,7 +557,7 @@ namespace QBitNinja.Notifications
                     }
                 }
             });
-            t.Start(commonThread ? _SingleThreadTaskScheduler : TaskScheduler.Default);
+            t.Start(TaskScheduler.Default);
             return t;
         }
 

@@ -180,38 +180,41 @@ namespace QBitNinja
 
                     using (msg.Message)
                     {
-
                         var range = msg.Body;
-                        ListenerTrace.Info("Processing " + range.ToString());
-                        totalProcessed++;
-                        var task = _IndexTasks[range.Target];
-                        BlockFetcher fetcher = new BlockFetcher(task.Item1, blockRepository, chain)
+                        using(var sched = new CustomThreadPoolTaskScheduler(50, 100, range.ToString()))
                         {
-                            FromHeight = range.From,
-                            ToHeight = range.From + range.Count - 1
-                        };
-                        try
-                        {
-                            task.Item2.SaveProgression = false;
-                            task.Item2.EnsureIsSetup = totalProcessed == 0;
-                            var index = Task.Factory.StartNew(() =>
-                            {
-                                task.Item2.Index(fetcher);
-                            }, TaskCreationOptions.LongRunning);
-                            while (!index.Wait(TimeSpan.FromMinutes(4)))
-                            {
-                                msg.Message.RenewLock();
-                                ListenerTrace.Info("Lock renewed");
-                            }
-                        }
-                        catch (AggregateException aex)
-                        {
-                            ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
-                            throw;
-                        }
 
-                        range.Processed = true;
-                        msg.Message.Complete();
+                            ListenerTrace.Info("Processing " + range.ToString());
+                            totalProcessed++;
+                            var task = _IndexTasks[range.Target];
+                            BlockFetcher fetcher = new BlockFetcher(task.Item1, blockRepository, chain)
+                            {
+                                FromHeight = range.From,
+                                ToHeight = range.From + range.Count - 1
+                            };
+                            try
+                            {
+                                task.Item2.SaveProgression = false;
+                                task.Item2.EnsureIsSetup = totalProcessed == 0;
+                                var index = Task.Factory.StartNew(() =>
+                                {
+                                    task.Item2.Index(fetcher, sched);
+                                }, TaskCreationOptions.LongRunning);
+                                while(!index.Wait(TimeSpan.FromMinutes(4)))
+                                {
+                                    msg.Message.RenewLock();
+                                    ListenerTrace.Info("Lock renewed");
+                                }
+                            }
+                            catch(AggregateException aex)
+                            {
+                                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+                                throw;
+                            }
+
+                            range.Processed = true;
+                            msg.Message.Complete();
+                        }
                     }
                 }
             }
