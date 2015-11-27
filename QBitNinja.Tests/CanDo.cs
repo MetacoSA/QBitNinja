@@ -301,23 +301,6 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
-        public void CanUseSingleThreadTaskScheduler()
-        {
-            var scheduler = new SingleThreadTaskScheduler();
-            int a = 0;
-            int b = 0;
-            new Task(() => a = 1).Start(scheduler);
-            new Task(() =>
-            {
-                throw new Exception();
-            }).Start(scheduler);
-            new Task(() => b = 1).Start(scheduler);
-            scheduler.Dispose();
-            Assert.True(a == 1);
-            Assert.True(b == 1);
-        }
-
-        [Fact]
         public void CanBroadcastTransaction()
         {
             using(var tester = ServerTester.Create())
