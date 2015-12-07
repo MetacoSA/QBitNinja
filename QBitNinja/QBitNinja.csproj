@@ -80,17 +80,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\WindowsAzure.Storage.4.3.0\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin, Version=2.1.5.8, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin, Version=2.1.5.10, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.2.1.5.8\lib\net45\NBitcoin.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.2.1.5.10\lib\net45\NBitcoin.dll</HintPath>
     </Reference>
     <Reference Include="NBitcoin.BouncyCastle, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.2.1.5.8\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.2.1.5.10\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.Indexer, Version=2.0.6.17, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NBitcoin.Indexer, Version=2.0.6.19, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NBitcoin.Indexer.2.0.6.17\lib\net45\NBitcoin.Indexer.dll</HintPath>
+      <HintPath>..\packages\NBitcoin.Indexer.2.0.6.19\lib\net45\NBitcoin.Indexer.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

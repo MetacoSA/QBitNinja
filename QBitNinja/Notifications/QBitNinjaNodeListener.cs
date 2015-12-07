@@ -384,26 +384,23 @@ namespace QBitNinja.Notifications
             {
                 var tx = ((TxPayload)message.Message.Payload).Object;
                 ListenerTrace.Verbose("Received Transaction " + tx.GetHash());
+                _Indexer.IndexAsync(new TransactionEntry.Entity(tx.GetHash(), tx, null));
+                _Indexer.IndexOrderedBalanceAsync(tx);
 
                 Async(() =>
                 {
-                    _Indexer.Index(new TransactionEntry.Entity(tx.GetHash(), tx, null));
-                });
-                Async(() =>
-                {
-                    _Indexer.IndexOrderedBalance(tx);
-                });
-                Async(() =>
-                {
                     var txId = tx.GetHash();
+                    List<OrderedBalanceChange> balances;
                     using(_WalletsSlimLock.LockRead())
                     {
-                        var balances =
+                        balances =
                             OrderedBalanceChange
                             .ExtractWalletBalances(txId, tx, null, null, int.MaxValue, _Wallets)
-                            .AsEnumerable();
-                        _Indexer.Index(balances);
+                            .AsEnumerable()
+                            .ToList();
                     }
+                    _Indexer.IndexAsync(balances);
+
 
                     Task notify = null;
                     using(_SubscriptionSlimLock.LockRead())
