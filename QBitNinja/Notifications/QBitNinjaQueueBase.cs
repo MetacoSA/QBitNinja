@@ -74,7 +74,11 @@ namespace QBitNinja.Notifications
                     throw new InvalidOperationException("Requires Duplicate Detection is on, but the callback GetMessageId is not set");
                 brokered.MessageId = GetMessageId(entity);
             }
-            await SendAsync(brokered).ConfigureAwait(false);
+
+            using(brokered)
+            {
+                await SendAsync(brokered).ConfigureAwait(false);
+            }
             return true;
         }
 
