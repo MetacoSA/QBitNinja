@@ -46,9 +46,17 @@ namespace QBitNinja.Notifications
         }
 
 
-        protected override Task SendAsync(BrokeredMessage brokered)
+        protected override async Task SendAsync(BrokeredMessage brokered)
         {
-            return CreateQueueClient().SendAsync(brokered);
+            var queue = CreateQueueClient();
+            try
+            {
+                await queue.SendAsync(brokered).ConfigureAwait(false);
+            }
+            finally
+            {
+                var unused = queue.CloseAsync();
+            }
         }
 
         protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)

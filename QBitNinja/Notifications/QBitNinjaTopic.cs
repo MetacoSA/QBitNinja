@@ -218,9 +218,18 @@ namespace QBitNinja.Notifications
             return client;
         }
 
-        protected override Task SendAsync(BrokeredMessage brokered)
+        protected override async Task SendAsync(BrokeredMessage brokered)
         {
-            return CreateTopicClient().SendAsync(brokered);
+            var topic = CreateTopicClient();
+            try
+            {
+                await topic.SendAsync(brokered).ConfigureAwait(false);
+                return;
+            }
+            finally
+            {
+                var unsued = topic.CloseAsync();
+            }
         }
 
         QBitNinjaTopicSubscription CreateSubscriptionClient()
