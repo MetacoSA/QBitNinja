@@ -228,13 +228,13 @@ namespace QBitNinja.Tests
         {
             var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
-            Assert.Equal(total, summary.UnConfirmed.Amount + summary.Confirmed.Amount - summary.Immature.Amount);
+            Assert.Equal(summary.UnConfirmed.Amount + summary.Confirmed.Amount - summary.Immature.Amount, total);
 
             var balances = SendGet<BalanceModel>("balances/" + address);
             var actual = balances.Operations.SelectMany(o => o.ReceivedCoins).OfType<Coin>().Select(c => c.Amount).Sum()
                         -
                         balances.Operations.SelectMany(o => o.SpentCoins).OfType<Coin>().Select(c => c.Amount).Sum();
-            Assert.Equal(total, actual);
+            Assert.Equal(actual, total);
         }
 
         public void AssertTotal(IDestination dest, IMoney total)

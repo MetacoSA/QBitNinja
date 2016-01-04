@@ -16,6 +16,8 @@ namespace QBitNinja
             settings.Converters.Add(new MoneyJsonConverter());
             settings.Converters.Add(new CoinJsonConverter(network));
             settings.Converters.Add(new ScriptJsonConverter());
+            settings.Converters.Add(new UInt160JsonConverter());
+            settings.Converters.Add(new UInt256JsonConverter());
             settings.Converters.Add(new NetworkJsonConverter());
             settings.Converters.Add(new KeyPathJsonConverter());
             settings.Converters.Add(new Base58DataJsonConverter()

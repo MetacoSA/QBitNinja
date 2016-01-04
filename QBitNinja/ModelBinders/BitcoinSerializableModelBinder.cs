@@ -12,6 +12,14 @@ namespace QBitNinja.ModelBinders
 
         public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
         {
+            if(typeof(uint160).IsAssignableFrom(bindingContext.ModelType))
+            {
+                return new UInt160ModelBinding().BindModel(actionContext, bindingContext);
+            }
+            if(typeof(uint256).IsAssignableFrom(bindingContext.ModelType))
+            {
+                return new UInt256ModelBinding().BindModel(actionContext, bindingContext);
+            }
             if (!typeof(IBitcoinSerializable).IsAssignableFrom(bindingContext.ModelType))
             {
                 return false;
@@ -41,7 +49,7 @@ namespace QBitNinja.ModelBinders
             }
             if (bindingContext.Model is uint256 || bindingContext.Model is uint160)
             {
-                if (bindingContext.Model.ToString().StartsWith(new uint160(0).ToString()))
+                if (bindingContext.Model.ToString().StartsWith(uint160.Zero.ToString()))
                     throw new FormatException("Invalid hash format");
             }
             return true;
