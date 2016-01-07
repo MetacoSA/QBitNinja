@@ -23,6 +23,13 @@ namespace QBitNinja.Client.Tests
             Assert.True(balanceSummary.Confirmed.TransactionCount > 60);
         }
 
+
+        [Fact] //Will detect when I forget to change namespace for one type in the client package
+        public void NoTypeFromQBitNinjaNS()
+        {
+            Assert.True(typeof(QBitNinjaClient).Assembly.GetTypes().All(t => t.Namespace != "QBitNinja"));
+        }
+
         [Fact]
         public void temp()
         {
