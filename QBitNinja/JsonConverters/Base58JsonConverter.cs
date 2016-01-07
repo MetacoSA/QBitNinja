@@ -3,7 +3,11 @@ using Newtonsoft.Json;
 using System;
 using System.Reflection;
 
+#if !CLIENT
 namespace QBitNinja.JsonConverters
+#else
+namespace QBitNinja.Client.JsonConverters
+#endif
 {
     public class Base58DataJsonConverter : JsonConverter
     {

@@ -5,7 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#if !CLIENT
 namespace QBitNinja.JsonConverters
+#else
+namespace QBitNinja.Client.JsonConverters
+#endif
 {
     public class JsonObjectException : Exception
     {

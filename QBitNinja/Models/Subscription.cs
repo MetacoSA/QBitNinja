@@ -1,16 +1,25 @@
 ﻿using Newtonsoft.Json;
 using System.Reflection;
+#if !CLIENT
 using QBitNinja.JsonConverters;
+using QBitNinja.Models;
+#else
+using QBitNinja.Client.JsonConverters;
+using QBitNinja.Client.Models;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using QBitNinja.Models;
 using System.IO;
 using Newtonsoft.Json.Linq;
 
+#if !CLIENT
 namespace QBitNinja.Models
+#else
+namespace QBitNinja.Client.Models
+#endif
 {    
     [JsonConverter(typeof(EnumAliasJsonConverter))]
     public enum SubscriptionType

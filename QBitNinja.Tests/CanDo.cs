@@ -538,7 +538,7 @@ namespace QBitNinja.Tests
                 Assert.True(response2.AdditionalInformation.Confirmations == 1);
                 Assert.True(response2.AdditionalInformation.Height == 1);
                 /////
-
+                
                 //Can get Block by height and special
                 var response3 = tester.SendGet<GetBlockResponse>("blocks/1");
                 Assert.Equal(Serializer.ToString(response2), Serializer.ToString(response3));
@@ -554,7 +554,7 @@ namespace QBitNinja.Tests
                 response = tester.SendGet<byte[]>("blocks/1?headerOnly=true&format=raw");
                 Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
                 ////
-
+               
                 //Check the blockFeature
                 var block2 = tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();

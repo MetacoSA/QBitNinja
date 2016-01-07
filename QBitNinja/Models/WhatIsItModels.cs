@@ -4,7 +4,11 @@ using NBitcoin.DataEncoders;
 using System;
 using System.Linq;
 
+#if !CLIENT
 namespace QBitNinja.Models
+#else
+namespace QBitNinja.Client.Models
+#endif
 {
     public class WhatIsScript
     {

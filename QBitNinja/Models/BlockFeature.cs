@@ -4,7 +4,11 @@ using System;
 using System.Linq;
 using System.Text;
 
+#if !CLIENT
 namespace QBitNinja.Models
+#else
+namespace QBitNinja.Client.Models
+#endif
 {
     public enum SpecialFeature
     {

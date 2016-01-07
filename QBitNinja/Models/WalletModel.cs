@@ -1,8 +1,19 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if CLIENT
+using QBitNinja.Client.JsonConverters;
+using QBitNinja.Client.Models;
+#else
+using QBitNinja.JsonConverters;
+using QBitNinja.Models;
+#endif
 
+#if !CLIENT
 namespace QBitNinja.Models
+#else
+namespace QBitNinja.Client.Models
+#endif
 {
     public class InsertWalletAddress
     {

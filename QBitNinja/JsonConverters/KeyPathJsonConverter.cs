@@ -3,7 +3,11 @@ using System;
 using System.Reflection;
 using Newtonsoft.Json;
 
+#if !CLIENT
 namespace QBitNinja.JsonConverters
+#else
+namespace QBitNinja.Client.JsonConverters
+#endif
 {
     public class KeyPathJsonConverter : JsonConverter
     {

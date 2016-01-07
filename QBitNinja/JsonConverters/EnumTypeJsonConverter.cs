@@ -7,7 +7,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
+#if !CLIENT
 namespace QBitNinja.JsonConverters
+#else
+namespace QBitNinja.Client.JsonConverters
+#endif
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class EnumTypeAttribute : Attribute

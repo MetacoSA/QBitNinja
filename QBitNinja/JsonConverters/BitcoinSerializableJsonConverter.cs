@@ -5,7 +5,11 @@ using System;
 using System.IO;
 using System.Reflection;
 
+#if !CLIENT
 namespace QBitNinja.JsonConverters
+#else
+namespace QBitNinja.Client.JsonConverters
+#endif
 {
     public class BitcoinSerializableJsonConverter : JsonConverter
     {

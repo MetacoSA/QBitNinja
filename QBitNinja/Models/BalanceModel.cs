@@ -8,7 +8,11 @@ using System;
 #if !CLIENT
 using NBitcoin.Indexer;
 #endif
+#if !CLIENT
 namespace QBitNinja.Models
+#else
+namespace QBitNinja.Client.Models
+#endif
 {
     public class BalanceModel
     {

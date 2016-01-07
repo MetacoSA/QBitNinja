@@ -1,7 +1,11 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
 
+#if !CLIENT
 namespace QBitNinja.Models
+#else
+namespace QBitNinja.Client.Models
+#endif
 {
     public class KeySetData
     {
