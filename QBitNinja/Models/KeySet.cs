@@ -24,9 +24,13 @@ namespace QBitNinja.Client.Models
 
         public HDKeyData GetUnused(int lookahead)
         {
+            return GetKey(State.NextUnused + lookahead);
+        }
+        public HDKeyData GetKey(int n)
+        {
             var network = KeySet.ExtPubKeys.Select(e => e.Network).FirstOrDefault();
             var root = KeySet.Path ?? new KeyPath();
-            var next = root.Derive(State.NextUnused + lookahead, false);
+            var next = root.Derive(n, false);
 
             var keyData = new HDKeyData();
             keyData.ExtPubKeys = KeySet
@@ -48,11 +52,18 @@ namespace QBitNinja.Client.Models
             return keyData;
         }
 
-        public IEnumerable<HDKeyData> GetUnuseds(int lookahead = 20)
+        public IEnumerable<HDKeyData> GetUnuseds(int from = 0)
         {
-            for(int i = 0; i < lookahead; i++)
+            for(int i = from; true; i++)
             {
                 yield return GetUnused(i);
+            }
+        }
+        public IEnumerable<HDKeyData> GetKeys(int from = 0)
+        {
+            for(int i = from; true; i++)
+            {
+                yield return GetKey(i);
             }
         }
         private static Script CreateScriptPubKey(IList<BitcoinExtPubKey> bitcoinExtPubKey, int sigCount, bool p2sh)

@@ -67,10 +67,10 @@ namespace QBitNinja.Notifications
         {
             var str = Serializer.ToString<T>(entity);
             BrokeredMessage brokered = new BrokeredMessage(str);
-            if (Creation.RequiresDuplicateDetection.HasValue &&
+            if(Creation.RequiresDuplicateDetection.HasValue &&
                 Creation.RequiresDuplicateDetection.Value)
             {
-                if (GetMessageId == null)
+                if(GetMessageId == null)
                     throw new InvalidOperationException("Requires Duplicate Detection is on, but the callback GetMessageId is not set");
                 brokered.MessageId = GetMessageId(entity);
             }
@@ -88,7 +88,7 @@ namespace QBitNinja.Notifications
                 UnhandledException(ex);
         }
 
-        public QBitNinjaQueueBase<T,TCreation,TDescription> AddUnhandledExceptionHandler(Action<Exception> handler)
+        public QBitNinjaQueueBase<T, TCreation, TDescription> AddUnhandledExceptionHandler(Action<Exception> handler)
         {
             UnhandledException += handler;
             return this;
@@ -116,7 +116,7 @@ namespace QBitNinja.Notifications
             {
                 AutoComplete = autoComplete,
                 MaxConcurrentCalls = 1,
-                
+
             });
         }
 
@@ -127,7 +127,7 @@ namespace QBitNinja.Notifications
 
         public IDisposable OnMessageAsync(Func<T, MessageControl, Task> evt, OnMessageOptions options = null)
         {
-            if (options == null)
+            if(options == null)
                 options = new OnMessageOptions()
                 {
                     AutoComplete = true,
@@ -140,16 +140,16 @@ namespace QBitNinja.Notifications
                 var control = new MessageControl();
                 control.Options = options;
                 var obj = ToObject(bm);
-                if (obj == null)
+                if(obj == null)
                     return;
                 await evt(obj, control).ConfigureAwait(false);
-                if (control._Scheduled != null)
+                if(control._Scheduled != null)
                 {
                     BrokeredMessage message = new BrokeredMessage(Serializer.ToString(obj));
                     message.MessageId = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
                     message.ScheduledEnqueueTimeUtc = control._Scheduled.Value;
                     await SendAsync(message).ConfigureAwait(false);
-                    if (!options.AutoComplete)
+                    if(!options.AutoComplete)
                         if(control._Complete)
                         {
                             try
@@ -171,7 +171,7 @@ namespace QBitNinja.Notifications
             {
                 SendAsync(message).Wait();
             }
-            catch (AggregateException ex)
+            catch(AggregateException ex)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                 throw;
@@ -180,10 +180,10 @@ namespace QBitNinja.Notifications
 
         public virtual async Task DrainMessagesAsync()
         {
-            while (true)
+            while(true)
             {
                 var message = await ReceiveAsync().ConfigureAwait(false);
-                if (message == null)
+                if(message == null)
                     break;
                 message.Message.Complete();
                 message.Message.Dispose();
@@ -192,10 +192,10 @@ namespace QBitNinja.Notifications
 
         public async Task<QBitNinjaMessage<T>> ReceiveAsync(TimeSpan? timeout = null)
         {
-            if (timeout == null)
+            if(timeout == null)
                 timeout = TimeSpan.Zero;
             var message = await ReceiveAsyncCore(timeout.Value).ConfigureAwait(false);
-            if (message == null)
+            if(message == null)
                 return null;
             return new QBitNinjaMessage<T>()
             {
@@ -209,7 +209,7 @@ namespace QBitNinja.Notifications
 
         private static T ToObject(BrokeredMessage bm)
         {
-            if (bm == null)
+            if(bm == null)
                 return default(T);
             var result = bm.GetBody<string>();
             var obj = Serializer.ToObject<T>(result);
@@ -224,27 +224,43 @@ namespace QBitNinja.Notifications
 
         public async Task<TDescription> EnsureExistsAsync()
         {
-            var create = ChangeType<TCreation, TDescription>(Creation);
-            InitDescription(create);
+            int retry = 0;
+            while(true)
+            {
+                try
+                {
 
-            TDescription result = default(TDescription);
-            try
-            {
-                result = await GetAsync().ConfigureAwait(false);
+                    var create = ChangeType<TCreation, TDescription>(Creation);
+                    InitDescription(create);
+
+                    TDescription result = default(TDescription);
+                    try
+                    {
+                        result = await GetAsync().ConfigureAwait(false);
+                    }
+                    catch(MessagingEntityNotFoundException)
+                    {
+                    }
+                    if(result == null)
+                    {
+                        result = await CreateAsync(create).ConfigureAwait(false);
+                    }
+                    if(!Validate(ChangeType<TDescription, TCreation>(result)))
+                    {
+                        await DeleteAsync().ConfigureAwait(false);
+                        return await EnsureExistsAsync().ConfigureAwait(false);
+                    }
+                    return result;
+                }
+                catch(MessagingException ex)
+                {
+                    if(retry == 3)
+                        throw;
+                    if(!ex.IsTransient)
+                        throw;
+                    retry++;
+                }
             }
-            catch (MessagingEntityNotFoundException)
-            {
-            }
-            if (result == null)
-            {
-                result = await CreateAsync(create).ConfigureAwait(false);
-            }
-            if (!Validate(ChangeType<TDescription, TCreation>(result)))
-            {
-                await DeleteAsync().ConfigureAwait(false);
-                return await EnsureExistsAsync().ConfigureAwait(false);
-            }
-            return result;
         }
 
         protected abstract Task DeleteAsync();

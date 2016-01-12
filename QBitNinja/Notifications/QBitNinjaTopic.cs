@@ -88,7 +88,7 @@ namespace QBitNinja.Notifications
                         OnUnHandledException(ex);
                     }
                 }, options);
-                return new ActionDisposable(() => client.Close());
+                return new ActionDisposable(() => client.CloseAsync());
             }
 
             public SubscriptionClient CreateSubscriptionClient()

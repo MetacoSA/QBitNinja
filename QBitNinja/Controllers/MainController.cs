@@ -247,21 +247,13 @@ namespace QBitNinja.Controllers
             if(!repo.AddKeySet(walletName, keysetData))
                 throw Error(409, "Keyset already exists");
 
-            var addresses = keysetData.GetUnuseds().Select(key => WalletAddress.ToWalletAddress(walletName, keysetData, key)).ToArray();
-            HackToPreventOOM(addresses);
-            Parallel.ForEach(addresses, address =>
-            {
-                repo.AddWalletAddress(address, true);
-            });
-            var unused = Configuration.Topics.AddedAddresses.AddAsync(addresses);
-            return keyset;
-        }
+            var newAddresses = repo.Scan(walletName, keysetData, 0, 20);
 
-        private static void HackToPreventOOM(WalletAddress[] addresses)
-        {
-            var addr = addresses.FirstOrDefault();
-            if(addr != null)
-                addr.CreateWalletRuleEntry().CreateTableEntity();
+            foreach(var addresses in newAddresses.Partition(20))
+            {
+                var unused = Configuration.Topics.AddedAddresses.AddAsync(addresses.ToArray());
+            }
+            return keyset;
         }
 
         [HttpGet]
@@ -273,6 +265,13 @@ namespace QBitNinja.Controllers
             if(sets.Length == 0)
                 AssetWalletAndKeysetExists(walletName, null);
             return sets;
+        }
+        [HttpGet]
+        [Route("wallets/{walletName}/keysets/{keysetName}")]
+        public KeySetData GetKeyset(string walletName, string keysetName)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            return AssetWalletAndKeysetExists(walletName, keysetName);
         }
 
         [HttpGet]

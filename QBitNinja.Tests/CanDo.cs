@@ -538,7 +538,7 @@ namespace QBitNinja.Tests
                 Assert.True(response2.AdditionalInformation.Confirmations == 1);
                 Assert.True(response2.AdditionalInformation.Height == 1);
                 /////
-                
+
                 //Can get Block by height and special
                 var response3 = tester.SendGet<GetBlockResponse>("blocks/1");
                 Assert.Equal(Serializer.ToString(response2), Serializer.ToString(response3));
@@ -554,7 +554,7 @@ namespace QBitNinja.Tests
                 response = tester.SendGet<byte[]>("blocks/1?headerOnly=true&format=raw");
                 Assert.True(response.SequenceEqual(response3.AdditionalInformation.BlockHeader.ToBytes()));
                 ////
-               
+
                 //Check the blockFeature
                 var block2 = tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1711,13 +1711,70 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
+        public void HDKeysetsAreCorrectlyTracked()
+        {
+            using(var tester = ServerTester.Create())
+            {
+                var alice = new ExtKey().GetWif(Network.TestNet);
+                var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+                var aliceName = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 10);
+
+                var listener = tester.CreateListenerTester();
+                tester.ChainBuilder.SkipIndexer = true;
+
+                var alice1 = pubkeyAlice.ExtPubKey.Derive(1).PubKey.GetAddress(Network.TestNet);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), alice1);
+                var alice20 = pubkeyAlice.ExtPubKey.Derive(20).PubKey.GetAddress(Network.TestNet);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), alice20); //Should be found because alice1 "extend" the scan
+                var alice41 = pubkeyAlice.ExtPubKey.Derive(41).PubKey.GetAddress(Network.TestNet);
+                var waiter = listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions);
+                var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.2m), alice41); //But 41 is "outside" the gap limit
+                Assert.True(waiter.Wait(10000));
+
+                var balance = tester.SendGet<BalanceModel>("balances/" + alice1);
+                Assert.Equal(1, balance.Operations.Count);
+
+                tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
+                {
+                    Name = aliceName
+                });
+                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/" + aliceName + "/keysets", new HDKeySet()
+                {
+                    Name = "SingleNoP2SH",
+                    ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
+                    NoP2SH = true
+                });
+
+                balance = tester.SendGet<BalanceModel>("wallets/" + aliceName + "/balance");
+                Assert.Equal(2, balance.Operations.Count);
+                Assert.True(balance.Operations.Any(op => op.Amount == Money.Coins(1.0m)));
+                Assert.True(balance.Operations.Any(op => op.Amount == Money.Coins(1.1m)));
+
+                var keyset = tester.Send<KeySetData>(HttpMethod.Get, "wallets/" + aliceName + "/keysets/SingleNoP2SH");
+                Assert.Equal(21, keyset.State.NextUnused);
+
+                var alice21 = pubkeyAlice.ExtPubKey.Derive(21).PubKey.GetAddress(Network.TestNet);
+                tester.ChainBuilder.EmitMoney(Money.Coins(1.3m), alice21); //Receiving on alice21 should fire a scan of 41
+
+                var waiter2 = listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks);
+                tester.ChainBuilder.EmitBlock();
+                waiter2.Wait();
+                tester.UpdateServerChain();
+
+                balance = tester.SendGet<BalanceModel>("wallets/" + aliceName + "/balance");
+                Assert.Equal(4, balance.Operations.Count);
+                Assert.True(balance.Operations.All(o => o.Confirmations == 1));
+
+                keyset = tester.Send<KeySetData>(HttpMethod.Get, "wallets/" + aliceName + "/keysets/SingleNoP2SH");
+                Assert.Equal(42, keyset.State.NextUnused);
+            }
+        }
+
+        [Fact]
         public void CanManageKeyGeneration()
         {
             using(var tester = ServerTester.Create())
             {
-                var listener = tester.CreateListenerTester();
-                tester.ChainBuilder.SkipIndexer = true;
-
                 var alice = new ExtKey().GetWif(Network.TestNet);
                 var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
 
@@ -1762,7 +1819,6 @@ namespace QBitNinja.Tests
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice, pubkeyBob },
                     SignatureCount = 1
                 });
-                AssertEx.Eventually(() => listener.Listener.WalletAddressCount >= 60);
                 result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0");
                 redeem = PayToMultiSigTemplate
                             .Instance
@@ -1773,49 +1829,11 @@ namespace QBitNinja.Tests
                 Assert.Equal(result.RedeemScript, redeem);
                 Assert.Equal(result.ScriptPubKey, redeem.Hash.ScriptPubKey);
 
-                tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), result.Address);
-                tester.ChainBuilder.EmitBlock();
-                Assert.True(listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks).Wait(10000));
-                tester.UpdateServerChain();
-
-                var balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
-                Assert.True(balance.Operations.Count == 1);
-
-                redeem = PayToMultiSigTemplate
-                            .Instance
-                            .GenerateScriptPubKey(1,
-                            pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/10")).PubKey,
-                            pubkeyBob.ExtPubKey.Derive(KeyPath.Parse("1/2/3/10")).PubKey);
-                tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), redeem.Hash);
-                tester.ChainBuilder.EmitBlock();
-                while(!listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks).Wait(10000))
-                {
-                }
-                tester.UpdateServerChain();
-
-                balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
-                Assert.True(balance.Operations.Count == 2);
-                var keySetData = tester.Send<KeySetData>(HttpMethod.Get, "wallets/alice/keysets/Multi");
-                var hdKeyData = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0");
-                var addresses = tester.SendGet<WalletAddress[]>("wallets/alice/addresses");
-                var next = addresses.FirstOrDefault(a => a.Address.ToString() == hdKeyData.Address.ToString());
-                Assert.NotNull(next);
-                Assert.True(next.HDKeySet.Path.Indexes.Last() == keySetData.State.NextUnused);
-                Assert.True(keySetData.State.NextUnused == 11);
-                Assert.Equal(30, addresses.Length);
-
-
-                balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
-                Assert.True(balance.Operations.Count == 2);
-                var scriptCoins = balance.Operations.SelectMany(o => o.ReceivedCoins).OfType<ScriptCoin>();
-                Assert.True(scriptCoins.Count() == 2);
-                Assert.True(scriptCoins.First().Redeem == redeem);
-
                 var sets = tester.SendGet<KeySetData[]>("wallets/alice/keysets");
                 Assert.Equal(3, sets.Length);
 
                 var keys = tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys");
-                Assert.Equal(2, keys.Length);
+                Assert.Equal(20, keys.Length);
 
                 Assert.True(tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));

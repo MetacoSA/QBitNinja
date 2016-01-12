@@ -593,24 +593,13 @@ namespace QBitNinja.Notifications
                     var keyIndex = (int)matchedAddress.HDKey.Path.Indexes.Last();
                     if(keyIndex < keySet.State.NextUnused)
                         return;
-
-                    var jumpSize = (keyIndex + 1) - keySet.State.NextUnused;
-                    for(int i = 0; i < jumpSize; i++)
+                    walletLock = walletLock ?? _WalletsSlimLock.LockWrite();
+                    foreach(var address in repo.Scan(matchedAddress.WalletName, keySet, keyIndex + 1, 20))
                     {
-                        var keyData = keySet.GetUnused(keySet.State.NextUnused + i + 20);
-                        var address = WalletAddress.ToWalletAddress(entry.BalanceId.GetWalletId(), keySet, keyData);
-                        walletLock = walletLock ?? _WalletsSlimLock.LockWrite();
                         ListenerTrace.Info("New wallet rule");
-
-                        repo.AddWalletAddress(address, true);
                         var walletEntry = address.CreateWalletRuleEntry();
-                        var existing = _Wallets.FirstOrDefault(e => e.WalletId == walletEntry.WalletId && e.Rule.Id == walletEntry.Rule.Id);
-                        if(existing == null)
-                        {
-                            _Wallets.Add(walletEntry);
-                        }
+                        _Wallets.Add(walletEntry);
                     }
-                    keySet.State.NextUnused += jumpSize;
                 }
             }
             finally

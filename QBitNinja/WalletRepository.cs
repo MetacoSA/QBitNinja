@@ -9,6 +9,7 @@ using System.Text;
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace QBitNinja
 {
@@ -102,7 +103,7 @@ namespace QBitNinja
             return WalletTable.Read();
         }
 
-        public bool AddAddress(WalletAddress address)
+        private bool AddAddress(WalletAddress address)
         {
             if(address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
@@ -112,6 +113,52 @@ namespace QBitNinja
                 .Create(address.Address.ToString(), address, false);
         }
 
+        public List<WalletAddress> Scan(string walletName, KeySetData keysetData, int from, int lookahead)
+        {
+            List<WalletAddress> addedAddresses = new List<WalletAddress>();
+            bool nextUnusedChanged = false;
+            int nextToScan = -1;
+            while(true)
+            {
+                List<uint> used = new List<uint>();
+                var start = nextToScan == -1 ? from : nextToScan;
+                var count = nextToScan == -1 ? lookahead : lookahead - (nextToScan - keysetData.State.NextUnused);
+                var addresses = keysetData.GetKeys(start)
+                                          .Take(count)
+                                          .Select(key => WalletAddress.ToWalletAddress(walletName, keysetData, key))
+                                          .ToArray();
+                nextToScan = from + lookahead;
+                HackToPreventOOM(addresses);
+                Parallel.ForEach(addresses, address =>
+                {
+                    bool empty;
+                    if(AddWalletAddress(address, true, out empty))
+                    {
+                        var n = address.HDKey.Path.Indexes.Last();
+                        if(!empty)
+                        {
+                            lock(used)
+                                used.Add(n);
+                        }
+                    }
+                });
+                addedAddresses.AddRange(addresses);
+                if(used.Count == 0)
+                    break;
+
+                keysetData.State.NextUnused = (int)(used.Max() + 1);
+                nextUnusedChanged = true;
+            }
+            if(nextUnusedChanged)
+                SetKeySet(walletName, keysetData);
+            return addedAddresses;
+        }
+        private static void HackToPreventOOM(WalletAddress[] addresses)
+        {
+            var addr = addresses.FirstOrDefault();
+            if(addr != null)
+                addr.CreateWalletRuleEntry().CreateTableEntity();
+        }
 
 
         private static string Hash(WalletAddress address)
@@ -127,6 +174,10 @@ namespace QBitNinja
         public bool AddKeySet(string walletName, KeySetData keysetData)
         {
             return KeySetTable.GetChild(walletName).Create(keysetData.KeySet.Name, keysetData, false);
+        }
+        public bool SetKeySet(string walletName, KeySetData keysetData)
+        {
+            return KeySetTable.GetChild(walletName).Create(keysetData.KeySet.Name, keysetData, true);
         }
 
         public bool DeleteKeySet(string walletName, string keyset)
@@ -175,6 +226,13 @@ namespace QBitNinja
 
         public bool AddWalletAddress(WalletAddress address, bool mergePast)
         {
+            bool merge = false;
+            return AddWalletAddress(address, mergePast, out merge);
+        }
+
+        public bool AddWalletAddress(WalletAddress address, bool mergePast, out bool empty)
+        {
+            empty = true;
             if(!AddAddress(address))
                 return false;
 
@@ -183,14 +241,13 @@ namespace QBitNinja
 
             var entry = address.CreateWalletRuleEntry();
             Indexer.AddWalletRule(entry.WalletId, entry.Rule);
-            bool merge = false;
             if(mergePast)
             {
                 CancellationTokenSource cancel = new CancellationTokenSource();
                 cancel.CancelAfter(10000);
-                merge = Indexer.MergeIntoWallet(address.WalletName, address, entry.Rule, cancel.Token);
+                empty = !Indexer.MergeIntoWallet(address.WalletName, address, entry.Rule, cancel.Token);
             }
-            if(merge)
+            if(!empty)
             {
                 GetBalanceSummaryCacheTable(address.WalletName, true).Delete();
                 GetBalanceSummaryCacheTable(address.WalletName, false).Delete();
@@ -211,6 +268,6 @@ namespace QBitNinja
             scope = scope.GetChild(colored ? "colsum" : "balsum");
             var cacheTable = GetBalancesCacheTable(scope);
             return cacheTable;
-        }
+        }        
     }
 }

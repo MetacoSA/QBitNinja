@@ -38,7 +38,7 @@ namespace QBitNinja.Tests
             _NodeServer.Listen();
 
             _Listener.Configuration.Indexer.Node = "127.0.0.1:" + _NodeServer.LocalEndpoint.Port;
-            if (!nodeOnly)
+            if(!nodeOnly)
                 _Listener.Listen();
 
             _Server.Configuration.Indexer.CreateIndexer().Index(_Server.Configuration.Indexer.Network.GetGenesis());
@@ -54,7 +54,7 @@ namespace QBitNinja.Tests
         void ChainBuilder_NewBlock(Block obj)
         {
             _Blocks.AddOrUpdate(obj.GetHash(), obj, (a, b) => b);
-            foreach (var node in _Nodes)
+            foreach(var node in _Nodes)
             {
                 node.SendMessage(new InvPayload(obj));
             }
@@ -63,7 +63,7 @@ namespace QBitNinja.Tests
         void ChainBuilder_NewTransaction(Transaction obj)
         {
             _Transactions.AddOrUpdate(obj.GetHash(), obj, (a, b) => b);
-            foreach (var node in _Nodes)
+            foreach(var node in _Nodes)
             {
                 node.SendMessage(new InvPayload(obj));
             }
@@ -71,14 +71,14 @@ namespace QBitNinja.Tests
 
         void NewNodeMessage(IncomingMessage message)
         {
-            if (message.Message.Payload is VerAckPayload)
+            if(message.Message.Payload is VerAckPayload)
             {
                 _Nodes.Add(message.Node);
             }
-            if (message.Message.Payload is InvPayload)
+            if(message.Message.Payload is InvPayload)
             {
                 InvPayload invPayload = (InvPayload)message.Message.Payload;
-                if (_Reject == null)
+                if(_Reject == null)
                     message.Node.SendMessage(new GetDataPayload(invPayload.Inventory.ToArray()));
                 else
                 {
@@ -87,18 +87,18 @@ namespace QBitNinja.Tests
                     message.Node.SendMessage(_Reject);
                 }
             }
-            if (message.Message.Payload is TxPayload)
+            if(message.Message.Payload is TxPayload)
             {
                 TxPayload txPayload = (TxPayload)message.Message.Payload;
                 _ReceivedTransactions.AddOrUpdate(txPayload.Object.GetHash(), txPayload.Object, (k, v) => v);
                 _Transactions.AddOrUpdate(txPayload.Object.GetHash(), txPayload.Object, (k, v) => v);
-                foreach (var node in _Nodes)
+                foreach(var node in _Nodes)
                 {
-                    if (node != message.Node)
+                    if(node != message.Node)
                         node.SendMessage(new InvPayload(txPayload.Object));
                 }
             }
-            if (message.Message.Payload is GetHeadersPayload)
+            if(message.Message.Payload is GetHeadersPayload)
             {
                 var headers = (GetHeadersPayload)message.Message.Payload;
                 var fork = _Server.ChainBuilder.Chain.FindFork(headers.BlockLocators);
@@ -114,27 +114,27 @@ namespace QBitNinja.Tests
                 message.Node.SendMessage(res);
             }
 
-            if (message.Message.Payload is GetDataPayload)
+            if(message.Message.Payload is GetDataPayload)
             {
                 Transaction tx;
                 Block block;
                 var getData = message.Message.Payload as GetDataPayload;
-                foreach (var inv in getData.Inventory)
+                foreach(var inv in getData.Inventory)
                 {
-                    if (inv.Type == InventoryType.MSG_TX)
-                        if (_Transactions.TryGetValue(inv.Hash, out tx))
+                    if(inv.Type == InventoryType.MSG_TX)
+                        if(_Transactions.TryGetValue(inv.Hash, out tx))
                         {
                             message.Node.SendMessage(new TxPayload(tx));
                         }
-                    if (inv.Type == InventoryType.MSG_BLOCK)
+                    if(inv.Type == InventoryType.MSG_BLOCK)
                     {
-                        if (_Blocks.TryGetValue(inv.Hash, out block))
+                        if(_Blocks.TryGetValue(inv.Hash, out block))
                         {
                             message.Node.SendMessage(new BlockPayload(block));
                         }
                         else
                         {
-                            
+
                         }
                     }
                 }
@@ -145,9 +145,9 @@ namespace QBitNinja.Tests
         {
             CancellationTokenSource s = new CancellationTokenSource();
             s.CancelAfter(5000);
-            while (!_ReceivedTransactions.ContainsKey(txId))
+            while(!_ReceivedTransactions.ContainsKey(txId))
             {
-                if (s.IsCancellationRequested)
+                if(s.IsCancellationRequested)
                     Assert.False(true);
             }
         }
@@ -180,11 +180,11 @@ namespace QBitNinja.Tests
 
         public void Dispose()
         {
-            if (_Listener != null)
+            if(_Listener != null)
                 _Listener.Dispose();
-            if (_NodeServer != null)
+            if(_NodeServer != null)
                 _NodeServer.Dispose();
-            if (_NodeListener != null)
+            if(_NodeListener != null)
                 _NodeListener.Dispose();
             Assert.Null(Listener.LastException);
         }
@@ -197,19 +197,17 @@ namespace QBitNinja.Tests
             _Reject = reject;
         }
 
-
-
         internal async Task<T> WaitMessageAsync<T>(QBitNinjaTopic<T> topic) where T : class
         {
             var message = await topic.CreateConsumer(new SubscriptionCreation()
             {
-                Name = "test",
+                Name = "test" + Guid.NewGuid().ToString().Replace("-", ""),
                 DefaultMessageTimeToLive = TimeSpan.FromSeconds(1.0),
                 AutoDeleteOnIdle = TimeSpan.FromMinutes(5.0)
             })
             .EnsureSubscriptionExists()
-            .ReceiveAsync(TimeSpan.FromSeconds(20.0)).ConfigureAwait(false);
-            if (message == null)
+            .ReceiveAsync(TimeSpan.FromSeconds(30.0)).ConfigureAwait(false);
+            if(message == null)
                 Assert.True(false, "No message received on topic");
             return message.Body;
         }

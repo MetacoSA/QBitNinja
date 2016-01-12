@@ -201,7 +201,19 @@ namespace QBitNinja.Tests
                     Entity = e,
                     Table = table
                 }))
-                .Select(table => table.Table.ExecuteAsync(TableOperation.Delete(table.Entity)))
+                .Select(async table =>
+                {
+                    try
+                    {
+                        await table.Table.ExecuteAsync(TableOperation.Delete(table.Entity));
+                    }
+                    catch(StorageException ex)
+                    {
+                        if(ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 404)
+                            return;
+                        throw;
+                    }
+                })
                 .ToArray();
             return Task.WhenAll(deletes);
         }
