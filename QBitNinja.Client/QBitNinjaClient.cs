@@ -48,9 +48,9 @@ namespace QBitNinja.Client
         }
         public KeySetClient(WalletClient walletClient, string keySet)
         {
-            if (keySet == null)
+            if(keySet == null)
                 throw new ArgumentNullException("keySet");
-            if (walletClient == null)
+            if(walletClient == null)
                 throw new ArgumentNullException("walletClient");
             _Name = keySet;
             _Wallet = walletClient;
@@ -79,9 +79,9 @@ namespace QBitNinja.Client
             return Client.CreateKeySetIfNotExists(Wallet.Name, keyset);
         }
 
-        public Task<HDKeyData> GenerateKey()
+        public Task<HDKeyData> GetUnused(int lookahead)
         {
-            return Client.GenerateKey(Wallet.Name, Name);
+            return Client.GetUnused(Wallet.Name, Name, lookahead);
         }
 
         public Task<bool> Delete()
@@ -93,9 +93,9 @@ namespace QBitNinja.Client
     {
         public WalletClient(QBitNinjaClient client, string walletName)
         {
-            if (walletName == null)
+            if(walletName == null)
                 throw new ArgumentNullException("walletName");
-            if (client == null)
+            if(client == null)
                 throw new ArgumentNullException("client");
             Client = client;
             Name = walletName;
@@ -184,14 +184,14 @@ namespace QBitNinja.Client
         /// <param name="network">The bitcoin network to use</param>
         public QBitNinjaClient(Network network)
         {
-            if (network == null)
+            if(network == null)
                 throw new ArgumentNullException("network");
             Network = network;
-            if (network == Network.Main)
+            if(network == Network.Main)
                 BaseAddress = new Uri("http://api.qbit.ninja/", UriKind.Absolute);
-            if (network == Network.TestNet)
+            if(network == Network.TestNet)
                 BaseAddress = new Uri("http://tapi.qbit.ninja/", UriKind.Absolute);
-            if (BaseAddress == null)
+            if(BaseAddress == null)
                 throw new NotSupportedException("Network not supported");
         }
         public QBitNinjaClient(string baseAddress, Network network = null)
@@ -201,7 +201,7 @@ namespace QBitNinja.Client
         }
         public QBitNinjaClient(Uri baseAddress, Network network = null)
         {
-            if (baseAddress == null)
+            if(baseAddress == null)
                 throw new ArgumentNullException("baseAddress");
             Network = network ?? Network.Main;
             BaseAddress = baseAddress;
@@ -250,17 +250,17 @@ namespace QBitNinja.Client
 
         private string CreateParameters(params object[] parameters)
         {
-            if (Colored != null)
+            if(Colored != null)
             {
                 parameters = parameters.Concat(new object[] { "colored", Colored.Value }).ToArray();
             }
 
             StringBuilder builder = new StringBuilder();
-            for (int i = 0 ; i < parameters.Length - 1 ; i += 2)
+            for(int i = 0; i < parameters.Length - 1; i += 2)
             {
                 builder.Append(parameters[i].ToString() + "=" + parameters[i + 1].ToString() + "&");
             }
-            if (builder.Length == 0)
+            if(builder.Length == 0)
                 return "";
             var result = builder.ToString();
             return "?" + result.Substring(0, result.Length - 1);
@@ -268,20 +268,20 @@ namespace QBitNinja.Client
 
         public Task<BalanceModel> GetBalance(string wallet, bool unspentOnly = false)
         {
-            if (wallet == null)
+            if(wallet == null)
                 throw new ArgumentNullException("wallet");
             return Get<BalanceModel>("wallets/" + EscapeUrlPart(wallet) + "/balance" + CreateParameters("unspentOnly", unspentOnly));
         }
         public Task<BalanceSummary> GetBalanceSummary(string wallet)
         {
-            if (wallet == null)
+            if(wallet == null)
                 throw new ArgumentNullException("wallet");
             return Get<BalanceSummary>("wallets/" + EscapeUrlPart(wallet) + "/summary" + CreateParameters());
         }
 
         public Task<WalletModel> CreateWallet(string wallet)
         {
-            if (wallet == null)
+            if(wallet == null)
                 throw new ArgumentNullException("wallet");
             return Post<WalletModel>("wallets", new WalletModel()
             {
@@ -291,14 +291,14 @@ namespace QBitNinja.Client
 
         private Base58Data AssertAddress(IDestination dest)
         {
-            if (dest == null)
+            if(dest == null)
                 throw new ArgumentNullException("address");
             var base58 = dest as Base58Data;
             var network = base58 == null ? Network : base58.Network;
             var address = dest.ScriptPubKey.GetDestinationAddress(network);
-            if (address == null)
+            if(address == null)
                 throw new ArgumentException("address does not represent a valid bitcoin address", "address");
-            if (dest is BitcoinColoredAddress)
+            if(dest is BitcoinColoredAddress)
                 return (BitcoinColoredAddress)dest;
             return address;
         }
@@ -312,7 +312,7 @@ namespace QBitNinja.Client
         {
             relativePath = String.Format(relativePath, parameters ?? new object[0]);
             var uri = BaseAddress.AbsoluteUri;
-            if (!uri.EndsWith("/"))
+            if(!uri.EndsWith("/"))
                 uri += "/";
             uri += relativePath;
             return uri;
@@ -326,40 +326,40 @@ namespace QBitNinja.Client
         public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
         {
             var uri = GetFullUri(relativePath, parameters);
-            using (var client = new HttpClient())
+            using(var client = new HttpClient())
             {
                 var message = new HttpRequestMessage(method, uri);
-                if (body != null)
+                if(body != null)
                 {
                     message.Content = new StringContent(Serializer.ToString(body, Network), Encoding.UTF8, "application/json");
                 }
                 var result = await client.SendAsync(message).ConfigureAwait(false);
-                if (result.StatusCode == HttpStatusCode.NotFound)
+                if(result.StatusCode == HttpStatusCode.NotFound)
                     return default(T);
-                if (!result.IsSuccessStatusCode)
+                if(!result.IsSuccessStatusCode)
                 {
                     string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    if (!string.IsNullOrEmpty(error))
+                    if(!string.IsNullOrEmpty(error))
                     {
                         try
                         {
                             var errorObject = Serializer.ToObject<QBitNinjaError>(error, Network);
-                            if (errorObject.StatusCode != 0)
+                            if(errorObject.StatusCode != 0)
                                 throw new QBitNinjaException(errorObject);
                         }
-                        catch (JsonSerializationException)
+                        catch(JsonSerializationException)
                         {
                         }
-                        catch (JsonReaderException)
+                        catch(JsonReaderException)
                         {
                         }
                     }
                 }
                 result.EnsureSuccessStatusCode();
-                if (typeof(T) == typeof(byte[]))
+                if(typeof(T) == typeof(byte[]))
                     return (T)(object)await result.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                if (typeof(T) == typeof(string))
+                if(typeof(T) == typeof(string))
                     return (T)(object)str;
                 return Serializer.ToObject<T>(str, Network);
             }
@@ -383,9 +383,9 @@ namespace QBitNinja.Client
                 await CreateWallet(name).ConfigureAwait(false);
                 return true;
             }
-            catch (QBitNinjaException ex)
+            catch(QBitNinjaException ex)
             {
-                if (ex.StatusCode == 409)
+                if(ex.StatusCode == 409)
                     return false;
                 throw;
             }
@@ -434,9 +434,9 @@ namespace QBitNinja.Client
                 await CreateAddress(walletName, address).ConfigureAwait(false);
                 return true;
             }
-            catch (QBitNinjaException ex)
+            catch(QBitNinjaException ex)
             {
-                if (ex.StatusCode == 409)
+                if(ex.StatusCode == 409)
                     return false;
                 throw;
             }
@@ -454,9 +454,9 @@ namespace QBitNinja.Client
                 await Post<HDKeySet>("wallets/" + EscapeUrlPart(walletName) + "/keysets", keyset).ConfigureAwait(false);
                 return true;
             }
-            catch (QBitNinjaException ex)
+            catch(QBitNinjaException ex)
             {
-                if (ex.StatusCode == 409)
+                if(ex.StatusCode == 409)
                     return false;
                 throw;
             }
@@ -484,9 +484,9 @@ namespace QBitNinja.Client
             });
         }
 
-        public Task<HDKeyData> GenerateKey(string wallet, string keyset)
+        public Task<HDKeyData> GetUnused(string wallet, string keyset, int lookahead)
         {
-            return Post<HDKeyData>(BuildPath(wallet, keyset) + "/keys", null);
+            return Post<HDKeyData>(BuildPath(wallet, keyset) + "/unused/" + lookahead, null);
         }
 
         private static string BuildPath(string wallet, string keyset)
@@ -513,7 +513,7 @@ namespace QBitNinja.Client
         public static string EscapeUrlPart(string str)
         {
             var path = System.Web.NBitcoin.HttpUtility.UrlEncode(str);
-            if (path.Contains("?") || path.Contains("/"))
+            if(path.Contains("?") || path.Contains("/"))
                 throw new ArgumentException("Invalid character found in the path of the request ('?' or '/')");
             return path;
         }

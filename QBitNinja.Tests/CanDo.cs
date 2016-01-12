@@ -1789,9 +1789,9 @@ namespace QBitNinja.Tests
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
                     NoP2SH = true
                 });
-                var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/keys/0");
+                var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/0");
                 Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(Network.TestNet));
-                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/keys/1");
+                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/1");
                 Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(Network.TestNet));
                 Assert.Equal(result.Path, KeyPath.Parse("1/2/3/1"));
                 Assert.Null(result.RedeemScript);
@@ -1802,7 +1802,7 @@ namespace QBitNinja.Tests
                     Path = KeyPath.Parse("1/2/3"),
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
                 });
-                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Single/keys/0");
+                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Single/unused/0");
                 var redeem = pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.ScriptPubKey;
                 Assert.Equal(result.Address, redeem.Hash.GetAddress(Network.TestNet));
                 Assert.Equal(result.RedeemScript, redeem);
@@ -1819,7 +1819,7 @@ namespace QBitNinja.Tests
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice, pubkeyBob },
                     SignatureCount = 1
                 });
-                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0");
+                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/unused/0");
                 redeem = PayToMultiSigTemplate
                             .Instance
                             .GenerateScriptPubKey(1,
@@ -1838,7 +1838,7 @@ namespace QBitNinja.Tests
                 Assert.True(tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys"));
-                AssertEx.HttpError(404, () => tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0"));
+                AssertEx.HttpError(404, () => tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/unused/0"));
             }
         }
 

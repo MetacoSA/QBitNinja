@@ -275,7 +275,7 @@ namespace QBitNinja.Controllers
         }
 
         [HttpGet]
-        [Route("wallets/{walletName}/keysets/{keysetName}/keys/{lookahead}")]
+        [Route("wallets/{walletName}/keysets/{keysetName}/unused/{lookahead}")]
         public HDKeyData GetUnused(string walletName, string keysetName, int lookahead)
         {
             if(lookahead < 0 || lookahead > 20)
