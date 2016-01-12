@@ -22,13 +22,11 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public Base58Data Address
         {
             get;
             set;
         }
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public Script RedeemScript
         {
             get;
@@ -56,7 +54,28 @@ namespace QBitNinja.Client.Models
     }
     public class WalletAddress : IDestination
     {
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+#if !CLIENT
+        public static WalletAddress TryParse(string str)
+        {
+            if(string.IsNullOrEmpty(str))
+                return null;
+            try
+            {
+                return Serializer.ToObject<WalletAddress>(str);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+#endif
+
+        public string WalletName
+        {
+            get;
+            set;
+        }
+
         public Base58Data Address
         {
             get;
@@ -68,28 +87,6 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
-
-        [JsonIgnore]
-        public KeySetData KeysetData
-        {
-            get
-            {
-                var info = AdditionalInformation as JObject;
-                if (info == null)
-                    return null;
-                var prop = info.Property("keysetData");
-                if (prop == null)
-                    return null;
-                return Serializer.ToObject<KeySetData>(prop.Value.ToString());
-            }
-        }
-
-        public JToken AdditionalInformation
-        {
-            get;
-            set;
-        }
-
         
         #region IDestination Members
 
@@ -111,10 +108,35 @@ namespace QBitNinja.Client.Models
 
         #endregion
 
-        public string WalletName
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public HDKeySet HDKeySet
         {
             get;
             set;
+        }
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public HDKeyData HDKey
+        {
+            get;
+            set;
+        }
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public JToken UserData
+        {
+            get;
+            set;
+        }
+
+        public static WalletAddress ToWalletAddress(string walletName, KeySetData keysetData, HDKeyData key)
+        {
+            WalletAddress address = new WalletAddress();
+            address.WalletName = walletName;
+            address.RedeemScript = key.RedeemScript;
+            address.Address = key.Address;
+            address.HDKey = key;
+            address.HDKeySet = keysetData.KeySet;
+            return address;
         }
     }
     public class WalletModel

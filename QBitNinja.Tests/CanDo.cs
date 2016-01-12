@@ -1715,6 +1715,9 @@ namespace QBitNinja.Tests
         {
             using(var tester = ServerTester.Create())
             {
+                var listener = tester.CreateListenerTester();
+                tester.ChainBuilder.SkipIndexer = true;
+
                 var alice = new ExtKey().GetWif(Network.TestNet);
                 var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
 
@@ -1729,9 +1732,9 @@ namespace QBitNinja.Tests
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
                     NoP2SH = true
                 });
-                var result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/SingleNoP2SH/keys");
+                var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/keys/0");
                 Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(Network.TestNet));
-                result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/SingleNoP2SH/keys");
+                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/keys/1");
                 Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(Network.TestNet));
                 Assert.Equal(result.Path, KeyPath.Parse("1/2/3/1"));
                 Assert.Null(result.RedeemScript);
@@ -1742,7 +1745,7 @@ namespace QBitNinja.Tests
                     Path = KeyPath.Parse("1/2/3"),
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
                 });
-                result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Single/keys");
+                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Single/keys/0");
                 var redeem = pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.ScriptPubKey;
                 Assert.Equal(result.Address, redeem.Hash.GetAddress(Network.TestNet));
                 Assert.Equal(result.RedeemScript, redeem);
@@ -1759,8 +1762,8 @@ namespace QBitNinja.Tests
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice, pubkeyBob },
                     SignatureCount = 1
                 });
-
-                result = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys");
+                AssertEx.Eventually(() => listener.Listener.WalletAddressCount >= 60);
+                result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0");
                 redeem = PayToMultiSigTemplate
                             .Instance
                             .GenerateScriptPubKey(1,
@@ -1772,28 +1775,34 @@ namespace QBitNinja.Tests
 
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), result.Address);
                 tester.ChainBuilder.EmitBlock();
+                Assert.True(listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks).Wait(10000));
                 tester.UpdateServerChain();
 
                 var balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
                 Assert.True(balance.Operations.Count == 1);
 
-                //Emit first, generate after
                 redeem = PayToMultiSigTemplate
                             .Instance
                             .GenerateScriptPubKey(1,
-                            pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey,
-                            pubkeyBob.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey);
+                            pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/10")).PubKey,
+                            pubkeyBob.ExtPubKey.Derive(KeyPath.Parse("1/2/3/10")).PubKey);
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), redeem.Hash);
                 tester.ChainBuilder.EmitBlock();
+                while(!listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks).Wait(10000))
+                {
+                }
                 tester.UpdateServerChain();
 
                 balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
-                Assert.True(balance.Operations.Count == 1);
-                var hdKeyData = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys");
+                Assert.True(balance.Operations.Count == 2);
+                var keySetData = tester.Send<KeySetData>(HttpMethod.Get, "wallets/alice/keysets/Multi");
+                var hdKeyData = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0");
                 var addresses = tester.SendGet<WalletAddress[]>("wallets/alice/addresses");
-                var generated = addresses.FirstOrDefault(a => a.Address.ToString() == hdKeyData.Address.ToString());
-                Assert.NotNull(generated);
-                Assert.True(generated.KeysetData.State.CurrentPath == hdKeyData.Path);
+                var next = addresses.FirstOrDefault(a => a.Address.ToString() == hdKeyData.Address.ToString());
+                Assert.NotNull(next);
+                Assert.True(next.HDKeySet.Path.Indexes.Last() == keySetData.State.NextUnused);
+                Assert.True(keySetData.State.NextUnused == 11);
+                Assert.Equal(30, addresses.Length);
 
 
                 balance = tester.SendGet<BalanceModel>("wallets/alice/balance");
@@ -1811,7 +1820,7 @@ namespace QBitNinja.Tests
                 Assert.True(tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.Send<bool>(HttpMethod.Delete, "wallets/alice/keysets/Multi"));
                 AssertEx.HttpError(404, () => tester.SendGet<HDKeyData[]>("wallets/alice/keysets/Multi/keys"));
-                AssertEx.HttpError(404, () => tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Multi/keys"));
+                AssertEx.HttpError(404, () => tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/keys/0"));
             }
         }
 

@@ -181,13 +181,6 @@ namespace QBitNinja.Controllers
             string walletName,
             [FromBody]InsertWalletAddress insertAddress)
         {
-            return AddWalletAddressesCore(walletName, insertAddress, null);
-        }
-
-        private WalletAddress AddWalletAddressesCore(string walletName, InsertWalletAddress insertAddress, Dictionary<string, JObject> additionalProperties)
-        {
-            if(additionalProperties == null)
-                additionalProperties = new Dictionary<string, JObject>();
             if(insertAddress.RedeemScript != null && insertAddress.Address == null)
             {
                 insertAddress.Address = insertAddress.RedeemScript.GetScriptAddress(Network);
@@ -201,43 +194,16 @@ namespace QBitNinja.Controllers
             var address = new WalletAddress();
             address.Address = insertAddress.Address;
             address.RedeemScript = insertAddress.RedeemScript;
-            address.AdditionalInformation = ToAdditionalInformation(insertAddress, additionalProperties);
+            address.UserData = insertAddress.UserData;
             address.WalletName = walletName;
 
             var repo = Configuration.CreateWalletRepository();
-            var walletRule = repo.AddAddress(address);
-            if(walletRule == null)
+
+            if(!repo.AddWalletAddress(address, insertAddress.MergePast))
                 throw Error(409, "This address already exist in the wallet");
 
-
-            var unused = Configuration.Topics.AddedAddresses.AddAsync(address);
-            var rule = walletRule.Rule;
-            bool merge = false;
-            if(insertAddress.MergePast)
-            {
-                var index = Configuration.Indexer.CreateIndexerClient();
-                CancellationTokenSource cancel = new CancellationTokenSource();
-                cancel.CancelAfter(10000);
-                merge = index.MergeIntoWallet(walletName, address, rule, cancel.Token);
-            }
-            if(merge)
-            {
-                GetBalanceSummaryCacheTable(new BalanceId(walletName), true).Delete();
-                GetBalanceSummaryCacheTable(new BalanceId(walletName), false).Delete();
-            }
+            var unused = Configuration.Topics.AddedAddresses.AddAsync(new[] { address });
             return address;
-        }
-
-
-        private static JObject ToAdditionalInformation(InsertWalletAddress address, Dictionary<string, JObject> properties)
-        {
-            JObject obj = new JObject();
-            obj.Add("userData", address.UserData ?? new JValue(""));
-            foreach(var kv in properties)
-            {
-                obj.Add(kv.Key, kv.Value);
-            }
-            return obj;
         }
 
         [HttpGet]
@@ -272,9 +238,30 @@ namespace QBitNinja.Controllers
             if(keyset.Path != null && keyset.Path.ToString().Contains("'"))
                 throw Error(400, "The keypath should not contains hardened children");
             var repo = Configuration.CreateWalletRepository();
-            if(!repo.AddKeySet(walletName, keyset))
+
+            KeySetData keysetData = new KeySetData
+            {
+                KeySet = keyset,
+                State = new HDKeyState()
+            };
+            if(!repo.AddKeySet(walletName, keysetData))
                 throw Error(409, "Keyset already exists");
+
+            var addresses = keysetData.GetUnuseds().Select(key => WalletAddress.ToWalletAddress(walletName, keysetData, key)).ToArray();
+            HackToPreventOOM(addresses);
+            Parallel.ForEach(addresses, address =>
+            {
+                repo.AddWalletAddress(address, true);
+            });
+            var unused = Configuration.Topics.AddedAddresses.AddAsync(addresses);
             return keyset;
+        }
+
+        private static void HackToPreventOOM(WalletAddress[] addresses)
+        {
+            var addr = addresses.FirstOrDefault();
+            if(addr != null)
+                addr.CreateWalletRuleEntry().CreateTableEntity();
         }
 
         [HttpGet]
@@ -288,35 +275,18 @@ namespace QBitNinja.Controllers
             return sets;
         }
 
-        [HttpPost]
-        [Route("wallets/{walletName}/keysets/{keysetName}/keys")]
-        public HDKeyData Generate(string walletName, string keysetName)
+        [HttpGet]
+        [Route("wallets/{walletName}/keysets/{keysetName}/keys/{lookahead}")]
+        public HDKeyData GetUnused(string walletName, string keysetName, int lookahead)
         {
+            if(lookahead < 0 || lookahead > 20)
+                throw Error(400, "lookahead should be between 0 and 20");
+            var keySet = AssetWalletAndKeysetExists(walletName, keysetName);
             var repo = Configuration.CreateWalletRepository();
-            var keyset = repo.GetKeySetData(walletName, keysetName);
-            var key = repo.NewKey(walletName, keysetName);
-            if(key != null)
-            {
-                keyset.State = new HDKeyState()
-                {
-                    CurrentPath = key.Path
-                };
-                AddWalletAddressesCore(walletName, new InsertWalletAddress()
-                {
-                    Address = key.Address,
-                    RedeemScript = key.RedeemScript,
-                    MergePast = true
-                }, new Dictionary<string, JObject>()
-                {
-                     { "keysetData", JObject.Parse(Serializer.ToString<KeySetData>(keyset)) }
-                });
-                return key;
-            }
-            AssetWalletAndKeysetExists(walletName, keysetName);
-            throw Error(500, "Unknown error about the keyset");
+            return keySet.GetUnused(lookahead);
         }
 
-        private void AssetWalletAndKeysetExists(string walletName, string keysetName)
+        private KeySetData AssetWalletAndKeysetExists(string walletName, string keysetName)
         {
             var repo = Configuration.CreateWalletRepository();
             var wallet = repo.GetWallet(walletName);
@@ -329,7 +299,9 @@ namespace QBitNinja.Controllers
                 {
                     throw Error(404, "keyset does not exists");
                 }
+                return keyset;
             }
+            return null;
         }
         [HttpGet]
         [Route("wallets/{walletName}/keysets/{keysetName}/keys")]
@@ -514,6 +486,7 @@ namespace QBitNinja.Controllers
             bool colored
             )
         {
+            var repo = Configuration.CreateWalletRepository();
             CancellationTokenSource cancel = new CancellationTokenSource();
             cancel.CancelAfter(30000);
             var checkpoint = Configuration.Indexer.CreateIndexer()
@@ -531,7 +504,7 @@ namespace QBitNinja.Controllers
 
             query.PageSizes = new[] { 1, 10, 100 };
 
-            var cacheTable = GetBalanceSummaryCacheTable(balanceId, colored);
+            var cacheTable = repo.GetBalanceSummaryCacheTable(balanceId, colored);
             var cachedSummary = cacheTable.Query(Chain, query).FirstOrDefault(c => (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
                                                                                    c.Immature.TransactionCount == 0 ||
                                                                                    ((c.Immature.TransactionCount != 0) && !IsMature(c.OlderImmature, atBlock)));
@@ -615,14 +588,6 @@ namespace QBitNinja.Controllers
 
             summary.PrepareForSend(at, debug);
             return summary;
-        }
-
-        private ChainTable<Models.BalanceSummary> GetBalanceSummaryCacheTable(BalanceId balanceId, bool colored)
-        {
-            Scope scope = new Scope(new[] { balanceId.ToString() });
-            scope = scope.GetChild(colored ? "colsum" : "balsum");
-            var cacheTable = Configuration.GetChainCacheTable<BalanceSummary>(scope);
-            return cacheTable;
         }
 
         private ConfirmedBalanceLocator ToBalanceLocator(BlockFeature feature)

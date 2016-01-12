@@ -26,7 +26,7 @@ namespace QBitNinja
                 AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
             });
 
-            _AddedAddresses = new QBitNinjaTopic<WalletAddress>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
+            _AddedAddresses = new QBitNinjaTopic<WalletAddress[]>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
             {
                 EnableExpress = true,
                 DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
@@ -130,8 +130,8 @@ namespace QBitNinja
                 return _BroadcastedTransactions;
             }
         }
-        private QBitNinjaTopic<WalletAddress> _AddedAddresses;
-        public QBitNinjaTopic<WalletAddress> AddedAddresses
+        private QBitNinjaTopic<WalletAddress[]> _AddedAddresses;
+        public QBitNinjaTopic<WalletAddress[]> AddedAddresses
         {
             get
             {
@@ -265,6 +265,7 @@ namespace QBitNinja
         {
             return new WalletRepository(
                     Indexer.CreateIndexerClient(),
+                    GetChainCacheTable<BalanceSummary>,
                     GetCrudTableFactory(scope));
         }
 

@@ -253,10 +253,15 @@ namespace QBitNinja.Notifications
                .AddUnhandledExceptionHandler(ExceptionOnMessagePump)
                .OnMessage(evt =>
                {
+                   if(evt == null)
+                       return;
                    ListenerTrace.Info("New wallet rule");
                    using(_WalletsSlimLock.LockWrite())
                    {
-                       _Wallets.Add(evt.CreateWalletRuleEntry());
+                       foreach(var address in evt)
+                       {
+                           _Wallets.Add(address.CreateWalletRuleEntry());
+                       }
                    }
                }));
 
@@ -357,6 +362,17 @@ namespace QBitNinja.Notifications
             }
         }
 
+        public int WalletAddressCount
+        {
+            get
+            {
+                using(_WalletsSlimLock.LockRead())
+                {
+                    return _Wallets.Count;
+                }
+            }
+        }
+
         ConcurrentDictionary<uint256, Transaction> _Broadcasting = new ConcurrentDictionary<uint256, Transaction>();
         ConcurrentDictionary<uint256, uint256> _KnownInvs = new ConcurrentDictionary<uint256, uint256>();
 
@@ -399,6 +415,8 @@ namespace QBitNinja.Notifications
                             .AsEnumerable()
                             .ToList();
                     }
+                    UpdateHDState(balances);
+
                     _Indexer.IndexAsync(balances);
 
 
@@ -426,6 +444,19 @@ namespace QBitNinja.Notifications
                     notify.Wait();
                 });
                 var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
+            }
+
+            if(message.Message.Payload is BlockPayload)
+            {
+                var block = ((BlockPayload)message.Message.Payload).Object;
+                var blockId = block.GetHash();
+
+                List<OrderedBalanceChange> balances = null;
+                using(_WalletsSlimLock.LockRead())
+                {
+                    balances = block.Transactions.SelectMany(tx => OrderedBalanceChange.ExtractWalletBalances(null, tx, null, null, 0, _Wallets)).ToList();
+                }
+                UpdateHDState(balances);
             }
 
             if(message.Message.Payload is HeadersPayload)
@@ -534,6 +565,58 @@ namespace QBitNinja.Notifications
                     Transaction tx;
                     _Broadcasting.TryRemove(txId, out tx);
                 }
+            }
+        }
+
+        private void UpdateHDState(List<OrderedBalanceChange> balances)
+        {
+            foreach(var balance in balances)
+            {
+                UpdateHDState(balance);
+            }
+
+        }
+
+        private void UpdateHDState(OrderedBalanceChange entry)
+        {
+            var repo = Configuration.CreateWalletRepository();
+            IDisposable walletLock = null;
+            try
+            {
+                foreach(var matchedAddress in entry.MatchedRules.Select(m => WalletAddress.TryParse(m.Rule.CustomData)).Where(m => m != null))
+                {
+                    if(matchedAddress.HDKeySet == null)
+                        return;
+                    var keySet = repo.GetKeySetData(matchedAddress.WalletName, matchedAddress.HDKeySet.Name);
+                    if(keySet == null)
+                        return;
+                    var keyIndex = (int)matchedAddress.HDKey.Path.Indexes.Last();
+                    if(keyIndex < keySet.State.NextUnused)
+                        return;
+
+                    var jumpSize = (keyIndex + 1) - keySet.State.NextUnused;
+                    for(int i = 0; i < jumpSize; i++)
+                    {
+                        var keyData = keySet.GetUnused(keySet.State.NextUnused + i + 20);
+                        var address = WalletAddress.ToWalletAddress(entry.BalanceId.GetWalletId(), keySet, keyData);
+                        walletLock = walletLock ?? _WalletsSlimLock.LockWrite();
+                        ListenerTrace.Info("New wallet rule");
+
+                        repo.AddWalletAddress(address, true);
+                        var walletEntry = address.CreateWalletRuleEntry();
+                        var existing = _Wallets.FirstOrDefault(e => e.WalletId == walletEntry.WalletId && e.Rule.Id == walletEntry.Rule.Id);
+                        if(existing == null)
+                        {
+                            _Wallets.Add(walletEntry);
+                        }
+                    }
+                    keySet.State.NextUnused += jumpSize;
+                }
+            }
+            finally
+            {
+                if(walletLock != null)
+                    walletLock.Dispose();
             }
         }
 

@@ -15,6 +15,25 @@ namespace QBitNinja.Client.Tests
         public void CanGetBalance()
         {
             var client = new QBitNinjaClient(Network.Main);
+            var b = client.GetBlock(new BlockFeature(392690)).Result.Block;
+            var blocksizeBefore = b.GetSerializedSize();
+            foreach(var t in b.Transactions)
+            {
+                foreach(var input in t.Inputs)
+                {
+                    input.ScriptSig = Script.Empty;
+                }
+            }
+            var blocksizeAfter = b.GetSerializedSize();
+
+            var avgTxSizeBefore = blocksizeBefore / b.Transactions.Count;
+            var avgTxSizeAfter = blocksizeAfter / b.Transactions.Count;
+
+            var txPerBlocksBefore = (1000 * 1024) / avgTxSizeBefore;
+            var txPerBlocksAfter = (750 * 1024) / avgTxSizeAfter;
+
+            
+            client = new QBitNinjaClient(Network.Main);
             var balance = client.GetBalance(new BitcoinAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
             Assert.NotNull(balance);
             Assert.True(balance.Operations.Any(o => o.Amount == Money.Coins(0.02m)));

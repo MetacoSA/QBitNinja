@@ -19,7 +19,7 @@ namespace QBitNinja
         {
             return new WalletRuleEntry(address.WalletName, new ScriptRule()
             {
-                CustomData = address.AdditionalInformation.ToString(),
+                CustomData = Serializer.ToString(address),
                 ScriptPubKey = address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
             });

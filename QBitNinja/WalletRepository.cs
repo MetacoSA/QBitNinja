@@ -8,18 +8,23 @@ using System;
 using System.Text;
 using NBitcoin.DataEncoders;
 using Newtonsoft.Json.Linq;
+using System.Threading;
 
 namespace QBitNinja
-{   
+{
     public class WalletRepository
     {
         public WalletRepository(IndexerClient indexer,
+                                Func<Scope, ChainTable<Models.BalanceSummary>> getBalancesCacheTable,
                                 CrudTableFactory tableFactory)
         {
-            if (indexer == null)
+            if(indexer == null)
                 throw new ArgumentNullException("indexer");
-            if (tableFactory == null)
+            if(tableFactory == null)
                 throw new ArgumentNullException("tableFactory");
+            if(getBalancesCacheTable == null)
+                throw new ArgumentNullException("getBalancesCacheTable");
+            GetBalancesCacheTable = getBalancesCacheTable;
             _walletAddressesTable = tableFactory.GetTable<WalletAddress>("wa");
             _walletTable = tableFactory.GetTable<WalletModel>("wm");
             _keySetTable = tableFactory.GetTable<KeySetData>("ks");
@@ -27,6 +32,9 @@ namespace QBitNinja
             Scope = tableFactory.Scope;
             _indexer = indexer;
         }
+
+        Func<Scope, ChainTable<Models.BalanceSummary>> GetBalancesCacheTable;
+        
 
         public Scope Scope
         {
@@ -94,18 +102,14 @@ namespace QBitNinja
             return WalletTable.Read();
         }
 
-        public WalletRuleEntry AddAddress(WalletAddress address)
+        public bool AddAddress(WalletAddress address)
         {
-            if (address.Address == null)
+            if(address.Address == null)
                 throw new ArgumentException("Address should not be null", "address.Address");
 
-            var entry = address.CreateWalletRuleEntry();
-            
-            if (!WalletAddressesTable
-                .GetChild(entry.WalletId)
-                .Create(address.Address.ToString(), address, false))
-                return null;
-            return Indexer.AddWalletRule(entry.WalletId, entry.Rule);
+            return WalletAddressesTable
+                .GetChild(address.WalletName)
+                .Create(address.Address.ToString(), address, false);
         }
 
 
@@ -120,77 +124,18 @@ namespace QBitNinja
             return WalletAddressesTable.GetChild(walletName).Read();
         }
 
-        public bool AddKeySet(string walletName, HDKeySet keyset)
+        public bool AddKeySet(string walletName, KeySetData keysetData)
         {
-            KeySetData data = new KeySetData
-            {
-                KeySet = keyset,
-                State = new HDKeyState()
-            };
-            return KeySetTable.GetChild(walletName).Create(keyset.Name, data, false);
+            return KeySetTable.GetChild(walletName).Create(keysetData.KeySet.Name, keysetData, false);
         }
 
         public bool DeleteKeySet(string walletName, string keyset)
         {
-            if (!KeySetTable.GetChild(walletName).Delete(keyset, true))
+            if(!KeySetTable.GetChild(walletName).Delete(keyset, true))
                 return false;
 
             KeyDataTable.GetChild(walletName, keyset).Delete();
             return true;
-        }
-
-        public HDKeyData NewKey(string walletName, string keysetName)
-        {
-            HDKeyData keyData;
-            while (true)
-            {
-                var keySetData = GetKeySetData(walletName, keysetName);
-                if (keySetData == null)
-                    return null;
-                KeyPath next;
-                if (keySetData.State.CurrentPath == null)
-                {
-                    var root = keySetData.KeySet.Path ?? new KeyPath();
-                    next = root.Derive(0);
-                }
-                else
-                {
-                    next = Inc(keySetData.State.CurrentPath);
-                }
-                keyData = new HDKeyData();
-                keyData.ExtPubKeys = keySetData
-                                      .KeySet
-                                      .ExtPubKeys
-                                      .Select(k => k.ExtPubKey.Derive(next).GetWif(Network)).ToArray();
-                keyData.Path = next;
-                keyData.RedeemScript = CreateScriptPubKey(keyData.ExtPubKeys, keySetData.KeySet.SignatureCount, !keySetData.KeySet.NoP2SH);
-                if (keySetData.KeySet.NoP2SH)
-                {
-                    keyData.ScriptPubKey = keyData.RedeemScript;
-                    keyData.RedeemScript = null;
-                    keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
-                }
-                else
-                {
-                    keyData.ScriptPubKey = keyData.RedeemScript.Hash.ScriptPubKey;
-                    keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(Network);
-                }
-
-                if (KeyDataTable.GetChild(walletName, keysetName).Create(Encode(keyData.ScriptPubKey), keyData, false))
-                {
-                    keySetData.State.CurrentPath = next;
-                    KeySetTable.GetChild(walletName).Create(keysetName, keySetData);
-                    break;
-                }
-            }
-            var entry = Indexer.AddWalletRule(walletName, new ScriptRule
-            {
-                RedeemScript = keyData.RedeemScript,
-                ScriptPubKey = keyData.ScriptPubKey
-            });
-            var clientIndexer = Indexer.Configuration.CreateIndexerClient();
-            clientIndexer.MergeIntoWallet(walletName, keyData.ScriptPubKey, entry.Rule);
-            return keyData;
         }
 
         public KeySetData GetKeySetData(string walletName, string keysetName)
@@ -201,15 +146,6 @@ namespace QBitNinja
         private static string Encode(Script script)
         {
             return Encoders.Hex.EncodeData(script.ToBytes(true));
-        }
-
-        private static Script CreateScriptPubKey(IList<BitcoinExtPubKey> bitcoinExtPubKey, int sigCount, bool p2sh)
-        {
-            if (bitcoinExtPubKey.Count == 1)
-            {
-                return p2sh ? bitcoinExtPubKey[0].ExtPubKey.PubKey.ScriptPubKey : bitcoinExtPubKey[0].ExtPubKey.PubKey.Hash.ScriptPubKey;
-            }
-            return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(sigCount, bitcoinExtPubKey.Select(k => k.ExtPubKey.PubKey).ToArray());
         }
 
         public Network Network
@@ -235,6 +171,46 @@ namespace QBitNinja
         internal HDKeyData[] GetKeys(string walletName, string keysetName)
         {
             return KeyDataTable.GetChild(walletName, keysetName).Read();
+        }
+
+        public bool AddWalletAddress(WalletAddress address, bool mergePast)
+        {
+            if(!AddAddress(address))
+                return false;
+
+            if(address.HDKeySet != null)
+                KeyDataTable.GetChild(address.WalletName, address.HDKeySet.Name).Create(Encode(address.ScriptPubKey), address.HDKey, false);
+
+            var entry = address.CreateWalletRuleEntry();
+            Indexer.AddWalletRule(entry.WalletId, entry.Rule);
+            bool merge = false;
+            if(mergePast)
+            {
+                CancellationTokenSource cancel = new CancellationTokenSource();
+                cancel.CancelAfter(10000);
+                merge = Indexer.MergeIntoWallet(address.WalletName, address, entry.Rule, cancel.Token);
+            }
+            if(merge)
+            {
+                GetBalanceSummaryCacheTable(address.WalletName, true).Delete();
+                GetBalanceSummaryCacheTable(address.WalletName, false).Delete();
+            }
+            return true;
+        }
+
+
+        public ChainTable<Models.BalanceSummary> GetBalanceSummaryCacheTable(string walletName, bool colored)
+        {
+            var balanceId = new BalanceId(walletName);
+            return GetBalanceSummaryCacheTable(balanceId, colored);
+        }
+
+        public ChainTable<Models.BalanceSummary> GetBalanceSummaryCacheTable(BalanceId balanceId, bool colored)
+        {
+            Scope scope = new Scope(new[] { balanceId.ToString() });
+            scope = scope.GetChild(colored ? "colsum" : "balsum");
+            var cacheTable = GetBalancesCacheTable(scope);
+            return cacheTable;
         }
     }
 }
