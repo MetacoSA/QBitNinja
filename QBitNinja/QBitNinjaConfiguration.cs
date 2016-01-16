@@ -189,7 +189,6 @@ namespace QBitNinja
 
         public void EnsureSetup()
         {
-            Indexer.EnsureSetup();
 
             var tasks = new[]
             {
@@ -197,14 +196,13 @@ namespace QBitNinja
                 GetChainCacheCloudTable(),
                 GetCrudTable(),
                 GetRejectTable().Table,
-                GetSubscriptionsTable().Table
-            }.Select(t => t.CreateIfNotExistsAsync()).ToArray();
+                GetSubscriptionsTable().Table,
+            }.Select(t => t.CreateIfNotExistsAsync()).OfType<Task>().ToList();
 
-            var tasks2 = new Task[]
-            { 
-                Topics.EnsureSetupAsync(),
-            };
-            Task.WaitAll(tasks.Concat(tasks2).ToArray());
+            tasks.Add(Indexer.EnsureSetupAsync());
+            tasks.Add(Topics.EnsureSetupAsync());
+
+            Task.WaitAll(tasks.ToArray());
         }
 
 

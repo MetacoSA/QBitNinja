@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
+using System.IO.IsolatedStorage;
 
 namespace QBitNinja.Tests
 {
@@ -46,25 +47,61 @@ namespace QBitNinja.Tests
 
 
         public ServerTester(string ns)
-        {
+        {            
             CleanTable = true;
             Address = "http://localhost:" + FindFreePort() + "/";
             Configuration = QBitNinjaConfiguration.FromConfiguration();
             Configuration.Indexer.StorageNamespace = ns;
+            Stopwatch watch = new Stopwatch();
             var server = WebApp.Start(Address, appBuilder =>
             {
+                watch.Start();
                 var config = new HttpConfiguration
                 {
                     IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always
                 };
-                WebApiConfig.Register(config, Configuration);
+                var setup = ShouldSetup(ns);
+                WebApiConfig.Register(config, Configuration, setup);
+                if(setup)
+                {
+                    SetShouldSetup(ns);
+                }
+                else
+                {
+                    //This at least should be setup
+                    Configuration.Topics.EnsureSetupAsync().Wait();
+                }
                 _resolver = (QBitNinjaDependencyResolver)config.DependencyResolver;
                 appBuilder.UseWebApi(config);
+
             });
             _disposables.Add(server);
             ChainBuilder = new ChainBuilder(this);
             _resolver.Get<ConcurrentChain>(); //So ConcurrentChain load
+            watch.Stop();
         }
+
+        private bool ShouldSetup(string ns)
+        {
+            var localStorage = IsolatedStorageFile.GetUserStoreForAssembly();
+            return !localStorage.FileExists(ns);
+        }
+
+        public static void ClearShouldSetup()
+        {
+            var localStorage = IsolatedStorageFile.GetUserStoreForAssembly();
+            foreach(var file in localStorage.GetFileNames())
+            {
+                localStorage.DeleteFile(file);
+            }
+        }
+
+        private void SetShouldSetup(string ns)
+        {
+            var localStorage = IsolatedStorageFile.GetUserStoreForAssembly();
+            localStorage.CreateFile(ns).Close();
+        }
+
 
         public static ushort FindFreePort()
         {

@@ -50,12 +50,13 @@ namespace QBitNinja
             }
         }
 
-        public static void Register(HttpConfiguration config, QBitNinjaConfiguration QBitNinja)
+        public static void Register(HttpConfiguration config, QBitNinjaConfiguration QBitNinja, bool setup)
         {
             SetThrottling();
-            if (QBitNinja == null)
+            if(QBitNinja == null)
                 QBitNinja = QBitNinjaConfiguration.FromConfiguration();
-            QBitNinja.EnsureSetup();
+            if(setup)
+                QBitNinja.EnsureSetup();
             config.MapHttpAttributeRoutes();
             config.Formatters.Clear();
             config.Formatters.Add(new CustomJsonMediaTypeFormatter()
@@ -67,6 +68,10 @@ namespace QBitNinja
             config.Filters.Add(new GlobalExceptionFilter());
             config.Services.Replace(typeof(IBodyModelValidator), new NoBodyModelProvider());
             Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings, QBitNinja.Indexer.Network);
+        }
+        public static void Register(HttpConfiguration config, QBitNinjaConfiguration QBitNinja)
+        {
+            Register(config, QBitNinja, true);
         }
     }
 }
