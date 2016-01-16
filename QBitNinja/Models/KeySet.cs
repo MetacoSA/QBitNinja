@@ -2,6 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System;
 
 #if !CLIENT
 namespace QBitNinja.Models
@@ -37,8 +38,8 @@ namespace QBitNinja.Client.Models
                                   .ExtPubKeys
                                   .Select(k => k.ExtPubKey.Derive(next).GetWif(network)).ToArray();
             keyData.Path = next;
-            keyData.RedeemScript = CreateScriptPubKey(keyData.ExtPubKeys, KeySet.SignatureCount, !KeySet.NoP2SH);
-            if(KeySet.NoP2SH)
+            keyData.RedeemScript = CreateScriptPubKey(keyData.ExtPubKeys, KeySet.SignatureCount, KeySet.P2SH, KeySet.LexicographicOrder);
+            if(!KeySet.P2SH)
             {
                 keyData.ScriptPubKey = keyData.RedeemScript;
                 keyData.RedeemScript = null;
@@ -48,7 +49,7 @@ namespace QBitNinja.Client.Models
             {
                 keyData.ScriptPubKey = keyData.RedeemScript.Hash.ScriptPubKey;
                 keyData.Address = keyData.ScriptPubKey.GetDestinationAddress(network);
-            }            
+            }
             return keyData;
         }
 
@@ -66,13 +67,16 @@ namespace QBitNinja.Client.Models
                 yield return GetKey(i);
             }
         }
-        private static Script CreateScriptPubKey(IList<BitcoinExtPubKey> bitcoinExtPubKey, int sigCount, bool p2sh)
+        private static Script CreateScriptPubKey(IList<BitcoinExtPubKey> bitcoinExtPubKey, int sigCount, bool p2sh, bool ordering)
         {
             if(bitcoinExtPubKey.Count == 1)
             {
                 return p2sh ? bitcoinExtPubKey[0].ExtPubKey.PubKey.ScriptPubKey : bitcoinExtPubKey[0].ExtPubKey.PubKey.Hash.ScriptPubKey;
             }
-            return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(sigCount, bitcoinExtPubKey.Select(k => k.ExtPubKey.PubKey).ToArray());
+            var keys = bitcoinExtPubKey.Select(k => k.ExtPubKey.PubKey).ToArray();
+            if(ordering)
+                keys = keys.OrderBy(p => p.ToHex()).ToArray();
+            return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(sigCount, keys);
         }
     }
 
@@ -117,6 +121,11 @@ namespace QBitNinja.Client.Models
     }
     public class HDKeySet
     {
+        public HDKeySet()
+        {
+            P2SH = true;
+            LexicographicOrder = true;
+        }
         public string Name
         {
             get;
@@ -140,8 +149,12 @@ namespace QBitNinja.Client.Models
             set;
         }
 
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool NoP2SH
+        public bool LexicographicOrder
+        {
+            get;
+            set;
+        }
+        public bool P2SH
         {
             get;
             set;

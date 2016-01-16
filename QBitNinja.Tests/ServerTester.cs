@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
 using System.IO.IsolatedStorage;
+using System.IO;
 
 namespace QBitNinja.Tests
 {
@@ -47,7 +48,7 @@ namespace QBitNinja.Tests
 
 
         public ServerTester(string ns)
-        {            
+        {
             CleanTable = true;
             Address = "http://localhost:" + FindFreePort() + "/";
             Configuration = QBitNinjaConfiguration.FromConfiguration();
@@ -83,29 +84,36 @@ namespace QBitNinja.Tests
 
         private bool ShouldSetup(string ns)
         {
-            var localStorage = IsolatedStorageFile.GetUserStoreForAssembly();
-            return !localStorage.FileExists(ns);
+            DirectoryInfo dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            return !dir.GetFiles().Where(f => f.Name == "CACHED" + ns).Any();
         }
 
         public static void ClearShouldSetup()
         {
-            var localStorage = IsolatedStorageFile.GetUserStoreForAssembly();
-            foreach(var file in localStorage.GetFileNames())
+            DirectoryInfo dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            foreach(var file in dir.GetFiles().Where(f => f.Name.StartsWith("CACHED")))
             {
-                localStorage.DeleteFile(file);
+                file.Delete();
             }
         }
 
         private void SetShouldSetup(string ns)
         {
-            var localStorage = IsolatedStorageFile.GetUserStoreForAssembly();
-            localStorage.CreateFile(ns).Close();
+            DirectoryInfo dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            FileInfo fs = new FileInfo(Path.Combine(dir.FullName, "CACHED" + ns));
+            try
+            {
+                fs.Create().Close();
+            }
+            catch
+            {
+            }
         }
 
 
         public static ushort FindFreePort()
         {
-            while (true)
+            while(true)
             {
                 var port = (ushort)RandomUtils.GetUInt32();
                 try
@@ -132,7 +140,7 @@ namespace QBitNinja.Tests
 
         public void Dispose()
         {
-            if (CleanTable)
+            if(CleanTable)
             {
 
                 var tasks = new List<Task>();
@@ -144,7 +152,7 @@ namespace QBitNinja.Tests
 
             }
 
-            foreach (var dispo in _disposables)
+            foreach(var dispo in _disposables)
                 dispo.Dispose();
         }
 
@@ -162,9 +170,9 @@ namespace QBitNinja.Tests
             HttpClient client = new HttpClient();
             var response = client.GetAsync(Address + relativeAddress).Result;
             response.EnsureSuccessStatusCode();
-            if (typeof(TResponse) == typeof(byte[]))
+            if(typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
-            if (typeof(string) == typeof(TResponse))
+            if(typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
             return response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
         }
@@ -174,7 +182,7 @@ namespace QBitNinja.Tests
         {
             var seria = ((JsonMediaTypeFormatter)Serializer.JsonMediaTypeFormatter).SerializerSettings;
             seria.Formatting = Formatting.Indented;
-            if (body != null)
+            if(body != null)
             {
                 var s = JsonConvert.SerializeObject(body, seria);
             }
@@ -184,12 +192,12 @@ namespace QBitNinja.Tests
                 Content = body == null ? null : new ObjectContent(body.GetType(), body, Serializer.JsonMediaTypeFormatter)
             }).Result;
             response.EnsureSuccessStatusCode();
-            if (typeof(TResponse) == typeof(byte[]))
+            if(typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
-            if (typeof(string) == typeof(TResponse))
+            if(typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
             var result = response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
-            if (result != null)
+            if(result != null)
             {
                 var s = JsonConvert.SerializeObject(result, seria);
             }
@@ -199,7 +207,7 @@ namespace QBitNinja.Tests
         private static async Task CleanAsync(CloudBlobContainer cloudBlobContainer)
         {
 
-            if (!await cloudBlobContainer.ExistsAsync().ConfigureAwait(false))
+            if(!await cloudBlobContainer.ExistsAsync().ConfigureAwait(false))
                 return;
             var deletes = cloudBlobContainer.ListBlobs(useFlatBlobListing: true)
                 .OfType<ICloudBlob>()
@@ -211,14 +219,14 @@ namespace QBitNinja.Tests
                         await b.DeleteAsync().ConfigureAwait(false);
                         return;
                     }
-                    catch (StorageException ex)
+                    catch(StorageException ex)
                     {
-                        if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 412)
+                        if(ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 412)
                         {
                             breaklease = true;
                         }
                     }
-                    if (breaklease)
+                    if(breaklease)
                     {
                         await b.BreakLeaseAsync(TimeSpan.Zero).ConfigureAwait(false);
                         await b.DeleteAsync().ConfigureAwait(false);
@@ -258,14 +266,14 @@ namespace QBitNinja.Tests
 
         public void UpdateServerChain(bool insist = false)
         {
-            if (!_resolver.UpdateChain())
+            if(!_resolver.UpdateChain())
             {
-                if (insist)
+                if(insist)
                 {
-                    for (int i = 0 ; i < 5 ; i++)
+                    for(int i = 0; i < 5; i++)
                     {
                         Thread.Sleep(100);
-                        if (_resolver.UpdateChain())
+                        if(_resolver.UpdateChain())
                             return;
                     }
                 }
@@ -305,19 +313,19 @@ namespace QBitNinja.Tests
         private IMoney SelectAmount(IMoney zero, ICoin coin)
         {
             var asset = zero is AssetMoney ? ((AssetMoney)zero).Id : null;
-            if (asset == null)
+            if(asset == null)
             {
                 var c = coin as Coin;
-                if (c == null)
+                if(c == null)
                     return zero;
                 return c.Amount;
             }
             else
             {
                 var cc = coin as ColoredCoin;
-                if (cc == null)
+                if(cc == null)
                     return zero;
-                if (cc.AssetId != asset)
+                if(cc.AssetId != asset)
                     return zero;
                 return cc.Amount;
             }
@@ -329,9 +337,9 @@ namespace QBitNinja.Tests
             if(cc == null)
                 return balanceSummaryDetails.Amount;
             var assetDetails = balanceSummaryDetails.Assets.FirstOrDefault(a => a.Asset.AssetId == cc.Id);
-            if (assetDetails == null)
+            if(assetDetails == null)
                 return zero;
-            return new AssetMoney(assetDetails.Asset,assetDetails.Quantity);
+            return new AssetMoney(assetDetails.Asset, assetDetails.Quantity);
         }
 
         public ICoin[] GetUnspentCoins(IDestination dest)

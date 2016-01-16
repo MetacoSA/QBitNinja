@@ -1742,7 +1742,7 @@ namespace QBitNinja.Tests
                 {
                     Name = "SingleNoP2SH",
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
-                    NoP2SH = true
+                    P2SH = false
                 });
 
                 balance = tester.SendGet<BalanceModel>("wallets/" + aliceName + "/balance");
@@ -1787,10 +1787,10 @@ namespace QBitNinja.Tests
                     Name = "SingleNoP2SH",
                     Path = KeyPath.Parse("1/2/3"),
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
-                    NoP2SH = true
+                    P2SH = false                   
                 });
                 var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/0");
-                Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(Network.TestNet));
+                Assert.Equal(pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(Network.TestNet), result.Address);
                 result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/1");
                 Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(Network.TestNet));
                 Assert.Equal(result.Path, KeyPath.Parse("1/2/3/1"));
@@ -1817,7 +1817,9 @@ namespace QBitNinja.Tests
                     Name = "Multi",
                     Path = KeyPath.Parse("1/2/3"),
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice, pubkeyBob },
-                    SignatureCount = 1
+                    SignatureCount = 1,
+                    P2SH = true,
+                    LexicographicOrder = false
                 });
                 result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Multi/unused/0");
                 redeem = PayToMultiSigTemplate
