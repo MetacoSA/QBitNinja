@@ -121,7 +121,7 @@ namespace QBitNinja.Client.Tests
             Assert.True(keyset.Delete().Result);
             Assert.False(keyset.Delete().Result);
             keyset.CreateIfNotExists(new[] { new ExtKey().Neuter() }, path: KeyPath.Parse("1/2/3")).Wait();
-            var key = keyset.GenerateKey().Result;
+            var key = keyset.GetUnused(1).Result;
 
             var sets = wallet.GetKeySets().Result;
             Assert.True(sets.Length > 0);

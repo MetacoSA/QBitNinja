@@ -123,7 +123,7 @@ namespace QBitNinja
                 List<uint> used = new List<uint>();
                 var start = nextToScan == -1 ? from : nextToScan;
                 var count = nextToScan == -1 ? lookahead : lookahead - (nextToScan - keysetData.State.NextUnused);
-                var addresses = keysetData.GetKeys(start)
+                var addresses = keysetData.KeySet.GetKeys(start)
                                           .Take(count)
                                           .Select(key => WalletAddress.ToWalletAddress(walletName, keysetData, key))
                                           .ToArray();
