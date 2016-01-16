@@ -1642,33 +1642,7 @@ namespace QBitNinja.Tests
             }
         }
 
-        [Fact]
-        public void GenerateKeysIsThreadSafe()
-        {
-            using(var tester = ServerTester.Create())
-            {
-                var alice = new ExtKey().GetWif(Network.TestNet);
-                var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
-
-                tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
-                {
-                    Name = "alice"
-                });
-                tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
-               {
-                   Name = "Single",
-                   ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
-               });
-                var tasks = Enumerable.Range(0, 10)
-                    .Select(_ => Task.Run(() => tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Single/keys")))
-                    .ToArray();
-
-                Task.WaitAll(tasks);
-                var data = tester.Send<HDKeyData>(HttpMethod.Post, "wallets/alice/keysets/Single/keys");
-                Assert.Equal(KeyPath.Parse("10"), data.Path);
-            }
-        }
-
+        
         [Fact]
         public void CanManageKeyGenerationErrorCheck()
         {
