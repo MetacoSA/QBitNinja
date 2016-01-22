@@ -12,12 +12,18 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Runtime.ExceptionServices;
+using System.IO;
 
 namespace QBitNinja.Listener.Console
 {
     public class ListenerOptions
     {
-
+        [Option("Conf", HelpText = "The used configuration file", Required = false, DefaultValue = null)]
+        public string Configuration
+        {
+            get;
+            set;
+        }
         [Option("Listen", HelpText = "Listen the local node and index bitcoin transaction and blocks. Can run on several boxes at the same time.", Required = false, DefaultValue = false)]
         public bool Listen
         {
@@ -73,6 +79,15 @@ namespace QBitNinja.Listener.Console
                 System.Console.WriteLine(options.GetUsage());
             if (Parser.Default.ParseArguments(args, options))
             {
+                if(options.Configuration != null)
+                {
+                    if(!File.Exists(options.Configuration))
+                    {
+                        System.Console.WriteLine("File " + new FileInfo(options.Configuration).FullName + " not found");
+                        return;
+                    }
+                    AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", options.Configuration);
+                }
                 var conf = QBitNinjaConfiguration.FromConfiguration();
                 conf.EnsureSetup();
                 if (options.CancelInit)
