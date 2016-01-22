@@ -86,7 +86,7 @@ namespace QBitNinja.Listener.Console
                         System.Console.WriteLine("File " + new FileInfo(options.Configuration).FullName + " not found");
                         return;
                     }
-                    AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", options.Configuration);
+                    AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", new FileInfo(options.Configuration).FullName);
                 }
                 var conf = QBitNinjaConfiguration.FromConfiguration();
                 conf.EnsureSetup();
