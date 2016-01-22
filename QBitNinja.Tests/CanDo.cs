@@ -1642,7 +1642,7 @@ namespace QBitNinja.Tests
             }
         }
 
-        
+
         [Fact]
         public void CanManageKeyGenerationErrorCheck()
         {
@@ -1761,7 +1761,7 @@ namespace QBitNinja.Tests
                     Name = "SingleNoP2SH",
                     Path = KeyPath.Parse("1/2/3"),
                     ExtPubKeys = new BitcoinExtPubKey[] { pubkeyAlice },
-                    P2SH = false                   
+                    P2SH = false
                 });
                 var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/0");
                 Assert.Equal(pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(Network.TestNet), result.Address);
@@ -2050,7 +2050,7 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     tx.GetHash().ToString(),
-                    "{  \"transaction\": \"01000000000100e1f505000000001976a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac00000000\",  \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",  \"isCoinbase\": false,  \"block\": null,  \"spentCoins\": [],  \"receivedCoins\": [    {      \"transactionId\": \"2a73ffc6cedfa8f7d807f2448decde899ca924efead70ccccc5ab70f028492da\",      \"index\": 0,      \"value\": 100000000,      \"scriptPubKey\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"redeemScript\": null    }  ], \"firstSeen\": 0, \"fees\": -100000000}"
+                    "{  \"transaction\": \"01000008000100e1f505000000001976a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac00000000\",  \"transactionId\": \"f2454c22812b37c9a8b7fc04cc9efe587fe3e559a922a0fd880af15a39161e33\",  \"isCoinbase\": false,  \"block\": null,  \"spentCoins\": [],  \"receivedCoins\": [    {      \"transactionId\": \"f2454c22812b37c9a8b7fc04cc9efe587fe3e559a922a0fd880af15a39161e33\",      \"index\": 0,      \"value\": 100000000,      \"scriptPubKey\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"redeemScript\": null    }  ], \"firstSeen\": 0, \"fees\": -100000000}"
                     );
                 /////
 

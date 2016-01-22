@@ -270,8 +270,21 @@ namespace QBitNinja.Client.Models
         {
             IsP2SH = address is BitcoinScriptAddress;
             ScriptPubKey = new WhatIsScript(address.ScriptPubKey, address.Network);
-            Hash = new uint160(address.Hash.ToBytes(true), false);
+            Hash = GetHash(address);
             ColoredAddress = address.ToColoredAddress().ToString();
+        }
+
+        private uint160 GetHash(BitcoinAddress address)
+        {
+            BitcoinPubKeyAddress pubkey = address as BitcoinPubKeyAddress;
+            if(pubkey != null)
+                return new uint160(pubkey.Hash.ToBytes(true), false);
+
+            BitcoinScriptAddress script = address as BitcoinScriptAddress;
+            if(script != null)
+                return new uint160(script.Hash.ToBytes(true), false);
+
+            return null;
         }
 
         public bool IsP2SH
