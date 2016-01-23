@@ -88,6 +88,10 @@
       <HintPath>..\packages\NBitcoin.3.0.0.4\lib\net45\NBitcoin.BouncyCastle.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NBitcoin.Indexer, Version=2.0.7.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NBitcoin.Indexer.2.0.7.1\lib\net45\NBitcoin.Indexer.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
