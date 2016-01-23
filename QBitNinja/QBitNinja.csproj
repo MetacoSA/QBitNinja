@@ -169,7 +169,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
-    <Content Include="Web.config" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ActionDisposable.cs" />
@@ -255,6 +257,7 @@
     <Content Include="Views\web.config" />
     <Content Include="Views\Help\Index.cshtml" />
     <None Include="Properties\PublishProfiles\main-qbitninja.pubxml" />
+    <None Include="Properties\PublishProfiles\seg-qbitninja.pubxml" />
     <None Include="Properties\PublishProfiles\test-qbitninja.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
