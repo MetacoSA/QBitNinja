@@ -392,7 +392,10 @@ namespace QBitNinja.Notifications
                         ListenerTrace.Info("Broadcasted reached mempool " + inventory);
                 }
                 var getdata = new GetDataPayload(inv.Inventory.Where(i => i.Type == InventoryType.MSG_TX && _KnownInvs.TryAdd(i.Hash, i.Hash)).ToArray());
-
+                foreach(var data in getdata.Inventory)
+                {
+                    data.Type = node.AddSupportedOptions(InventoryType.MSG_TX);
+                }
                 if(getdata.Inventory.Count > 0)
                     node.SendMessageAsync(getdata);
             }
@@ -402,7 +405,6 @@ namespace QBitNinja.Notifications
                 ListenerTrace.Verbose("Received Transaction " + tx.GetHash());
                 _Indexer.IndexAsync(new TransactionEntry.Entity(tx.GetHash(), tx, null));
                 _Indexer.IndexOrderedBalanceAsync(tx);
-
                 Async(() =>
                 {
                     var txId = tx.GetHash();

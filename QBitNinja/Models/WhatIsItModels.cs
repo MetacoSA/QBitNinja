@@ -274,16 +274,23 @@ namespace QBitNinja.Client.Models
             ColoredAddress = address.ToColoredAddress().ToString();
         }
 
-        private uint160 GetHash(BitcoinAddress address)
+        private string GetHash(BitcoinAddress address)
         {
             BitcoinPubKeyAddress pubkey = address as BitcoinPubKeyAddress;
             if(pubkey != null)
-                return new uint160(pubkey.Hash.ToBytes(true), false);
+                return pubkey.Hash.ToString();
 
             BitcoinScriptAddress script = address as BitcoinScriptAddress;
             if(script != null)
-                return new uint160(script.Hash.ToBytes(true), false);
+                return script.Hash.ToString();
 
+            BitcoinWitPubKeyAddress wit1 = address as BitcoinWitPubKeyAddress;
+            if(wit1 != null)
+                return wit1.Hash.ToString();
+
+            BitcoinWitScriptAddress wit2 = address as BitcoinWitScriptAddress;
+            if(wit2 != null)
+                return wit2.Hash.ToString();
             return null;
         }
 
@@ -293,7 +300,7 @@ namespace QBitNinja.Client.Models
             set;
         }
 
-        public uint160 Hash
+        public string Hash
         {
             get;
             set;
@@ -363,6 +370,8 @@ namespace QBitNinja.Client.Models
                 {
                     case Base58Type.SCRIPT_ADDRESS:
                     case Base58Type.PUBKEY_ADDRESS:
+                    case Base58Type.WITNESS_P2WPKH:
+                    case Base58Type.WITNESS_P2WSH:
                         return new WhatIsAddress((BitcoinAddress)b58);
                     case Base58Type.SECRET_KEY:
                         return new WhatIsPrivateKey((BitcoinSecret)b58);

@@ -28,8 +28,9 @@ namespace QBitNinja.Client.JsonConverters
                 return Network.Main;
             if (network.Equals("TestNet", StringComparison.OrdinalIgnoreCase) || network.Equals("test", StringComparison.OrdinalIgnoreCase))
                 return Network.TestNet;
-
-            throw new JsonObjectException("Unknown network (valid values : main, test)", reader);
+            if(network.Equals("SegNet", StringComparison.OrdinalIgnoreCase) || network.Equals("seg", StringComparison.OrdinalIgnoreCase))
+                return Network.SegNet;
+            throw new JsonObjectException("Unknown network (valid values : main, test, seg)", reader);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -40,6 +41,8 @@ namespace QBitNinja.Client.JsonConverters
                 str = "MainNet";
             if (net == Network.TestNet)
                 str = "TestNet";
+            if(net == Network.SegNet)
+                str = "SegNet";
             if (str != null)
                 writer.WriteValue(str);
         }
