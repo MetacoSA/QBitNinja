@@ -710,12 +710,15 @@ namespace QBitNinja.Controllers
             }
             if(unspentOnly)
             {
-                var changeByTxId = balanceChanges.ToDictionary(_ => _.TransactionId);
-                var spentOutpoints = changeByTxId.Values.SelectMany(b => b.SpentCoins.Select(c => c.Outpoint)).ToDictionary(_ => _);
-                foreach(var change in changeByTxId.Values.ToArray())
+                HashSet<OutPoint> spents = new HashSet<OutPoint>();
+                foreach(var change in balanceChanges.SelectMany(b=>b.SpentCoins))
+                {
+                    spents.Add(change.Outpoint);
+                }
+                foreach(var change in balanceChanges)
                 {
                     change.SpentCoins.Clear();
-                    change.ReceivedCoins.RemoveAll(c => spentOutpoints.ContainsKey(c.Outpoint));
+                    change.ReceivedCoins.RemoveAll(c => spents.Contains(c.Outpoint));
                 }
             }
 
