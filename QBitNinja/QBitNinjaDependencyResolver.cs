@@ -7,6 +7,7 @@ using Autofac.Integration.WebApi;
 using NBitcoin;
 using NBitcoin.Indexer;
 using System.IO;
+using System.Threading;
 
 namespace QBitNinja
 {
@@ -66,7 +67,27 @@ namespace QBitNinja
                 ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
                 LoadCache(chain, configuration.LocalChain);
                 var changes = client.GetChainChangesUntilFork(chain.Tip, false);
-                changes.UpdateChain(chain);
+                try
+                {
+                    changes.UpdateChain(chain);
+                }
+                catch(ArgumentException) //Happen when chain in table is corrupted
+                {
+                    client.Configuration.GetChainTable().DeleteIfExists();
+                    for(int i = 0; i < 20; i++)
+                    {
+                        try
+                        {
+                            if(client.Configuration.GetChainTable().CreateIfNotExists())
+                                break;
+                        }
+                        catch
+                        {
+                        }
+                        Thread.Sleep(10000);
+                    }
+                    client.Configuration.CreateIndexer().IndexChain(chain);
+                }
                 SaveChainCache(chain, configuration.LocalChain);
                 return chain;
             }).SingleInstance();
