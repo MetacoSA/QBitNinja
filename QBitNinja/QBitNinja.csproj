@@ -259,6 +259,9 @@
     <None Include="Properties\PublishProfiles\main-qbitninja.pubxml" />
     <None Include="Properties\PublishProfiles\seg-qbitninja.pubxml" />
     <None Include="Properties\PublishProfiles\test-qbitninja.pubxml" />
+    <Content Include="QBitNinja.Tokenized.nuspec">
+      <SubType>Designer</SubType>
+    </Content>
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

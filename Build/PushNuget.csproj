@@ -5,6 +5,8 @@
 		<Projects Include="..\QBitNinja.Client/QBitNinja.Client.csproj"></Projects>
 		<Projects Include="..\QBitNinja.Client(Profile111)/QBitNinja.Client(Profile111).csproj"></Projects>
 		<Projects Include="..\QBitNinja.Client(Profile259)/QBitNinja.Client(Profile259).csproj"></Projects>
+
+		<ProjectsServer Include="..\QBitNinja/QBitNinja.csproj"></ProjectsServer>
 	</ItemGroup>
 	
 	<Target Name="Build">
@@ -12,9 +14,18 @@
 		<Build.CreateNuspec
 			OriginalNuspec="../QBitNinja.Client/QBitNinja.Client.Tokenized.nuspec"
 			ModifiedNuspec="../QBitNinja.Client/QBitNinja.Client.nuspec"
-			AssemblyFile="../QBitNinja.Client/Properties/AssemblyInfo.cs"
+			AssemblyFile="../QBitNinja/Properties/AssemblyInfo.cs"
 			Configuration="$(Configuration)"
 			Projects="@(Projects)"
+			></Build.CreateNuspec>
+
+		<MSBuild Targets="Build" Properties="Configuration=$(Configuration)" Projects="@(ProjectsServer)"></MSBuild>
+		<Build.CreateNuspec
+			OriginalNuspec="../QBitNinja/QBitNinja.Tokenized.nuspec"
+			ModifiedNuspec="../QBitNinja/QBitNinja.nuspec"
+			AssemblyFile="../QBitNinja/Properties/AssemblyInfo.cs"
+			Configuration="$(Configuration)"
+			Projects="@(ProjectsServer)"
 			></Build.CreateNuspec>
 	</Target>
  </Project>

@@ -83,10 +83,12 @@
     <Compile Include="..\QBitNinja\Models\*.cs">
       <Link>Models\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\QBitNinja\Properties\AssemblyInfo.cs">
+      <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\QBitNinja\Serializer.cs">
       <Link>Serializer.cs</Link>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QBitNinjaClient.cs" />
   </ItemGroup>
   <ItemGroup>
