@@ -313,12 +313,16 @@ namespace QBitNinja.Client.Models
             SpentCoins = balanceChange.SpentCoins.ToList();
             Amount = balanceChange.Amount;
             TransactionId = balanceChange.TransactionId;
-
-            if (balanceChange.BlockId != null)
+            FirstSeen = balanceChange.SeenUtc;
+            if(balanceChange.BlockId != null)
             {
                 BlockId = balanceChange.BlockId;
                 Height = chain.GetBlock(balanceChange.BlockId).Height;
                 Confirmations = (chain.Tip.Height - Height) + 1;
+            }
+            else
+            {
+                Height = chain.Tip.Height + 1;
             }
         }
 #endif
@@ -360,9 +364,14 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
+        public DateTimeOffset FirstSeen
+        {
+            get;
+            set;
+        }
         public override string ToString()
         {
             return Amount.ToString();
-        }
+        }        
     }
 }
