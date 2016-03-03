@@ -18,6 +18,7 @@ namespace QBitNinja.Client.Models
         {
             BlockId = header.GetHash();
             BlockHeader = header;
+            BlockTime = header.BlockTime;
             Height = -1;
             Confirmations = -1;
         }
@@ -38,6 +39,18 @@ namespace QBitNinja.Client.Models
             set;
         }
         public int Confirmations
+        {
+            get;
+            set;
+        }
+
+        public DateTimeOffset MedianTimePast
+        {
+            get;
+            set;
+        }
+
+        public DateTimeOffset BlockTime
         {
             get;
             set;

@@ -408,6 +408,8 @@ namespace QBitNinja.Controllers
                 BlockHeader = confirmed.Header,
                 Confirmations = Chain.Tip.Height - confirmed.Height + 1,
                 Height = confirmed.Height,
+                MedianTimePast = confirmed.GetMedianTimePast(),
+                BlockTime = confirmed.Header.BlockTime
             };
         }
 
