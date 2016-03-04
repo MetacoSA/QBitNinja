@@ -403,8 +403,10 @@ namespace QBitNinja.Notifications
             {
                 var tx = ((TxPayload)message.Message.Payload).Object;
                 ListenerTrace.Verbose("Received Transaction " + tx.GetHash());
-                _Indexer.IndexAsync(new TransactionEntry.Entity(tx.GetHash(), tx, null));
-                _Indexer.IndexOrderedBalanceAsync(tx);
+                _Indexer.IndexAsync(new TransactionEntry.Entity(tx.GetHash(), tx, null))
+                        .ContinueWith(HandleException);
+                _Indexer.IndexOrderedBalanceAsync(tx)
+                    .ContinueWith(HandleException);
                 Async(() =>
                 {
                     var txId = tx.GetHash();
@@ -419,7 +421,8 @@ namespace QBitNinja.Notifications
                     }
                     UpdateHDState(balances);
 
-                    _Indexer.IndexAsync(balances);
+                    _Indexer.IndexAsync(balances)
+                        .ContinueWith(HandleException);
 
 
                     Task notify = null;
@@ -445,7 +448,8 @@ namespace QBitNinja.Notifications
                     }
                     notify.Wait();
                 });
-                var unused = Configuration.Topics.NewTransactions.AddAsync(tx);
+                var unused = Configuration.Topics.NewTransactions.AddAsync(tx)
+                                .ContinueWith(HandleException);
             }
 
             if(message.Message.Payload is BlockPayload)
@@ -630,6 +634,18 @@ namespace QBitNinja.Notifications
             });
             t.Start(TaskScheduler.Default);
             return t;
+        }
+
+        void HandleError(Task t)
+        {
+            if(t.IsFaulted)
+            {
+                if(!_Disposed)
+                {
+                    ListenerTrace.Error("Error during asynchronous task", t.Exception);
+                    LastException = t.Exception;
+                }
+            }
         }
 
         public Exception LastException
