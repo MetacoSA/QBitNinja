@@ -636,7 +636,7 @@ namespace QBitNinja.Notifications
             return t;
         }
 
-        void HandleError(Task t)
+        void HandleException(Task t)
         {
             if(t.IsFaulted)
             {
