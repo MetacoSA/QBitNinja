@@ -45,6 +45,18 @@ namespace QBitNinja.Client.JsonConverters
                         RedeemScript = scc.Redeem;
                     }
                 }
+
+                if (PayToPubkeyHashTemplate.Instance.CheckScriptPubKey(coin.TxOut.ScriptPubKey))
+                {
+                    Address = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(coin.TxOut.ScriptPubKey).GetAddress(network);
+                }
+                else
+                {
+                    if (PayToScriptHashTemplate.Instance.CheckScriptPubKey(coin.TxOut.ScriptPubKey))
+                    {
+                        Address = PayToScriptHashTemplate.Instance.ExtractScriptPubKeyParameters(coin.TxOut.ScriptPubKey).GetAddress(network);
+                    }
+                }
             }
             public ICoin ToCoin()
             {
@@ -52,6 +64,12 @@ namespace QBitNinja.Client.JsonConverters
                 if (AssetId != null)
                     return coin.ToColoredCoin(new AssetMoney(AssetId, Quantity));
                 return coin;
+            }
+
+            public IDestination Address
+            {
+                get;
+                set;
             }
 
             public uint256 TransactionId
