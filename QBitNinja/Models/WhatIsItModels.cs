@@ -20,17 +20,24 @@ namespace QBitNinja.Client.Models
         {
             Raw = script;
             Asm = script.ToString();
-            Hash = new uint160(script.Hash.ToBytes(false), false);
+            Hash160 = new uint160(script.Hash.ToBytes(false), false);
+			Hash256 = new uint256(script.WitHash.ToBytes(false), false);
             var address = script.GetDestinationAddress(network);
             if(address != null)
                 Address =  address.ToString();
         }
 
-        public uint160 Hash
+        public uint160 Hash160
         {
             get;
             set;
         }
+
+		public uint256 Hash256
+		{
+			get;
+			set;
+		}
 
         public string Address
         {
@@ -48,8 +55,8 @@ namespace QBitNinja.Client.Models
         {
             get;
             set;
-        }
-    }
+        }		
+	}
 
     public class WhatIsPublicKey
     {
