@@ -371,7 +371,7 @@ namespace QBitNinja.Controllers
             for(int i = 0; i < tx.Transaction.Outputs.Count; i++)
             {
                 var txout = tx.Transaction.Outputs[i];
-                ICoin coin = new Coin(tx.Transaction, txout);
+				ICoin coin = new Coin(new OutPoint(txId, i), txout);
                 if(colored)
                 {
                     var entry = tx.ColoredTransaction.GetColoredEntry((uint)i);
