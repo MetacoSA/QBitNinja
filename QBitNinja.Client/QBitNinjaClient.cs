@@ -486,7 +486,7 @@ namespace QBitNinja.Client
 
         public Task<HDKeyData> GetUnused(string wallet, string keyset, int lookahead)
         {
-            return Post<HDKeyData>(BuildPath(wallet, keyset) + "/unused/" + lookahead, null);
+            return Get<HDKeyData>(BuildPath(wallet, keyset) + "/unused/" + lookahead, null);
         }
 
         private static string BuildPath(string wallet, string keyset)
