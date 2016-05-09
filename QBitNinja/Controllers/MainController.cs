@@ -371,7 +371,7 @@ namespace QBitNinja.Controllers
             for(int i = 0; i < tx.Transaction.Outputs.Count; i++)
             {
                 var txout = tx.Transaction.Outputs[i];
-				ICoin coin = new Coin(new OutPoint(txId, i), txout);
+                ICoin coin = new Coin(new OutPoint(txId, i), txout);
                 if(colored)
                 {
                     var entry = tx.ColoredTransaction.GetColoredEntry((uint)i);
@@ -397,7 +397,7 @@ namespace QBitNinja.Controllers
 
         private BlockInformation FetchBlockInformation(uint256[] blockIds)
         {
-            var confirmed = blockIds.Select(b => Chain.GetBlock(b)).FirstOrDefault();
+            var confirmed = blockIds.Select(b => Chain.GetBlock(b)).Where(b => b != null).FirstOrDefault();
             if(confirmed == null)
             {
                 return null;
@@ -713,7 +713,7 @@ namespace QBitNinja.Controllers
             if(unspentOnly)
             {
                 HashSet<OutPoint> spents = new HashSet<OutPoint>();
-                foreach(var change in balanceChanges.SelectMany(b=>b.SpentCoins))
+                foreach(var change in balanceChanges.SelectMany(b => b.SpentCoins))
                 {
                     spents.Add(change.Outpoint);
                 }
