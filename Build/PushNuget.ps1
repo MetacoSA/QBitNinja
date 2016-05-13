@@ -3,6 +3,8 @@ impvs
 msbuild.exe "Build.csproj" /p:Configuration=Release
 msbuild.exe "PushNuget.csproj" /p:Configuration=Release
 
+.\GitLink.exe ".." -ignore "QBitNinja.Tests,Build,QBitNinja.Client.Tests,QBitNinja.Hosting.Azure.Web,Common"
+
 nuget pack "../QBitNinja.Client/QBitNinja.Client.nuspec"
 nuget pack "../QBitNinja/QBitNinja.nuspec"
 

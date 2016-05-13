@@ -17,5 +17,6 @@
 		<tags>bitcoin</tags>
 	</metadata>
 	<files>
+		<file src="bin\QBitNinja.pdb" target="lib\net45" />
 	</files>
 </package>
