@@ -535,7 +535,7 @@ namespace QBitNinja.Controllers
             var diff =
                 client
                 .GetOrderedBalance(balanceId, query)
-                .WhereNotExpired(TimeSpan.FromHours(1.0))
+                .WhereNotExpired(Expiration)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
                 .TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight)
                 .AsBalanceSheet(Chain);
@@ -644,7 +644,7 @@ namespace QBitNinja.Controllers
             return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
         }
 
-
+        TimeSpan Expiration = TimeSpan.FromHours(6.0);
         BalanceModel Balance(BalanceId balanceId,
             BalanceLocator continuation,
             BlockFeature until,
@@ -694,7 +694,7 @@ namespace QBitNinja.Controllers
                 client
                 .GetOrderedBalance(balanceId, query)
                 .TakeWhile(_ => !cancel.IsCancellationRequested)
-                .WhereNotExpired()
+                .WhereNotExpired(Expiration)
                 .Where(o => includeImmature || IsMature(o, Chain.Tip))
                 .AsBalanceSheet(Chain);
 

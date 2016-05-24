@@ -174,3 +174,10 @@ FakesAssemblies/
 
 
 Components/
+/Build/QBitNinja.Server.1.0.3.21.nupkg
+/Build/QBitNinja.Client.1.0.3.21.nupkg
+/Build/GitLink.exe
+/QBitNinja.Client/QBitNinja.Client.nuspec
+/QBitNinja/QBitNinja.nuspec
+/.vs/config/applicationhost.config
+/QBitNinja.Hosting.Azure.sln
