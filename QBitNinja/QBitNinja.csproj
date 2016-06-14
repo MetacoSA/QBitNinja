@@ -22,6 +22,7 @@
     <NuGetPackageImportStamp>1b97cb76</NuGetPackageImportStamp>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <UseGlobalApplicationHostFile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -181,6 +182,7 @@
     <Compile Include="JsonConverters\UIntJsonConverter.cs" />
     <Compile Include="ModelBinders\UIntModelBinding.cs" />
     <Compile Include="Models\NewBlockSubscription.cs" />
+    <Compile Include="Models\VersionStatsResponse.cs" />
     <Compile Include="Notifications\BroadcastedTransaction.cs" />
     <Compile Include="ChainTable.cs" />
     <Compile Include="Controllers\HelpController.cs" />
