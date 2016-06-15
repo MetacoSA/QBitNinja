@@ -308,8 +308,8 @@ namespace QBitNinja.Tests
 				tester.ChainBuilder.EmitBlock();
 				tester.ChainBuilder.EmitBlock();
 				tester.ChainBuilder.EmitBlock();
-				tester.ChainBuilder.EmitBlock();
-				var response = tester.Send<BroadcastResponse>(HttpMethod.Get, "versionstats");
+				tester.ChainBuilder.EmitBlock(blockVersion: 536870913);
+				var response = tester.Send<VersionStatsResponse>(HttpMethod.Get, "versionstats");
 			}
 		}
 

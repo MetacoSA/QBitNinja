@@ -100,10 +100,11 @@ namespace QBitNinja.Tests
         {
             _ongoingTransactions.Clear();
         }
-        internal Block EmitBlock(uint? nonce = null)
+		
+		internal Block EmitBlock(uint? nonce = null, int blockVersion = 2)
         {
             var block = new Block();
-            block.Header.Version = 2;
+            block.Header.Version = blockVersion;
             block.Transactions.AddRange(_ongoingTransactions.ToList());
             block.Header.HashPrevBlock = Chain.Tip.HashBlock;
             block.Header.Nonce = nonce == null ? RandomUtils.GetUInt32() : nonce.Value;

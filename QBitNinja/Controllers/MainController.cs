@@ -753,14 +753,14 @@ namespace QBitNinja.Controllers
 			resp.Last144 = GetVersionStats(Chain.Tip.EnumerateToGenesis().Take(144).ToArray());
 			resp.Last2016 = GetVersionStats(Chain.Tip.EnumerateToGenesis().Take(2016).ToArray());
 			resp.SincePeriodStart = GetVersionStats(Chain.Tip.EnumerateToGenesis()
-														     .TakeWhile(s => Chain.Tip == s || s.Height % Network.Consensus.DifficultyAdjustmentInterval !=		Network.Consensus.DifficultyAdjustmentInterval - 1).ToArray());
+															 .TakeWhile(s => Chain.Tip == s || s.Height % Network.Consensus.DifficultyAdjustmentInterval != Network.Consensus.DifficultyAdjustmentInterval - 1).ToArray());
 			return resp;
 		}
 
 		private VersionStats GetVersionStats(ChainedBlock[] chainedBlock)
 		{
 			VersionStats stats = new VersionStats();
-			stats.Stats = 
+			stats.Stats =
 				chainedBlock
 				.GroupBy(c => c.Header.Version)
 				.Select(g => new VersionStatsItem()
@@ -769,11 +769,39 @@ namespace QBitNinja.Controllers
 					Count = g.Count(),
 					Percentage = ((double)g.Count() / (double)chainedBlock.Length) * 100.0
 				}).ToList();
+
+
+			var proposals = new[]
+			{
+				new
+				{
+					Name = "CSV",
+					Bit = 0
+				}
+			};
+
+			foreach(var proposal in proposals)
+			{
+				var supportingBlocks =
+					chainedBlock
+					.Where(b => ((((uint)b.Header.Version & VERSIONBITS_TOP_MASK) == VERSIONBITS_TOP_BITS) && (b.Header.Version & ((uint)1) << proposal.Bit) != 0))
+					.ToArray();
+				stats.Stats.Add(new VersionStatsItem()
+				{
+					Proposal = proposal.Name,
+					Count = supportingBlocks.Length,
+					Percentage = ((double)supportingBlocks.Length / (double)chainedBlock.Length) * 100.0
+				});
+			}
+
 			stats.FromHeight = chainedBlock.Last().Height;
 			stats.ToHeight = chainedBlock.First().Height;
 			stats.Total = chainedBlock.Length;
 			return stats;
 		}
+
+		const ulong VERSIONBITS_TOP_BITS = 0x20000000UL;
+		const ulong VERSIONBITS_TOP_MASK = 0xE0000000UL;
 
 		[HttpGet]
 		[Route("whatisit/{data}")]
