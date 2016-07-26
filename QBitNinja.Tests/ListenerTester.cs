@@ -33,7 +33,7 @@ namespace QBitNinja.Tests
             _NodeListener = new EventLoopMessageListener<IncomingMessage>(NewNodeMessage);
             _NodeServer.ExternalEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), _NodeServer.LocalEndpoint.Port);
             _NodeServer.AllowLocalPeers = true;
-            _NodeServer.IsRelay = true;
+            _NodeServer.InboundNodeConnectionParameters.IsRelay = true;
             _NodeServer.AllMessages.AddMessageListener(_NodeListener);
             _NodeServer.Listen();
 

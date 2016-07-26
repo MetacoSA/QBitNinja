@@ -93,7 +93,7 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
-
+        [Newtonsoft.Json.JsonProperty(PropertyName = "p2shAddress")]
         public WhatIsAddress P2SHAddress
         {
             get;
