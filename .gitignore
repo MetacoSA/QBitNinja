@@ -181,3 +181,4 @@ Components/
 /QBitNinja/QBitNinja.nuspec
 /.vs/config/applicationhost.config
 /QBitNinja.Hosting.Azure.sln
+Build/*.nupkg

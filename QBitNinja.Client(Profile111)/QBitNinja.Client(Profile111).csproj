@@ -9,8 +9,8 @@
     <ProjectGuid>{C86B6060-023D-4E55-9FA2-0098DBB34E4D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidBase.Client</RootNamespace>
-    <AssemblyName>RapidBase.Client</AssemblyName>
+    <RootNamespace>QBitNinja.Client</RootNamespace>
+    <AssemblyName>QBitNinja.Client</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -39,7 +39,7 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
-  <ItemGroup>
+   <ItemGroup>
     <Reference Include="NBitcoin, Version=3.0.0.16, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NBitcoin.3.0.0.16\lib\portable-net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10\NBitcoin.dll</HintPath>
       <Private>True</Private>
