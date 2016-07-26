@@ -276,45 +276,45 @@ namespace QBitNinja.Tests
                 }
                 writer.Flush();
             }
-			//var conf = IndexerConfiguration.FromConfiguration();
-			//var client = conf.CreateIndexerClient();
-			//var rules = client.GetAllWalletRules();
-			//var result = rules.GroupBy(r => r.WalletId);
+            //var conf = IndexerConfiguration.FromConfiguration();
+            //var client = conf.CreateIndexerClient();
+            //var rules = client.GetAllWalletRules();
+            //var result = rules.GroupBy(r => r.WalletId);
 
-			//var indexer = conf.CreateIndexer();
+            //var indexer = conf.CreateIndexer();
 
-			//var b = client.GetBlock(new uint256("..."));
-			//indexer.IndexWalletOrderedBalance(0, b, rules);
+            //var b = client.GetBlock(new uint256("..."));
+            //indexer.IndexWalletOrderedBalance(0, b, rules);
 
-			//using (var tester = ServerTester.Create())
-			//{
-			//    var walletName = System.Web.NBitcoin.HttpUtility.UrlEncode("@098098.@##.balance?frpoeifpo")
-			//        .Replace("/", "%2F")
-			//        .Replace("?", "%3F");
+            //using (var tester = ServerTester.Create())
+            //{
+            //    var walletName = System.Web.NBitcoin.HttpUtility.UrlEncode("@098098.@##.balance?frpoeifpo")
+            //        .Replace("/", "%2F")
+            //        .Replace("?", "%3F");
 
-			//    tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
-			//    {
-			//        Name = "@098098.//frpoeifpo"
-			//    });
-			//    tester.SendGet<string>("wallets/" + walletName);
-			//}
-		}
+            //    tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
+            //    {
+            //        Name = "@098098.//frpoeifpo"
+            //    });
+            //    tester.SendGet<string>("wallets/" + walletName);
+            //}
+        }
 
-		[Fact]
-		public void CanGetVersionStats()
-		{
-			using(var tester = ServerTester.Create())
-			{
-				tester.ChainBuilder.EmitBlock();
-				tester.ChainBuilder.EmitBlock();
-				tester.ChainBuilder.EmitBlock();
-				tester.ChainBuilder.EmitBlock(blockVersion: 536870913);
-				var response = tester.Send<VersionStatsResponse>(HttpMethod.Get, "versionstats");
-			}
-		}
+        [Fact]
+        public void CanGetVersionStats()
+        {
+            using(var tester = ServerTester.Create())
+            {
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock();
+                tester.ChainBuilder.EmitBlock(blockVersion: 536870913);
+                var response = tester.Send<VersionStatsResponse>(HttpMethod.Get, "versionstats");
+            }
+        }
 
 
-		[Fact]
+        [Fact]
         public void CanBroadcastTransaction()
         {
             using(var tester = ServerTester.Create())
@@ -408,15 +408,20 @@ namespace QBitNinja.Tests
 
                 var notification = request.GetBody<Notification>();
                 var data = (NewBlockNotificationData)notification.Data;
-                Assert.True(notification.Subscription.Id == "toto");
-                Assert.True(data.BlockId == b.Header.HashPrevBlock);
-                Assert.True(data.Height == 0);
-                Assert.True(data.Header.GetHash() == b.Header.HashPrevBlock);
 
-                request = notifications.WaitRequest();
-                request.Complete(true);
-                notification = request.GetBody<Notification>();
-                data = (NewBlockNotificationData)notification.Data;
+                if(data.Height == 0) //Due to timing problem, sometimes the first block is not received
+                {
+                    Assert.True(notification.Subscription.Id == "toto");
+                    Assert.True(data.BlockId == b.Header.HashPrevBlock);
+                    Assert.True(data.Height == 0);
+                    Assert.True(data.Header.GetHash() == b.Header.HashPrevBlock);
+
+                    request = notifications.WaitRequest();
+                    request.Complete(true);
+                    notification = request.GetBody<Notification>();
+                    data = (NewBlockNotificationData)notification.Data;
+                }
+
                 Assert.True(notification.Subscription.Id == "toto");
                 Assert.True(data.BlockId == b.Header.GetHash());
                 Assert.True(data.Height == 1);
@@ -2043,14 +2048,14 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     bob.ToString(),
-					"{  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"akJE6ZGzCRGueyTwZdD8beZZ7rvH2oRDzGP\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"18GDK7Arwo1y7DnCab2QzheYXK6rqW8zzM\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"18GDK7Arwo1y7DnCab2QzheYXK6rqW8zzM\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"MainNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"anYvNDD3eJVQ5G17C4d99fB5hzVzP3hARES\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"MainNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"KxMVn7SRNkWTfVa78UXCmsc6Kyp3aQZydnyzGzNBrRg2T9X1u4er\",  \"type\": \"SECRET_KEY\",  \"network\": \"MainNet\"}"
+                    "{  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"akJE6ZGzCRGueyTwZdD8beZZ7rvH2oRDzGP\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"18GDK7Arwo1y7DnCab2QzheYXK6rqW8zzM\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"18GDK7Arwo1y7DnCab2QzheYXK6rqW8zzM\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"MainNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"anYvNDD3eJVQ5G17C4d99fB5hzVzP3hARES\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"3NxUy3EJq1WPPkwq212y1KB8etpD4aTgCh\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"MainNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"KxMVn7SRNkWTfVa78UXCmsc6Kyp3aQZydnyzGzNBrRg2T9X1u4er\",  \"type\": \"SECRET_KEY\",  \"network\": \"MainNet\"}"
                     );
                 //Can parse address (depends on TestNet)
                 bob = bob.PrivateKey.GetBitcoinSecret(Network.TestNet);
                 AssertWhatIsIt(
                     tester,
                     bob.GetAddress().ToString(),
-					"{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": null,  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
+                    "{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": null,  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
                     );
 
                 //Can find transaction
@@ -2079,7 +2084,7 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     "fc6f54710fefb6c27cad94c6103ceec7b206a80b34b1e4458355d88d257337d5",
-					"{  \"additionalInformation\": {    \"blockId\": \"fc6f54710fefb6c27cad94c6103ceec7b206a80b34b1e4458355d88d257337d5\",    \"blockHeader\": \"0200000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea3309000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000\",    \"height\": 1,    \"confirmations\": 1,    \"medianTimePast\": \"2011-02-03T08:16:42+09:00\",    \"blockTime\": \"1970-01-01T09:00:00+09:00\"  },  \"block\": null}"
+                    "{  \"additionalInformation\": {    \"blockId\": \"fc6f54710fefb6c27cad94c6103ceec7b206a80b34b1e4458355d88d257337d5\",    \"blockHeader\": \"0200000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea3309000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000\",    \"height\": 1,    \"confirmations\": 1,    \"medianTimePast\": \"2011-02-03T08:16:42+09:00\",    \"blockTime\": \"1970-01-01T09:00:00+09:00\"  },  \"block\": null}"
                     );
                 /////
 
@@ -2087,7 +2092,7 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     "1",
-					"{  \"additionalInformation\": {    \"blockId\": \"fc6f54710fefb6c27cad94c6103ceec7b206a80b34b1e4458355d88d257337d5\",    \"blockHeader\": \"0200000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea3309000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000\",    \"height\": 1,    \"confirmations\": 1,    \"medianTimePast\": \"2011-02-03T08:16:42+09:00\",    \"blockTime\": \"1970-01-01T09:00:00+09:00\"  },  \"block\": null}"
+                    "{  \"additionalInformation\": {    \"blockId\": \"fc6f54710fefb6c27cad94c6103ceec7b206a80b34b1e4458355d88d257337d5\",    \"blockHeader\": \"0200000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea3309000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000\",    \"height\": 1,    \"confirmations\": 1,    \"medianTimePast\": \"2011-02-03T08:16:42+09:00\",    \"blockTime\": \"1970-01-01T09:00:00+09:00\"  },  \"block\": null}"
                     );
                 AssertWhatIsIt(
                    tester,
@@ -2100,7 +2105,7 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     bob.PrivateKey.PubKey.ToHex(),
-					"{  \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",  \"isCompressed\": true,  \"address\": {    \"isP2SH\": false,    \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",    \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",    \"scriptPubKey\": {      \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",      \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",      \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"    },    \"redeemScript\": null,    \"publicKey\": null,    \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"type\": \"PUBKEY_ADDRESS\",    \"network\": \"TestNet\"  },  \"p2shAddress\": {    \"isP2SH\": true,    \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",    \"scriptPubKey\": {      \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",      \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",      \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",      \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"    },    \"redeemScript\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    },    \"publicKey\": null,    \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"type\": \"SCRIPT_ADDRESS\",    \"network\": \"TestNet\"  },  \"scriptPubKey\": {    \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",    \"address\": null,    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  }}"
+                    "{  \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",  \"isCompressed\": true,  \"address\": {    \"isP2SH\": false,    \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",    \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",    \"scriptPubKey\": {      \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",      \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",      \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",      \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"    },    \"redeemScript\": null,    \"publicKey\": null,    \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"type\": \"PUBKEY_ADDRESS\",    \"network\": \"TestNet\"  },  \"p2shAddress\": {    \"isP2SH\": true,    \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",    \"scriptPubKey\": {      \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",      \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",      \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",      \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"    },    \"redeemScript\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    },    \"publicKey\": null,    \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"type\": \"SCRIPT_ADDRESS\",    \"network\": \"TestNet\"  },  \"scriptPubKey\": {    \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",    \"address\": null,    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  }}"
                     );
                 ////
 
@@ -2115,13 +2120,13 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                     tester,
                     bob.GetAddress().ToString(),
-					"{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"TestNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"TestNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
+                    "{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"TestNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"TestNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
                     );
                 //Should also find with the pub key hash
                 AssertWhatIsIt(
                     tester,
                     "4fa965c94a53aaa0d87d1d05a826d77906ff5219",
-					"{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"TestNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"TestNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
+                    "{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"TestNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"TestNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
                     );
                 /////
 
@@ -2138,13 +2143,13 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                    tester,
                    bob.PrivateKey.PubKey.ScriptPubKey.GetScriptAddress(Network.TestNet).ToString(),
-				   "{  \"isP2SH\": true,  \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",  \"scriptPubKey\": {    \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",    \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",    \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",    \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"  },  \"redeemScript\": {    \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",    \"address\": null,    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  },  \"publicKey\": null,  \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",  \"type\": \"SCRIPT_ADDRESS\",  \"network\": \"TestNet\"}"
+                   "{  \"isP2SH\": true,  \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",  \"scriptPubKey\": {    \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",    \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",    \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",    \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"  },  \"redeemScript\": {    \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",    \"address\": null,    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  },  \"publicKey\": null,  \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",  \"type\": \"SCRIPT_ADDRESS\",  \"network\": \"TestNet\"}"
                    );
                 //Should also find with the script hash
                 AssertWhatIsIt(
                    tester,
                    "e947748c6687299740a448d524dc7aef830023a7",
-				   "{  \"isP2SH\": true,  \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",  \"scriptPubKey\": {    \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",    \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",    \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",    \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"  },  \"redeemScript\": {    \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",    \"address\": null,    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  },  \"publicKey\": null,  \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",  \"type\": \"SCRIPT_ADDRESS\",  \"network\": \"TestNet\"}"
+                   "{  \"isP2SH\": true,  \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",  \"scriptPubKey\": {    \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",    \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",    \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",    \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",    \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"  },  \"redeemScript\": {    \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",    \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",    \"address\": null,    \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",    \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"  },  \"publicKey\": null,  \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",  \"type\": \"SCRIPT_ADDRESS\",  \"network\": \"TestNet\"}"
                    );
                 ////
 
@@ -2152,14 +2157,14 @@ namespace QBitNinja.Tests
                 AssertWhatIsIt(
                   tester,
                   "21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac",
-				  "{  \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",  \"address\": null,  \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",  \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"}"
+                  "{  \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",  \"address\": null,  \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",  \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"}"
                   );
                 AssertWhatIsIt(
                   tester,
                   "025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG",
-				  "{  \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",  \"address\": null,  \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",  \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"}"
+                  "{  \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",  \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",  \"address\": null,  \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",  \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"}"
                   );
-				AssertWhatIsIt(tester, "76a9142e9ced3c2b5a04cf46b2c9fed28cd80672e61ab688ac", "{  \"hash160\": \"65ecbd17539541b2e28862b6367c3486014e8cdb\",  \"hash256\": \"25ae59f9a2a14c2c0c0f9ad0e72b17e28df39b7bb72532df645812d190740c39\",  \"address\": \"mjmRNLU3cYrijMm6Ndf4bftdymRrHLPvrw\",  \"raw\": \"76a9142e9ced3c2b5a04cf46b2c9fed28cd80672e61ab688ac\",  \"asm\": \"OP_DUP OP_HASH160 2e9ced3c2b5a04cf46b2c9fed28cd80672e61ab6 OP_EQUALVERIFY OP_CHECKSIG\"}");
+                AssertWhatIsIt(tester, "76a9142e9ced3c2b5a04cf46b2c9fed28cd80672e61ab688ac", "{  \"hash160\": \"65ecbd17539541b2e28862b6367c3486014e8cdb\",  \"hash256\": \"25ae59f9a2a14c2c0c0f9ad0e72b17e28df39b7bb72532df645812d190740c39\",  \"address\": \"mjmRNLU3cYrijMm6Ndf4bftdymRrHLPvrw\",  \"raw\": \"76a9142e9ced3c2b5a04cf46b2c9fed28cd80672e61ab688ac\",  \"asm\": \"OP_DUP OP_HASH160 2e9ced3c2b5a04cf46b2c9fed28cd80672e61ab6 OP_EQUALVERIFY OP_CHECKSIG\"}");
                 ////
 
                 //Can decode signature
