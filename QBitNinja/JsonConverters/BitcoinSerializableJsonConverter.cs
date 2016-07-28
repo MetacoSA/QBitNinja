@@ -11,7 +11,12 @@ namespace QBitNinja.JsonConverters
 namespace QBitNinja.Client.JsonConverters
 #endif
 {
-    public class BitcoinSerializableJsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class BitcoinSerializableJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

@@ -28,5 +28,11 @@
     <Compile Include="..\QBitNinja\Serializer.cs">
       <Link>Serializer.cs</Link>
     </Compile>
+	  <ExcludedStuffJson Include="..\Newtonsoft.Json(portable)\Properties\AssemblyInfo.cs">
+		  <Visible>false</Visible>
+	  </ExcludedStuffJson>
+	  <Compile Include="..\Newtonsoft.Json(portable)\**\*.cs" Exclude="@(ExcludedStuffJson)" Condition="'$(NoNewtonsoft)' == 'true'">
+		  <Link>LinkedJson\%(RecursiveDir)%(Filename)%(Extension)</Link>
+	  </Compile>	 
   </ItemGroup>
 </Project>

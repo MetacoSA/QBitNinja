@@ -9,7 +9,12 @@ namespace QBitNinja.JsonConverters
 namespace QBitNinja.Client.JsonConverters
 #endif
 {
-    public class MoneyJsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class MoneyJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

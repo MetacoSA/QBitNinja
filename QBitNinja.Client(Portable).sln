@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client", "QBitNinja.Client\QBitNinja.Client.csproj", "{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client(Profile259)", "QBitNinja.Client(Profile259)\QBitNinja.Client(Profile259).csproj", "{E2D86C21-D7F7-4496-AC57-EA3D41F23D4E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{44241912-4992-416E-A07B-4ABCA3C93826}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Newtonsoft.Json.Portable", "Newtonsoft.Json(portable)\Newtonsoft.Json.Portable.csproj", "{959F7F85-C98B-4876-971A-9036224578E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +59,14 @@ Global
 		{44241912-4992-416E-A07B-4ABCA3C93826}.QA|Any CPU.ActiveCfg = Debug|x86
 		{44241912-4992-416E-A07B-4ABCA3C93826}.QA-Testnet|Any CPU.ActiveCfg = Debug|x86
 		{44241912-4992-416E-A07B-4ABCA3C93826}.Release|Any CPU.ActiveCfg = Debug|x86
+		{959F7F85-C98B-4876-971A-9036224578E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.QA|Any CPU.Build.0 = Release|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.QA-Testnet|Any CPU.ActiveCfg = Release|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.QA-Testnet|Any CPU.Build.0 = Release|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{959F7F85-C98B-4876-971A-9036224578E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

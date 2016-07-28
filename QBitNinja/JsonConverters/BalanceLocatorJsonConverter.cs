@@ -5,7 +5,12 @@ using System;
 
 namespace QBitNinja.JsonConverters
 {
-    public class BalanceLocatorJsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class BalanceLocatorJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

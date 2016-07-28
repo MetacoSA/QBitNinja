@@ -13,7 +13,12 @@ namespace QBitNinja.JsonConverters
 namespace QBitNinja.Client.JsonConverters
 #endif
 {
-    public class UInt160JsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class UInt160JsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
@@ -42,7 +47,12 @@ namespace QBitNinja.Client.JsonConverters
             writer.WriteValue(value.ToString());
         }
     }
-    public class UInt256JsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class UInt256JsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

@@ -25,10 +25,15 @@ namespace QBitNinja.Client.JsonConverters
         }
     }
 
-    /// <summary>
-    /// Convert string to enum properties from their EnumAliasAttribute (See SubscriptionType)
-    /// </summary>
-    public class EnumAliasJsonConverter : JsonConverter
+	/// <summary>
+	/// Convert string to enum properties from their EnumAliasAttribute (See SubscriptionType)
+	/// </summary>
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class EnumAliasJsonConverter : JsonConverter
     {
         Dictionary<string, object> _Values = null;
         void EnsureInit(Type type)

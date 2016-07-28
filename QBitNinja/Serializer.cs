@@ -18,7 +18,12 @@ namespace QBitNinja.Client
 {
     public class Serializer
     {
-        public static void RegisterFrontConverters(JsonSerializerSettings settings, Network network = null)
+#if !NOJSONNET
+		public
+#else
+		internal
+#endif
+		static void RegisterFrontConverters(JsonSerializerSettings settings, Network network = null)
         {
             settings.Converters.Add(new BitcoinSerializableJsonConverter());
             settings.Converters.Add(new MoneyJsonConverter());

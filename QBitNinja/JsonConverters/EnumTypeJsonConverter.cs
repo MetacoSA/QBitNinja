@@ -34,10 +34,15 @@ namespace QBitNinja.Client.JsonConverters
     }
 
 
-    /// <summary>
-    /// Deserialize a derived class thanks to an enum indicator member field (see Subscription)
-    /// </summary>
-    public class EnumTypeJsonConverter : JsonConverter
+	/// <summary>
+	/// Deserialize a derived class thanks to an enum indicator member field (see Subscription)
+	/// </summary>
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class EnumTypeJsonConverter : JsonConverter
     {
         Dictionary<string, TypeInfo> _Values = null;
         TypeInfo _EnumType;

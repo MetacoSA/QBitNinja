@@ -32,7 +32,12 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
-        public JToken UserData
+#if !NOJSONNET
+	public
+#else
+		internal
+#endif 
+		JToken UserData
         {
             get;
             set;
@@ -122,7 +127,12 @@ namespace QBitNinja.Client.Models
             set;
         }
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public JToken UserData
+#if !NOJSONNET
+	public
+#else
+		internal
+#endif
+		JToken UserData
         {
             get;
             set;

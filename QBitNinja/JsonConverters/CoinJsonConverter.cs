@@ -10,7 +10,12 @@ namespace QBitNinja.JsonConverters
 namespace QBitNinja.Client.JsonConverters
 #endif
 {
-    public class CoinJsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class CoinJsonConverter : JsonConverter
     {
         public class CoinJson
         {

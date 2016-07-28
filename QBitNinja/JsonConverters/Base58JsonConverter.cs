@@ -9,7 +9,12 @@ namespace QBitNinja.JsonConverters
 namespace QBitNinja.Client.JsonConverters
 #endif
 {
-    public class Base58DataJsonConverter : JsonConverter
+#if !NOJSONNET
+	public
+#else
+	internal
+#endif
+	class Base58DataJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
