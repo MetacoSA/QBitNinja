@@ -1,5 +1,12 @@
 del "*.nupkg"
+
 msbuild.exe "Build.csproj" /p:Configuration=Release
+
+cd ..\QBitNinja.Client.NETCore
+dotnet restore
+dotnet build -c Release
+cd ..\Build
+
 msbuild.exe "PushNuget.csproj" /p:Configuration=Release
 
 .\GitLink.exe ".." -ignore "QBitNinja.Tests,Build,QBitNinja.Client.Tests,QBitNinja.Hosting.Azure.Web,Common"

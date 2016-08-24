@@ -1,23 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<UsingTask TaskName="Build.CreateNuspec" AssemblyFile="bin\$(Configuration)\Build.dll"></UsingTask>
+	<UsingTask TaskName="Build.CreateNuspec" AssemblyFile="bin\Build.dll"></UsingTask>
+	<UsingTask TaskName="Build.TokenizeTask" AssemblyFile="bin/Build.dll"></UsingTask>
+	<UsingTask TaskName="Build.SetCoreVersion" AssemblyFile="bin\Build.dll"></UsingTask>
+	<UsingTask TaskName="Build.AddCoreDependencies" AssemblyFile="bin\Build.dll"></UsingTask>
+	
 	<ItemGroup>
 		<Projects Include="..\QBitNinja.Client/QBitNinja.Client.csproj"></Projects>
-		<Projects Include="..\QBitNinja.Client(Profile111)/QBitNinja.Client(Profile111).csproj"></Projects>
-		<Projects Include="..\QBitNinja.Client(Profile259)/QBitNinja.Client(Profile259).csproj"></Projects>
-
 		<ProjectsServer Include="..\QBitNinja/QBitNinja.csproj"></ProjectsServer>
 	</ItemGroup>
 	
 	<Target Name="Build">
 		<MSBuild Targets="Build" Properties="Configuration=$(Configuration)" Projects="@(Projects)"></MSBuild>
-		<Build.CreateNuspec
-			OriginalNuspec="../QBitNinja.Client/QBitNinja.Client.Tokenized.nuspec"
-			ModifiedNuspec="../QBitNinja.Client/QBitNinja.Client.nuspec"
-			AssemblyFile="../QBitNinja/Properties/AssemblyInfo.cs"
-			Configuration="$(Configuration)"
-			Projects="@(Projects)"
-			></Build.CreateNuspec>
+
+		<Build.TokenizeTask InputFile="../QBitNinja.Client/QBitNinja.Client.Tokenized.nuspec"
+							AssemblyFile="../QBitNinja/Properties/AssemblyInfo.cs"
+							OutputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
+							></Build.TokenizeTask>
+
+		<Build.AddCoreDependencies
+							TargetFramework=".NETStandard1.1"
+							FrameworkName="netstandard1.1"
+							InputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
+							ProjectJsonFile="../QBitNinja.Client.NETCore/project.json"
+							OutputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
+							></Build.AddCoreDependencies>
 
 		<MSBuild Targets="Build" Properties="Configuration=$(Configuration)" Projects="@(ProjectsServer)"></MSBuild>
 		<Build.CreateNuspec
@@ -28,4 +35,5 @@
 			Projects="@(ProjectsServer)"
 			></Build.CreateNuspec>
 	</Target>
+
  </Project>

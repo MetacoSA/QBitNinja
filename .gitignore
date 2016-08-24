@@ -182,3 +182,5 @@ Components/
 /.vs/config/applicationhost.config
 /QBitNinja.Hosting.Azure.sln
 Build/*.nupkg
+/.vs/restore.dg
+/QBitNinja.Client.NETCore/project.lock.json

@@ -15,8 +15,17 @@
 		<projectUrl>https://github.com/QBitNinja/QBitNinja</projectUrl>
 		<copyright>Copyright 2015</copyright>
 		<tags>bitcoin</tags>
-	</metadata>
+		<dependencies>
+			<group targetFramework="net45">
+				<dependency id="NBitcoin" version="3.0.0.51" />
+			</group>
+
+			<group targetFramework=".NETStandard1.1">
+			</group>
+		</dependencies>
+	</metadata>	
 	<files>
-		<file src="bin\Release\QBitNinja.Client.pdb" target="lib\net45" />
+		<file src="bin\Release\QBitNinja.Client.*" target="lib\net45" />
+		<file src="..\QBitNinja.Client.NETCore\bin\Release\netstandard1.1\*.*" target="lib\netstandard1.1" />
 	</files>
 </package>
