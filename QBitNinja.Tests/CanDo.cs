@@ -2041,9 +2041,11 @@ namespace QBitNinja.Tests
             using(var tester = ServerTester.Create())
             {
                 tester.ChainBuilder.UploadBlock = true;
-                var bob = new BitcoinSecret("KxMVn7SRNkWTfVa78UXCmsc6Kyp3aQZydnyzGzNBrRg2T9X1u4er");
-                //whatisit/[address|txId|blockId|blockheader|base58|transaction|script|scriptbytes]
+				var address = new BitcoinColoredAddress("bWsXFju6Ge1sWnH3p1s24GfEifv1n6D8uJX", Network.TestNet).ToNetwork(Network.Main);
+				tester.SendGet<string>("whatisit/" + address.ToString());
 
+				var bob = new BitcoinSecret("KxMVn7SRNkWTfVa78UXCmsc6Kyp3aQZydnyzGzNBrRg2T9X1u4er");
+				//whatisit/[address|txId|blockId|blockheader|base58|transaction|script|scriptbytes]				
                 //Can parse base58 secret (depends on MainNet)
                 AssertWhatIsIt(
                     tester,

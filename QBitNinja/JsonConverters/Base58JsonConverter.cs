@@ -52,8 +52,6 @@ namespace QBitNinja.Client.JsonConverters
             var base58 = value as Base58Data;
             if (base58 != null)
             {
-                if (Network != null && base58.Network != Network)
-                    throw new FormatException("Invalid base58 network");
                 writer.WriteValue(value.ToString());
             }
         }
