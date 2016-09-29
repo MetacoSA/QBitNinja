@@ -134,7 +134,6 @@ namespace QBitNinja.Notifications
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new ChainBehavior(_Chain));
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
-            _Group.Connect();
 
 
 
@@ -145,6 +144,7 @@ namespace QBitNinja.Notifications
             ListenerTrace.Info("Fetching wallet subscriptions...");
             _Subscriptions = new SubscriptionCollection(_Configuration.GetSubscriptionsTable().Read());
             ListenerTrace.Info("Subscriptions fetched");
+            _Group.Connect();
 
             ListenerTrace.Info("Fetching transactions to broadcast...");
 

@@ -16,6 +16,10 @@ namespace QBitNinja.Notifications
         public IndexNotificationsTask(QBitNinjaConfiguration conf, SubscriptionCollection subscriptions)
             : base(conf.Indexer)
         {
+            if(subscriptions == null)
+                throw new ArgumentNullException("subscriptions");
+            if(conf == null)
+                throw new ArgumentNullException("conf");
             _Subscriptions = subscriptions;
             _Conf = conf;
         }
