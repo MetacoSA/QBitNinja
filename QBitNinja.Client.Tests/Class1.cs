@@ -52,15 +52,6 @@ namespace QBitNinja.Client.Tests
         [Fact]
         public void temp()
         {
-            var client = new QBitNinjaClient(Network.TestNet);
-            var result = client.GetBalance(BitcoinAddress.Create("mnDQg9yvKQv3u88favjCfGtDhfD5tpq9wa")).Result;
-            var operation = result.Operations.FirstOrDefault(o => o.TransactionId == uint256.Parse("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7"));
-
-            var includedCoins = operation.SpentCoins.ToDictionary(o => o.Outpoint);
-            var tx = client.GetTransaction(uint256.Parse("ed7bc6de74ce3c8d2e2f6d9b2ac487eacc39a03ea11f9431c4865c7ce27244e7")).Result;
-
-            var rogue = tx.SpentCoins.OfType<Coin>().Single(o => !includedCoins.ContainsKey(o.Outpoint));
-            var dest = rogue.ScriptPubKey.GetDestination().GetAddress(Network.TestNet); //mx97heA9c7o54YgZR7hVaYnpKkWFbmL6nr
         }
 
 

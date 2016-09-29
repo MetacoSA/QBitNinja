@@ -100,7 +100,11 @@ namespace QBitNinja.Tests
         {
             _ongoingTransactions.Clear();
         }
-		
+
+        public void DontMine(Transaction tx)
+        {
+            _ongoingTransactions.Remove(tx);
+        }
 		internal Block EmitBlock(uint? nonce = null, int blockVersion = 2)
         {
             var block = new Block();

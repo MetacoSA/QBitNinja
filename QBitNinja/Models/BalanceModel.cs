@@ -23,7 +23,12 @@ namespace QBitNinja.Client.Models
 #if !CLIENT
         public BalanceModel(IEnumerable<OrderedBalanceChange> balance, ConcurrentChain chain)
         {
-            Operations = balance
+            Operations = GetBalanceOperations(balance, chain);
+        }
+
+        internal List<BalanceOperation> GetBalanceOperations(IEnumerable<OrderedBalanceChange> balance, ConcurrentChain chain)
+        {
+            return balance
                 .Where(b => b.SpentCoins.Count > 0 || b.ReceivedCoins.Count > 0)
                 .Select(c => new BalanceOperation(c, chain))
                 .ToList();
@@ -42,6 +47,11 @@ namespace QBitNinja.Client.Models
         }
 #endif
         public List<BalanceOperation> Operations
+        {
+            get;
+            set;
+        }
+        public List<BalanceOperation> ConflictedOperations
         {
             get;
             set;

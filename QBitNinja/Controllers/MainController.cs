@@ -710,6 +710,36 @@ namespace QBitNinja.Controllers
 						break;
 				}
 			}
+
+            var spentOutputs = new Dictionary<OutPoint, OrderedBalanceChange>();
+            var conflicts = new List<OrderedBalanceChange>();
+            var unconfirmedConflicts = new List<OrderedBalanceChange>();
+            foreach(var balanceChange in balanceChanges)
+            {
+                foreach(var spent in balanceChange.SpentCoins)
+                {
+                    if(!spentOutputs.TryAdd(spent.Outpoint, balanceChange))
+                    {
+                        var balanceChange2 = spentOutputs[spent.Outpoint];
+                        var score = GetScore(balanceChange);
+                        var score2 = GetScore(balanceChange2);
+                        var conflicted = 
+                            score == score2 ? 
+                                    ((balanceChange.SeenUtc < balanceChange2.SeenUtc) ? balanceChange : balanceChange2) :
+                            score < score2 ? balanceChange : balanceChange2;
+                        conflicts.Add(conflicted);
+                        
+                        var nonConflicted = conflicted == balanceChange ? balanceChange2 : balanceChange;
+                        if(nonConflicted.BlockId == null || !Chain.Contains(nonConflicted.BlockId))
+                            unconfirmedConflicts.Add(conflicted);
+                    }
+                }
+            }
+            foreach(var conflict in conflicts)
+            {
+                balanceChanges.Remove(conflict);
+            }
+
 			if(unspentOnly)
 			{
 				HashSet<OutPoint> spents = new HashSet<OutPoint>();
@@ -725,6 +755,7 @@ namespace QBitNinja.Controllers
 			}
 
 			var result = new BalanceModel(balanceChanges, Chain);
+            result.ConflictedOperations = result.GetBalanceOperations(unconfirmedConflicts, Chain);
 			if(cancel.IsCancellationRequested)
 			{
 				if(balanceChanges.Count > 0)
@@ -736,7 +767,21 @@ namespace QBitNinja.Controllers
 			return result;
 		}
 
-		private Exception InvalidParameters(string message)
+        private long GetScore(OrderedBalanceChange balance)
+        {
+            long score = 0;
+            if(balance.BlockId != null)
+            {
+                score += 10;
+                if(Chain.Contains(balance.BlockId))
+                {
+                    score += 100;
+                }
+            }            
+            return score;
+        }
+
+        private Exception InvalidParameters(string message)
 		{
 			return new HttpResponseException(new HttpResponseMessage()
 			{

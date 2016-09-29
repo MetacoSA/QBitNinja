@@ -1959,6 +1959,48 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
+        public void ShouldNotShowConflictingTransactions()
+        {
+            using(var tester = ServerTester.Create())
+            {
+                var bob = new Key().GetBitcoinSecret(Network.TestNet);
+                var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
+
+                var tx1 = new TransactionBuilder()
+                      .AddKeys(bob)
+                      .AddCoins(new Coin(tx, 0U))
+                      .SendFees(Money.Coins(0.05m))
+                      .SetChange(bob)
+                      .BuildTransaction(true);
+                Thread.Sleep(1000);
+                var tx2 = new TransactionBuilder()
+                      .AddKeys(bob)
+                      .AddCoins(new Coin(tx, 0U))
+                      .SendFees(Money.Coins(0.06m))
+                      .SetChange(bob)
+                      .BuildTransaction(true);
+
+                tester.ChainBuilder.Broadcast(tx1);
+                tester.ChainBuilder.Broadcast(tx2);
+
+                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.Equal(2, balance.Operations.Count);
+                Assert.True(balance.Operations[0].TransactionId == tx2.GetHash());
+                Assert.Equal(1, balance.ConflictedOperations.Count);
+                Assert.True(balance.ConflictedOperations[0].TransactionId == tx1.GetHash());
+
+                tester.ChainBuilder.DontMine(tx2);
+                tester.ChainBuilder.EmitBlock();
+                tester.UpdateServerChain();
+
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                Assert.Equal(2, balance.Operations.Count);
+                Assert.True(balance.Operations.Any(op=>op.TransactionId == tx1.GetHash()));
+                Assert.Equal(0, balance.ConflictedOperations.Count);
+            }
+        }
+
+        [Fact]
         public void CanGetBalance()
         {
             using(var tester = ServerTester.Create())
