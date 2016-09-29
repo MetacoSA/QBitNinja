@@ -323,46 +323,44 @@ namespace QBitNinja.Client
             return Send<T>(HttpMethod.Get, null, relativePath, parameters);
         }
 
+        static HttpClient Client = new HttpClient();
         public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
         {
-            var uri = GetFullUri(relativePath, parameters);
-            using(var client = new HttpClient())
+            var uri = GetFullUri(relativePath, parameters);            
+            var message = new HttpRequestMessage(method, uri);
+            if(body != null)
             {
-                var message = new HttpRequestMessage(method, uri);
-                if(body != null)
+                message.Content = new StringContent(Serializer.ToString(body, Network), Encoding.UTF8, "application/json");
+            }
+            var result = await Client.SendAsync(message).ConfigureAwait(false);
+            if(result.StatusCode == HttpStatusCode.NotFound)
+                return default(T);
+            if(!result.IsSuccessStatusCode)
+            {
+                string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if(!string.IsNullOrEmpty(error))
                 {
-                    message.Content = new StringContent(Serializer.ToString(body, Network), Encoding.UTF8, "application/json");
-                }
-                var result = await client.SendAsync(message).ConfigureAwait(false);
-                if(result.StatusCode == HttpStatusCode.NotFound)
-                    return default(T);
-                if(!result.IsSuccessStatusCode)
-                {
-                    string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    if(!string.IsNullOrEmpty(error))
+                    try
                     {
-                        try
-                        {
-                            var errorObject = Serializer.ToObject<QBitNinjaError>(error, Network);
-                            if(errorObject.StatusCode != 0)
-                                throw new QBitNinjaException(errorObject);
-                        }
-                        catch(JsonSerializationException)
-                        {
-                        }
-                        catch(JsonReaderException)
-                        {
-                        }
+                        var errorObject = Serializer.ToObject<QBitNinjaError>(error, Network);
+                        if(errorObject.StatusCode != 0)
+                            throw new QBitNinjaException(errorObject);
+                    }
+                    catch(JsonSerializationException)
+                    {
+                    }
+                    catch(JsonReaderException)
+                    {
                     }
                 }
-                result.EnsureSuccessStatusCode();
-                if(typeof(T) == typeof(byte[]))
-                    return (T)(object)await result.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                if(typeof(T) == typeof(string))
-                    return (T)(object)str;
-                return Serializer.ToObject<T>(str, Network);
             }
+            result.EnsureSuccessStatusCode();
+            if(typeof(T) == typeof(byte[]))
+                return (T)(object)await result.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            var str = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if(typeof(T) == typeof(string))
+                return (T)(object)str;
+            return Serializer.ToObject<T>(str, Network);
         }
 
         public Task<T> Post<T>(string relativePath, object content)
