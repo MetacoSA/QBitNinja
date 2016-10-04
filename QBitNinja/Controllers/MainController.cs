@@ -496,14 +496,15 @@ namespace QBitNinja.Controllers
 			var atBlock = AtBlock(at);
 
 			var query = new BalanceQuery();
-			//query.From = null;
-			if(at != null)
+            query.RawOrdering = true;
+            query.From = null;
+
+            if(at != null)
 				query.From = ToBalanceLocator(atBlock);
+            if(query.From == null)
+                query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - Expiration);
 
-			//if (query.From == null)
-			//    query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
-
-			query.PageSizes = new[] { 1, 10, 100 };
+            query.PageSizes = new[] { 1, 10, 100 };
 
 			var cacheTable = repo.GetBalanceSummaryCacheTable(balanceId, colored);
 			var cachedSummary = cacheTable.Query(Chain, query).FirstOrDefault(c => (((ConfirmedBalanceLocator)c.Locator).BlockHash == atBlock.HashBlock && at != null) ||
@@ -526,13 +527,13 @@ namespace QBitNinja.Controllers
 			};
 
 			int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedLocator.Height;
-			if(at == null) //Need more block to find the unconfs
-				stopAtHeight = stopAtHeight - 12;
+			if(at == null)
+				stopAtHeight = stopAtHeight - (int)(Expiration.Ticks / this.Network.Consensus.PowTargetSpacing.Ticks);
 
 			var client = Configuration.Indexer.CreateIndexerClient();
-			client.ColoredBalance = colored;
+			client.ColoredBalance = colored;            
 
-			var diff =
+            var diff =
 				client
 				.GetOrderedBalance(balanceId, query)
 				.WhereNotExpired(Expiration)
@@ -548,8 +549,9 @@ namespace QBitNinja.Controllers
 					ReasonPhrase = "The server can't fetch the balance summary because the balance is too big. Please, load it in several step with ?at={blockFeature} parameter. Once fully loaded after all the step, the summary will return in constant time."
 				});
 			}
+            RemoveConflicts(diff);
 
-			var unconfs = diff.Unconfirmed;
+            var unconfs = diff.Unconfirmed;
 			var confs = cachedLocator == null ?
 											diff.Confirmed :
 											diff.Confirmed.Where(c => c.Height > cachedLocator.Height).ToList();
@@ -644,7 +646,7 @@ namespace QBitNinja.Controllers
 			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
 		}
 
-		TimeSpan Expiration = TimeSpan.FromHours(6.0);
+		TimeSpan Expiration = TimeSpan.FromHours(24.0);
 		BalanceModel Balance(BalanceId balanceId,
 			BalanceLocator continuation,
 			BlockFeature until,
@@ -652,69 +654,102 @@ namespace QBitNinja.Controllers
 			bool includeImmature,
 			bool unspentOnly,
 			bool colored)
-		{
-			CancellationTokenSource cancel = new CancellationTokenSource();
-			cancel.CancelAfter(30000);
+        {
+            CancellationTokenSource cancel = new CancellationTokenSource();
+            cancel.CancelAfter(30000);
 
-			BalanceQuery query = new BalanceQuery();
-			query.From = null;
+            BalanceQuery query = new BalanceQuery();
+            query.RawOrdering = true;
+            query.From = null;
 
-			if(from != null)
-			{
-				query.From = ToBalanceLocator(from);
-				query.FromIncluded = true;
-			}
+            if(from != null)
+            {
+                query.From = ToBalanceLocator(from);
+                query.FromIncluded = true;
+            }
 
-			if(continuation != null)
-			{
-				query = new BalanceQuery
-				{
-					From = continuation,
-					FromIncluded = false
-				};
-			}
+            if(continuation != null)
+            {
+                query = new BalanceQuery
+                {
+                    From = continuation,
+                    FromIncluded = false
+                };
+                query.RawOrdering = true;
+            }
 
-			if(query.From == null)
-			{
-				query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - TimeSpan.FromHours(24.0));
-			}
+            if(query.From == null)
+            {
+                query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - Expiration);
+            }
 
-			if(until != null)
-			{
-				query.To = ToBalanceLocator(until);
-				query.FromIncluded = true;
-			}
+            if(until != null)
+            {
+                query.To = ToBalanceLocator(until);
+                query.FromIncluded = true;
+            }
 
-			if(query.To.IsGreaterThan(query.From))
-				throw InvalidParameters("Invalid agurment : from < until");
+            if(query.To.IsGreaterThan(query.From))
+                throw InvalidParameters("Invalid agurment : from < until");
 
-			var client = Configuration.Indexer.CreateIndexerClient();
-			client.ColoredBalance = colored;
-			var balance =
-				client
-				.GetOrderedBalance(balanceId, query)
-				.TakeWhile(_ => !cancel.IsCancellationRequested)
-				.WhereNotExpired(Expiration)
-				.Where(o => includeImmature || IsMature(o, Chain.Tip))
-				.AsBalanceSheet(Chain);
+            var client = Configuration.Indexer.CreateIndexerClient();
+            client.ColoredBalance = colored;
+            var balance =
+                client
+                .GetOrderedBalance(balanceId, query)
+                .TakeWhile(_ => !cancel.IsCancellationRequested)
+                .WhereNotExpired(Expiration)
+                .Where(o => includeImmature || IsMature(o, Chain.Tip))
+                .AsBalanceSheet(Chain);
 
-			var balanceChanges = balance.All;
-			if(until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
-			{
-				for(int i = balanceChanges.Count - 1; i >= 0; i--)
-				{
-					var last = balanceChanges[i];
-					if(last.BlockId == null)
-						balanceChanges.RemoveAt(i);
-					else
-						break;
-				}
-			}
+            var balanceChanges = balance.All;
+            if(until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
+            {
+                for(int i = 0; i < balanceChanges.Count; i++)
+                {
+                    var last = balanceChanges[i];
+                    if(last.BlockId == null)
+                        balanceChanges.RemoveAt(i);
+                    else
+                        break;
+                }
+            }
 
+            var conflicts = RemoveConflicts(balance);
+
+            if(unspentOnly)
+            {
+                HashSet<OutPoint> spents = new HashSet<OutPoint>();
+                foreach(var change in balanceChanges.SelectMany(b => b.SpentCoins))
+                {
+                    spents.Add(change.Outpoint);
+                }
+                foreach(var change in balanceChanges)
+                {
+                    change.SpentCoins.Clear();
+                    change.ReceivedCoins.RemoveAll(c => spents.Contains(c.Outpoint));
+                }
+            }
+
+            var result = new BalanceModel(balanceChanges, Chain);
+            result.ConflictedOperations = result.GetBalanceOperations(conflicts, Chain);
+            if(cancel.IsCancellationRequested)
+            {
+                if(balanceChanges.Count > 0)
+                {
+                    var lastop = balanceChanges[balanceChanges.Count - 1];
+                    result.Continuation = lastop.CreateBalanceLocator();
+                }
+            }
+            return result;
+        }
+
+        private List<OrderedBalanceChange> RemoveConflicts(BalanceSheet balance)
+        {
             var spentOutputs = new Dictionary<OutPoint, OrderedBalanceChange>();
             var conflicts = new List<OrderedBalanceChange>();
             var unconfirmedConflicts = new List<OrderedBalanceChange>();
-            foreach(var balanceChange in balanceChanges)
+            foreach(var balanceChange in balance.All)
             {
                 foreach(var spent in balanceChange.SpentCoins)
                 {
@@ -723,12 +758,12 @@ namespace QBitNinja.Controllers
                         var balanceChange2 = spentOutputs[spent.Outpoint];
                         var score = GetScore(balanceChange);
                         var score2 = GetScore(balanceChange2);
-                        var conflicted = 
-                            score == score2 ? 
+                        var conflicted =
+                            score == score2 ?
                                     ((balanceChange.SeenUtc < balanceChange2.SeenUtc) ? balanceChange : balanceChange2) :
                             score < score2 ? balanceChange : balanceChange2;
                         conflicts.Add(conflicted);
-                        
+
                         var nonConflicted = conflicted == balanceChange ? balanceChange2 : balanceChange;
                         if(nonConflicted.BlockId == null || !Chain.Contains(nonConflicted.BlockId))
                             unconfirmedConflicts.Add(conflicted);
@@ -737,35 +772,12 @@ namespace QBitNinja.Controllers
             }
             foreach(var conflict in conflicts)
             {
-                balanceChanges.Remove(conflict);
+                balance.All.Remove(conflict);
+                balance.Unconfirmed.Remove(conflict);
             }
 
-			if(unspentOnly)
-			{
-				HashSet<OutPoint> spents = new HashSet<OutPoint>();
-				foreach(var change in balanceChanges.SelectMany(b => b.SpentCoins))
-				{
-					spents.Add(change.Outpoint);
-				}
-				foreach(var change in balanceChanges)
-				{
-					change.SpentCoins.Clear();
-					change.ReceivedCoins.RemoveAll(c => spents.Contains(c.Outpoint));
-				}
-			}
-
-			var result = new BalanceModel(balanceChanges, Chain);
-            result.ConflictedOperations = result.GetBalanceOperations(unconfirmedConflicts, Chain);
-			if(cancel.IsCancellationRequested)
-			{
-				if(balanceChanges.Count > 0)
-				{
-					var lastop = balanceChanges[balanceChanges.Count - 1];
-					result.Continuation = lastop.CreateBalanceLocator();
-				}
-			}
-			return result;
-		}
+            return unconfirmedConflicts;
+        }
 
         private long GetScore(OrderedBalanceChange balance)
         {
