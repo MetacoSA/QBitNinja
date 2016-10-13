@@ -24,7 +24,8 @@ namespace QBitNinja.Controllers
                             "blocks/tip?format=json&headeronly=true",
                             "blocks/tip?format=raw",
                             "blocks/tip?format=raw&headeronly=true",
-                        }
+							"blocks/tip?format=raw&headeronly=true&extended=true",
+						}
                     },
                      new RouteModel
                     {
