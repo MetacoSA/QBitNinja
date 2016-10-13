@@ -13,7 +13,12 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
-        public Block Block
+		public ExtendedBlockInformation ExtendedInformation
+		{
+			get;
+			set;
+		}
+		public Block Block
         {
             get;
             set;

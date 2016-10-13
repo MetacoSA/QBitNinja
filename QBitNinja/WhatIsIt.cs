@@ -62,7 +62,7 @@ namespace QBitNinja
                 {
                 }
             }
-            var b = NoException(() => Controller.JsonBlock(BlockFeature.Parse(data), true));
+            var b = NoException(() => Controller.JsonBlock(BlockFeature.Parse(data), true, false));
             if (b != null)
                 return b;
 

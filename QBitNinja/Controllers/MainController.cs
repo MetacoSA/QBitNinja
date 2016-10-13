@@ -9,6 +9,7 @@ using QBitNinja.Models;
 using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -448,10 +449,10 @@ namespace QBitNinja.Controllers
 		[Route("blocks/{blockFeature}")]
 		public object Block(
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
-			BlockFeature blockFeature, bool headerOnly = false, DataFormat format = DataFormat.Json)
+			BlockFeature blockFeature, bool headerOnly = false, DataFormat format = DataFormat.Json, bool extended = false)
 		{
 			if(format == DataFormat.Json)
-				return JsonBlock(blockFeature, headerOnly);
+				return JsonBlock(blockFeature, headerOnly, extended);
 
 			return RawBlock(blockFeature, headerOnly);
 		}
@@ -876,7 +877,7 @@ namespace QBitNinja.Controllers
 			}
 		}
 
-		internal GetBlockResponse JsonBlock(BlockFeature blockFeature, bool headerOnly)
+		internal GetBlockResponse JsonBlock(BlockFeature blockFeature, bool headerOnly, bool extended)
 		{
 			var block = GetBlock(blockFeature, headerOnly);
 			if(block == null)
@@ -886,12 +887,60 @@ namespace QBitNinja.Controllers
 					StatusCode = HttpStatusCode.NotFound,
 					ReasonPhrase = "Block not found"
 				});
-			}
+			}			
 			return new GetBlockResponse()
 			{
 				AdditionalInformation = FetchBlockInformation(new[] { block.Header.GetHash() }) ?? new BlockInformation(block.Header),
+				ExtendedInformation = extended ? FetchExtendedBlockInformation(blockFeature, block) : null,
 				Block = headerOnly ? null : block
 			};
+		}
+
+		private ExtendedBlockInformation FetchExtendedBlockInformation(BlockFeature blockFeature, Block block)
+		{
+			var id = block.Header.GetHash().ToString();
+			var extendedInfo = Configuration.GetCacheTable<ExtendedBlockInformation>().ReadOne(id);
+			if(extendedInfo != null)
+				return extendedInfo;
+			ChainedBlock chainedBlock = blockFeature.GetChainedBlock(Chain);
+			if(chainedBlock == null)
+				return null;
+			if(block.Transactions.Count == 0)
+			{
+				block = GetBlock(blockFeature, false);
+				if(block == null || block.Transactions.Count == 0)
+					return null;
+			}			
+			extendedInfo = new ExtendedBlockInformation()
+			{
+				BlockReward = block.Transactions[0].TotalOut,
+				BlockSubsidy = GetBlockSubsidy(chainedBlock.Height),
+				Size = GetSize(block, TransactionOptions.All),
+				StrippedSize = GetSize(block, TransactionOptions.None),
+				TransactionCount = block.Transactions.Count
+			};
+			Configuration.GetCacheTable<ExtendedBlockInformation>().Create(id, extendedInfo, true);
+			return extendedInfo;
+		}
+
+		public int GetSize(IBitcoinSerializable data, TransactionOptions options)
+		{
+			var bms = new BitcoinStream(Stream.Null, true);
+			bms.TransactionOptions = options;
+			data.ReadWrite(bms);
+			return (int)bms.Counter.WrittenBytes;
+		}
+		Money GetBlockSubsidy(int nHeight)
+		{
+			int halvings = nHeight / Configuration.Indexer.Network.Consensus.SubsidyHalvingInterval;
+			// Force block reward to zero when right shift is undefined.
+			if(halvings >= 64)
+				return 0;
+
+			Money nSubsidy = Money.Coins(50);
+			// Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
+			nSubsidy >>= halvings;
+			return nSubsidy;
 		}
 
 		private Block GetBlock(BlockFeature blockFeature, bool headerOnly)
