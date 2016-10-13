@@ -67,7 +67,8 @@ namespace QBitNinja
             config.DependencyResolver = new QBitNinjaDependencyResolver(QBitNinja, config.DependencyResolver);
             config.Filters.Add(new GlobalExceptionFilter());
             config.Services.Replace(typeof(IBodyModelValidator), new NoBodyModelProvider());
-            Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings, QBitNinja.Indexer.Network);
+			config.MessageHandlers.Insert(0, new CompressionHandler());
+			Serializer.RegisterFrontConverters(config.Formatters.JsonFormatter.SerializerSettings, QBitNinja.Indexer.Network);
         }
         public static void Register(HttpConfiguration config, QBitNinjaConfiguration QBitNinja)
         {

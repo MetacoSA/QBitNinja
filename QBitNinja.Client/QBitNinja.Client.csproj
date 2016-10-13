@@ -70,6 +70,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\QBitNinja\CompressionHandler.cs">
+      <Link>CompressionHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\QBitNinja\Compressors.cs">
+      <Link>Compressors.cs</Link>
+    </Compile>
     <Compile Include="..\QBitNinja\JsonConverters\*.cs">
       <Link>JsonConverters\%(Filename)%(Extension)</Link>
     </Compile>

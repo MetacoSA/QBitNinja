@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NBitcoin.DataEncoders;
+using System.Net.Http.Headers;
 #if CLIENT
 using QBitNinja.Client.JsonConverters;
 using QBitNinja.Client.Models;
@@ -303,9 +304,9 @@ namespace QBitNinja.Client
             return address;
         }
 
-        public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false)
+        public Task<GetBlockResponse> GetBlock(BlockFeature blockFeature, bool headerOnly = false, bool extended = false)
         {
-            return Get<GetBlockResponse>("blocks/" + EscapeUrlPart(blockFeature.ToString()) + "?headerOnly=" + headerOnly);
+            return Get<GetBlockResponse>("blocks/" + EscapeUrlPart(blockFeature.ToString()) + "?headerOnly=" + headerOnly + "&extended=" + extended);
         }
 
         private string GetFullUri(string relativePath, params object[] parameters)
@@ -323,8 +324,15 @@ namespace QBitNinja.Client
             return Send<T>(HttpMethod.Get, null, relativePath, parameters);
         }
 
-        static HttpClient Client = new HttpClient();
-        public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
+        static HttpClient Client;
+		static QBitNinjaClient()
+		{
+			var client = new HttpClient(new DecompressionHandler(new HttpClientHandler()));
+			client.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+			Client = client;
+		}
+
+		public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
         {
             var uri = GetFullUri(relativePath, parameters);            
             var message = new HttpRequestMessage(method, uri);

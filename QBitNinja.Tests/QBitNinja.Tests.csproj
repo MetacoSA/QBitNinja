@@ -166,6 +166,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\QBitNinja.Client\QBitNinja.Client.csproj">
+      <Project>{7c796b6b-86b5-4c57-adaa-12cf1fecda71}</Project>
+      <Name>QBitNinja.Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\QBitNinja\QBitNinja.csproj">
       <Project>{39b56da4-7986-4ea4-8f00-f1e28efa0101}</Project>
       <Name>QBitNinja</Name>

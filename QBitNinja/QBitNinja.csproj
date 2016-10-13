@@ -172,6 +172,8 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="CacheBlocksRepository.cs" />
+    <Compile Include="CompressionHandler.cs" />
+    <Compile Include="Compressors.cs" />
     <Compile Include="InitialIndexer.cs" />
     <Compile Include="JsonConverters\EnumAliasJsonConverter.cs" />
     <Compile Include="JsonConverters\EnumTypeJsonConverter.cs" />

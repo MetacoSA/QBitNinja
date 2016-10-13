@@ -536,6 +536,8 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
+				var genesis = new Client.QBitNinjaClient(tester.Address, tester.Configuration.Indexer.Network).GetBlock(new Client.Models.BlockFeature(Client.Models.SpecialFeature.Last), extended: true).GetAwaiter().GetResult();
+				Assert.NotNull(genesis);
 				tester.ChainBuilder.UploadBlock = true;
 
 				var bob = new Key();
@@ -612,6 +614,9 @@ namespace QBitNinja.Tests
 				Assert.NotNull(response2.ExtendedInformation);
 				response2 = tester.SendGet<GetBlockResponse>("blocks/tip?extended=true");
 				Assert.NotNull(response2.ExtendedInformation);
+				var response22 = new Client.QBitNinjaClient(tester.Address, tester.Configuration.Indexer.Network).GetBlock(new Client.Models.BlockFeature(Client.Models.SpecialFeature.Last), extended : true).GetAwaiter().GetResult();
+				Assert.NotNull(response22.ExtendedInformation);
+
 				Assert.Equal(Money.Coins(50m), response2.ExtendedInformation.BlockSubsidy);
 				Assert.Equal(Money.Coins(55m), response2.ExtendedInformation.BlockReward);
 				Assert.Equal(response2.ExtendedInformation.Size, response2.ExtendedInformation.StrippedSize);

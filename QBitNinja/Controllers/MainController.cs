@@ -949,6 +949,8 @@ namespace QBitNinja.Controllers
 			var hash = chainedBlock == null ? blockFeature.BlockId : chainedBlock.HashBlock;
 			if(hash == null)
 				return null;
+			if(chainedBlock != null && chainedBlock.Height == 0)
+				return headerOnly ? new NBitcoin.Block(Network.GetGenesis().Header) : Network.GetGenesis();
 			var client = Configuration.Indexer.CreateIndexerClient();
 			return headerOnly ? GetHeader(hash, client) : client.GetBlock(hash);
 		}
