@@ -467,18 +467,17 @@ namespace QBitNinja.Controllers
 		}
 
 		[HttpGet]
-		[Route("balances/{address}/summary")]
+		[Route("balances/{balanceId}/summary")]
 		public BalanceSummary AddressBalanceSummary(
-			[ModelBinder(typeof(Base58ModelBinder))]
-			IDestination address,
+			[ModelBinder(typeof(BalanceIdModelBinder))]
+			BalanceId balanceId,
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
 			BlockFeature at = null,
 			bool debug = false,
 			bool colored = false)
 		{
-			BalanceId id = new BalanceId(address);
-			colored = address is BitcoinColoredAddress || colored;
-			return BalanceSummary(id, at, debug, colored);
+			colored = colored || IsColoredAddress();
+			return BalanceSummary(balanceId, at, debug, colored);
 		}
 
 		public BalanceSummary BalanceSummary(
@@ -628,10 +627,10 @@ namespace QBitNinja.Controllers
 		}
 
 		[HttpGet]
-		[Route("balances/{address}")]
+		[Route("balances/{balanceId}")]
 		public BalanceModel AddressBalance(
-			[ModelBinder(typeof(Base58ModelBinder))]
-			IDestination address,
+			[ModelBinder(typeof(BalanceIdModelBinder))]
+			BalanceId balanceId,
 			[ModelBinder(typeof(BalanceLocatorModelBinder))]
 			BalanceLocator continuation = null,
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
@@ -642,9 +641,14 @@ namespace QBitNinja.Controllers
 			bool unspentOnly = false,
 			bool colored = false)
 		{
-			var balanceId = new BalanceId(address);
-			colored = address is BitcoinColoredAddress || colored;
+			colored = colored || IsColoredAddress(); 
 			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
+		}
+
+		//Property passed by BalanceIdModelBinder
+		private bool IsColoredAddress()
+		{
+			return ActionContext.Request.Properties.ContainsKey("BitcoinColoredAddress");
 		}
 
 		TimeSpan Expiration = TimeSpan.FromHours(24.0);

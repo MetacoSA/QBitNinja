@@ -8,6 +8,7 @@ using NBitcoin.OpenAsset;
 using NBitcoin.Policy;
 using NBitcoin.Protocol;
 using Newtonsoft.Json.Linq;
+using QBitNinja.Client;
 using QBitNinja.Controllers;
 using QBitNinja.Models;
 using QBitNinja.Notifications;
@@ -259,45 +260,45 @@ namespace QBitNinja.Tests
 			}
 		}
 
-		//[Fact]
+		[Fact]
 		public void Play()
 		{
-			using(var fs = File.Open("c:/blocksize.csv", FileMode.Create))
+			//56f87210814c8baef7068454e517a70da2f2103fc3ac7f687e32a228dc80e115
+
+			var key = new BitcoinSecret("cNUnpYpMsJXYCERYBciJnsWBpcYEFjdcbq6dxj4SskGhs7uHuJ7Q", Network.TestNet);
+			var qbit = new QBitNinjaClient(Network.TestNet);
+
+			var P2WPKH = key.PubKey.WitHash.ScriptPubKey;
+			var P2WSH = key.PubKey.ScriptPubKey.WitHash.ScriptPubKey;
+			//var P2SHP2WPKH = P2WPKH.Hash.ScriptPubKey;
+			//var P2SHP2WSH = P2WSH.Hash.ScriptPubKey;
+
+			//TransactionBuilder builder = new TransactionBuilder();
+			//builder.AddCoins(qbit.GetBalance(key.GetAddress(), true).Result.Operations.SelectMany(o=>o.ReceivedCoins).ToArray());
+			//builder.AddKeys(key);
+			//builder.Send(P2WPKH, Money.Coins(1.0m));
+			//builder.Send(P2WSH, Money.Coins(1.0m));
+			//builder.Send(P2SHP2WPKH, Money.Coins(1.0m));
+			//builder.Send(P2SHP2WSH, Money.Coins(1.0m));
+			//builder.SetChange(key.GetAddress());
+			//builder.SendEstimatedFees(new FeeRate(Money.Satoshis(60), 1));
+			//var tx = builder.BuildTransaction(true);
+
+			//var a = qbit.Broadcast(tx).Result;
+
+			var coins = qbit.GetTransaction(new uint256("56f87210814c8baef7068454e517a70da2f2103fc3ac7f687e32a228dc80e115")).Result.ReceivedCoins.Skip(2).ToArray();
+			
+			foreach(var coin in coins)
 			{
-				StreamWriter writer = new StreamWriter(fs);
-				var node = Node.ConnectToLocal(Network.Main);
-				node.VersionHandshake();
-				var chain = node.GetChain();
-
-				foreach(var block in node.GetBlocks(chain.EnumerateAfter(chain.Genesis).Where(c => c.Height % 100 == 0).Select(c => c.HashBlock)))
-				{
-					var blockinfo = chain.GetBlock(block.GetHash());
-					writer.WriteLine(blockinfo.Height + "," + block.Transactions.Count);
-				}
-				writer.Flush();
+				TransactionBuilder builder = new TransactionBuilder();
+				builder.AddCoins(coin);
+				builder.AddKnownRedeems(key.PubKey.ScriptPubKey, P2WPKH, P2WSH);
+				builder.AddKeys(key);
+				builder.SetChange(key.GetAddress());
+				builder.SendEstimatedFees(new FeeRate(Money.Satoshis(60), 1));
+				var tx = builder.BuildTransaction(true);
+				var a = qbit.Broadcast(tx).Result;
 			}
-			//var conf = IndexerConfiguration.FromConfiguration();
-			//var client = conf.CreateIndexerClient();
-			//var rules = client.GetAllWalletRules();
-			//var result = rules.GroupBy(r => r.WalletId);
-
-			//var indexer = conf.CreateIndexer();
-
-			//var b = client.GetBlock(new uint256("..."));
-			//indexer.IndexWalletOrderedBalance(0, b, rules);
-
-			//using (var tester = ServerTester.Create())
-			//{
-			//    var walletName = System.Web.NBitcoin.HttpUtility.UrlEncode("@098098.@##.balance?frpoeifpo")
-			//        .Replace("/", "%2F")
-			//        .Replace("?", "%3F");
-
-			//    tester.Send<string>(HttpMethod.Post, "wallets", new WalletModel()
-			//    {
-			//        Name = "@098098.//frpoeifpo"
-			//    });
-			//    tester.SendGet<string>("wallets/" + walletName);
-			//}
 		}
 
 		[Fact]
@@ -2039,7 +2040,7 @@ namespace QBitNinja.Tests
 				var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
 				tester.AssertTotal(bob.GetAddress(), 0);
 				Assert.True(balance.Operations.Count == 0);
-
+					
 				var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
 				balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
 				tester.AssertTotal(bob.GetAddress(), Money.Coins(1.0m));
@@ -2050,6 +2051,11 @@ namespace QBitNinja.Tests
 				var b = tester.ChainBuilder.EmitBlock(); //1
 				tester.UpdateServerChain();
 				balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+				Assert.True(balance.Operations[0].Confirmations == 1);
+				Assert.True(balance.Operations[0].BlockId == b.GetHash());
+
+				//Trying with Script
+				balance = tester.SendGet<BalanceModel>("balances/0x" + Encoders.Hex.EncodeData(bob.ScriptPubKey.ToBytes()));
 				Assert.True(balance.Operations[0].Confirmations == 1);
 				Assert.True(balance.Operations[0].BlockId == b.GetHash());
 

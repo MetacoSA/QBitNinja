@@ -238,12 +238,28 @@ namespace QBitNinja.Client
             return Post<BroadcastResponse>("transactions", Encoders.Hex.EncodeData(transaction.ToBytes()));
         }
 
-        public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
+		public Task<BalanceModel> GetBalance(Script dest, bool unspentOnly = false)
+		{
+			return Get<BalanceModel>("balances/" + ToHex(dest) + CreateParameters("unspentOnly", unspentOnly));
+		}
+
+		private string ToHex(Script dest)
+		{
+			return string.Format("0x{0}", Encoders.Hex.EncodeData(dest.ToBytes()));
+		}
+
+		public Task<BalanceModel> GetBalance(IDestination dest, bool unspentOnly = false)
         {
             var address = AssertAddress(dest);
             return Get<BalanceModel>("balances/" + EscapeUrlPart(address.ToString()) + CreateParameters("unspentOnly", unspentOnly));
         }
-        public Task<BalanceSummary> GetBalanceSummary(IDestination dest)
+
+		public Task<BalanceSummary> GetBalanceSummary(Script dest)
+		{
+			return Get<BalanceSummary>("balances/" + ToHex(dest) + "/summary" + CreateParameters());
+		}
+
+		public Task<BalanceSummary> GetBalanceSummary(IDestination dest)
         {
             var address = AssertAddress(dest);
             return Get<BalanceSummary>("balances/" + EscapeUrlPart(address.ToString()) + "/summary" + CreateParameters());
