@@ -31,6 +31,11 @@ namespace QBitNinja.ModelBinders
 				bindingContext.Model = new BalanceId(new Script(Encoders.Hex.DecodeData(key.Substring(2))));
 				return true;
 			}
+			if(key.Length > 3 && key.Length < 5000 && key.StartsWith("W-"))
+			{
+				bindingContext.Model = new BalanceId(key.Substring(2));
+				return true;
+			}
 			var data = Network.CreateFromBase58Data(key, actionContext.RequestContext.GetConfiguration().Indexer.Network);
 			if(!(data is IDestination))
 			{

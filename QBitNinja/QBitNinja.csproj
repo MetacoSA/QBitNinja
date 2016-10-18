@@ -180,6 +180,7 @@
     <Compile Include="JsonConverters\UIntJsonConverter.cs" />
     <Compile Include="ModelBinders\BalanceIdModelBinder.cs" />
     <Compile Include="ModelBinders\UIntModelBinding.cs" />
+    <Compile Include="Models\BalanceSelector.cs" />
     <Compile Include="Models\ChainStatus.cs" />
     <Compile Include="Models\ExtendedBlockInformation.cs" />
     <Compile Include="Models\NewBlockSubscription.cs" />
