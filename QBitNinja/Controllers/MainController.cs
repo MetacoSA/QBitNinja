@@ -839,6 +839,11 @@ namespace QBitNinja.Controllers
 				{
 					Name = "CSV",
 					Bit = 0
+				},
+				new
+				{
+					Name = "SEGWIT",
+					Bit = 1
 				}
 			};
 
