@@ -310,7 +310,9 @@ namespace QBitNinja.Tests
 				tester.ChainBuilder.EmitBlock();
 				tester.ChainBuilder.EmitBlock();
 				tester.ChainBuilder.EmitBlock(blockVersion: 536870913);
+				tester.ChainBuilder.EmitBlock(blockVersion: 536870914);
 				var response = tester.Send<VersionStatsResponse>(HttpMethod.Get, "versionstats");
+				var response2 = tester.Send<JObject>(HttpMethod.Get, "bip9");
 			}
 		}
 

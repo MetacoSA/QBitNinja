@@ -27,7 +27,7 @@ namespace QBitNinja.Controllers
 							"blocks/tip?format=raw&headeronly=true&extended=true",
 						}
                     },
-                     new RouteModel
+					new RouteModel
                     {
                         Template = "blocks/[blockFeature]/header",
                         Samples = new RouteSample[]
@@ -110,8 +110,17 @@ namespace QBitNinja.Controllers
                             new RouteSample("whatisit/3045022100a8a45e762fbda89f16a08de25274257eb2b7d9fbf481d359b28e47205c8bdc2f022007917ee618ae55a8936c75ad603623671f27ce8591010b769718ebc5ff295cf001","Signature"),
                              new RouteSample("whatisit/what is my future","Astrology")
                         }
-                    }
-                }
+                    },
+					new RouteModel
+					{
+						Template = "Miscellaneous",
+						Samples = new RouteSample[]
+						{
+							"versionstats",
+							"bip9"
+						}
+					},
+				}
             });
         }
     }
