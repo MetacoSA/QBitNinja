@@ -189,9 +189,9 @@ namespace QBitNinja.Client
                 throw new ArgumentNullException("network");
             Network = network;
             if(network == Network.Main)
-                BaseAddress = new Uri("http://api.qbit.ninja/", UriKind.Absolute);
+                BaseAddress = new Uri("https://api.qbit.ninja/", UriKind.Absolute);
             if(network == Network.TestNet)
-                BaseAddress = new Uri("http://tapi.qbit.ninja/", UriKind.Absolute);
+                BaseAddress = new Uri("https://tapi.qbit.ninja/", UriKind.Absolute);
             if(BaseAddress == null)
                 throw new NotSupportedException("Network not supported");
         }
