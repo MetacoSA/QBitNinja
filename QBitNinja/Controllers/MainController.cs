@@ -527,8 +527,9 @@ namespace QBitNinja.Controllers
 			};
 
 			int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedLocator.Height;
+			int lookback = (int)(Expiration.Ticks / this.Network.Consensus.PowTargetSpacing.Ticks);
 			if(at == null)
-				stopAtHeight = stopAtHeight - (int)(Expiration.Ticks / this.Network.Consensus.PowTargetSpacing.Ticks);
+				stopAtHeight = stopAtHeight - lookback;
 
 			var client = Configuration.Indexer.CreateIndexerClient();
 			client.ColoredBalance = colored;
@@ -538,7 +539,8 @@ namespace QBitNinja.Controllers
 				.GetOrderedBalance(balanceId, query)
 				.WhereNotExpired(Expiration)
 				.TakeWhile(_ => !cancel.IsCancellationRequested)
-				.TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight)
+				//Some confirmation of the fetched unconfirmed may hide behind stopAtHeigh
+				.TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight - lookback)
 				.AsBalanceSheet(Chain);
 
 			if(cancel.Token.IsCancellationRequested)
@@ -549,6 +551,7 @@ namespace QBitNinja.Controllers
 					ReasonPhrase = "The server can't fetch the balance summary because the balance is too big. Please, load it in several step with ?at={blockFeature} parameter. Once fully loaded after all the step, the summary will return in constant time."
 				});
 			}
+			RemoveBehind(diff, stopAtHeight);
 			RemoveConflicts(diff);
 
 			var unconfs = diff.Unconfirmed;
@@ -591,6 +594,26 @@ namespace QBitNinja.Controllers
 
 			summary.PrepareForSend(at, debug);
 			return summary;
+		}
+
+		private void RemoveBehind(BalanceSheet diff, int stopAtHeight)
+		{
+			RemoveBehind(diff.All, stopAtHeight);
+			RemoveBehind(diff.Confirmed, stopAtHeight);
+			RemoveBehind(diff.Unconfirmed, stopAtHeight);
+			RemoveBehind(diff.Prunable, stopAtHeight);
+		}
+
+		private void RemoveBehind(List<OrderedBalanceChange> changes, int stopAtHeight)
+		{
+			foreach(var change in changes.ToList())
+			{
+				if(change.BlockId != null)
+				{
+					if(change.Height <= stopAtHeight)
+						changes.Remove(change);
+				}
+			}
 		}
 
 		private ConfirmedBalanceLocator ToBalanceLocator(BlockFeature feature)
