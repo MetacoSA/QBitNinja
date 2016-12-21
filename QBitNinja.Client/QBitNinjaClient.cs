@@ -357,12 +357,24 @@ namespace QBitNinja.Client
             return Send<T>(HttpMethod.Get, null, relativePath, parameters);
         }
 
-        static HttpClient Client;
+        static HttpClient DefaultClient;
+		HttpClient Client = DefaultClient;
 		static QBitNinjaClient()
 		{
-			var client = new HttpClient(new DecompressionHandler(new HttpClientHandler()));
+			HttpClient client = CreateHttpClient(new HttpClientHandler());
+			DefaultClient = client;
+		}
+
+		public void SetHttpMessageHandler(HttpMessageHandler innerHandler)
+		{
+			Client = CreateHttpClient(innerHandler);
+		}
+
+		private static HttpClient CreateHttpClient(HttpMessageHandler innerHandler)
+		{
+			var client = new HttpClient(new DecompressionHandler(innerHandler));
 			client.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
-			Client = client;
+			return client;
 		}
 
 		public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
