@@ -100,6 +100,7 @@ namespace QBitNinja.Controllers
 
 		[HttpGet]
 		[Route("transactions/{txId}")]
+		[Route("tx/{txId}")]
 		public async Task<object> Transaction(
 			[ModelBinder(typeof(BitcoinSerializableModelBinder))]
 			uint256 txId,
@@ -718,7 +719,7 @@ namespace QBitNinja.Controllers
 			}
 
 			if(query.To.IsGreaterThan(query.From))
-				throw InvalidParameters("Invalid agurment : from < until");
+				throw InvalidParameters("Invalid argument : from < until");
 
 			var client = Configuration.Indexer.CreateIndexerClient();
 			client.ColoredBalance = colored;
