@@ -162,7 +162,7 @@ namespace QBitNinja
     {
         public QBitNinjaConfiguration()
         {
-            CoinbaseMaturity = 101;
+            CoinbaseMaturity = 100;
         }
         public static QBitNinjaConfiguration FromConfiguration()
         {
@@ -172,6 +172,7 @@ namespace QBitNinja
                 LocalChain = ConfigurationManager.AppSettings["LocalChain"],
                 ServiceBus = ConfigurationManager.AppSettings["ServiceBus"]
             };
+			conf.CoinbaseMaturity = conf.Indexer.Network.Consensus.CoinbaseMaturity;
             return conf;
         }
 

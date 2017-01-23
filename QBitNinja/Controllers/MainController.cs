@@ -642,7 +642,7 @@ namespace QBitNinja.Controllers
 
 		private bool IsMature(int height, ChainedBlock tip)
 		{
-			return (tip.Height - height + 1) >= Configuration.CoinbaseMaturity;
+			return  tip.Height - height >= Configuration.CoinbaseMaturity;
 		}
 
 		private bool IsMature(OrderedBalanceChange c, ChainedBlock tip)

@@ -722,7 +722,7 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				tester.Configuration.CoinbaseMaturity = 5;
+				tester.Configuration.CoinbaseMaturity = 4;
 				//Alice hit an invalid cached summary
 				var bob = new Key().GetBitcoinSecret(Network.TestNet);
 				var alice = new Key().GetBitcoinSecret(Network.TestNet);
@@ -948,7 +948,7 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				tester.Configuration.CoinbaseMaturity = 5;
+				tester.Configuration.CoinbaseMaturity = 4;
 				var bob = new Key().GetBitcoinSecret(Network.TestNet);
 				tester.ChainBuilder.EmitMoney("0.01", bob, coinbase: false);
 				tester.ChainBuilder.EmitMoney("0.1", bob, coinbase: true);
