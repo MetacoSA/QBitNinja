@@ -9,11 +9,13 @@ namespace QBitNinja.Tests
     public class ChainBuilder
     {
         private readonly ServerTester _parent;
+		Network _Network;
 
         public ChainBuilder(ServerTester serverTester)
         {
             _parent = serverTester;
-            Chain = new ConcurrentChain(Network.TestNet);
+			_Network = serverTester.Configuration.Indexer.Network;
+			Chain = new ConcurrentChain(_Network);
         }
 
         public bool SkipIndexer
@@ -109,11 +111,20 @@ namespace QBitNinja.Tests
         {
             var block = new Block();
             block.Header.Version = blockVersion;
-            block.Transactions.AddRange(_ongoingTransactions.ToList());
+			block.Header.Bits = Chain.Tip.GetNextWorkRequired(_Network);
+			block.Transactions.AddRange(_ongoingTransactions.ToList());
             block.Header.HashPrevBlock = Chain.Tip.HashBlock;
             block.Header.Nonce = nonce == null ? RandomUtils.GetUInt32() : nonce.Value;
             if (nonce == null) //if != null, probably want a deterministic block
                 block.Header.BlockTime = DateTime.UtcNow;
+
+			var chainedBlock = new ChainedBlock(block.Header, block.GetHash(), Chain.GetBlock(block.Header.HashPrevBlock));
+			while(!chainedBlock.Validate(_Network))
+			{
+				block.Header.Nonce = RandomUtils.GetUInt32();
+				chainedBlock = new ChainedBlock(block.Header, block.GetHash(), Chain.GetBlock(block.Header.HashPrevBlock));
+			}
+
             var indexer = CreateIndexer();
             var blockHash = block.GetHash();
 
@@ -129,8 +140,7 @@ namespace QBitNinja.Tests
                     indexer.Index(block);
                 }
             }
-            var prev = Chain.GetBlock(block.Header.HashPrevBlock);
-            Chain.SetTip(new ChainedBlock(block.Header, block.GetHash(), prev));
+            Chain.SetTip(chainedBlock);
             if (!SkipIndexer)
             {
                 indexer.IndexChain(Chain);

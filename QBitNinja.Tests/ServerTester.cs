@@ -52,6 +52,7 @@ namespace QBitNinja.Tests
             CleanTable = true;
             Address = "http://localhost:" + FindFreePort() + "/";
             Configuration = QBitNinjaConfiguration.FromConfiguration();
+			Configuration.Indexer.Network = Network.RegTest;
             Configuration.Indexer.StorageNamespace = ns;
             Stopwatch watch = new Stopwatch();
             var server = WebApp.Start(Address, appBuilder =>
