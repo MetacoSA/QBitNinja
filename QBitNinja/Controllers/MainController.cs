@@ -642,7 +642,7 @@ namespace QBitNinja.Controllers
 
 		private bool IsMature(int height, ChainedBlock tip)
 		{
-			return  tip.Height - height >= Configuration.CoinbaseMaturity;
+			return tip.Height - height >= Configuration.CoinbaseMaturity;
 		}
 
 		private bool IsMature(OrderedBalanceChange c, ChainedBlock tip)
@@ -732,15 +732,25 @@ namespace QBitNinja.Controllers
 				.AsBalanceSheet(Chain);
 
 			var balanceChanges = balance.All;
+
 			if(until != null && balance.Confirmed.Count != 0) //Strip unconfirmed that can appear after the last until
 			{
+				List<OrderedBalanceChange> oldUnconfirmed = new List<OrderedBalanceChange>();
+				var older = balanceChanges.Last();
 				for(int i = 0; i < balanceChanges.Count; i++)
 				{
 					var last = balanceChanges[i];
 					if(last.BlockId == null)
-						balanceChanges.RemoveAt(i);
+					{
+						if(last.SeenUtc < older.SeenUtc)
+							oldUnconfirmed.Add(last);
+					}
 					else
 						break;
+				}
+				foreach(var unconf in oldUnconfirmed)
+				{
+					balanceChanges.Remove(unconf);
 				}
 			}
 
@@ -853,7 +863,7 @@ namespace QBitNinja.Controllers
 			{
 				foreach(var stat in ((JArray)period["stats"]).OfType<JObject>().ToArray())
 				{
-					((JArray)period["stats"]).Remove(stat);					
+					((JArray)period["stats"]).Remove(stat);
 					if(stat["proposal"] != null)
 					{
 						period.Add(stat["proposal"].ToString(), stat);
