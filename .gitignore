@@ -184,3 +184,5 @@ Components/
 Build/*.nupkg
 /.vs/restore.dg
 /QBitNinja.Client.NETCore/project.lock.json
+/QBitNinja/Properties/PublishProfiles/bc2api - Web Deploy.pubxml
+/QBitNinja/Properties/PublishProfiles/bc2api - FTP.pubxml
