@@ -267,6 +267,20 @@ namespace QBitNinja.Client
 			return GetBalance(new BalanceSelector(dest), unspentOnly);
 		}
 
+		public Task<BalanceModel> GetBalanceBetween(
+			BalanceSelector dest,
+			BlockFeature from = null,
+			BlockFeature until = null,
+			bool includeImmature = false,
+			bool unspentOnly = false)
+		{
+
+			return Get<BalanceModel>("balances/" + EscapeUrlPart(dest.ToString())
+				+ CreateParameters("unspentOnly", unspentOnly,
+								   "until", until,
+								   "from", from));
+		}
+
 		public Task<BalanceSummary> GetBalanceSummary(BalanceSelector dest)
 		{
 			if(dest == null)
@@ -295,7 +309,9 @@ namespace QBitNinja.Client
 			return GetBalanceSummary(new BalanceSelector(dest));
         }
 
-        private string CreateParameters(params object[] parameters)
+
+
+		private string CreateParameters(params object[] parameters)
         {
             if(Colored != null)
             {
@@ -305,6 +321,8 @@ namespace QBitNinja.Client
             StringBuilder builder = new StringBuilder();
             for(int i = 0; i < parameters.Length - 1; i += 2)
             {
+				if(parameters[i + 1] == null)
+					continue;
                 builder.Append(parameters[i].ToString() + "=" + parameters[i + 1].ToString() + "&");
             }
             if(builder.Length == 0)
