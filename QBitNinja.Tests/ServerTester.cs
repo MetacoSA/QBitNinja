@@ -284,7 +284,7 @@ namespace QBitNinja.Tests
 
         public void AssertTotal(IDestination dest, Money total)
         {
-            var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
+            var address = dest.ScriptPubKey.GetDestinationAddress(Network).ToColoredAddress();
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
             Assert.Equal(summary.UnConfirmed.Amount + summary.Confirmed.Amount - summary.Immature.Amount, total);
 
@@ -298,7 +298,7 @@ namespace QBitNinja.Tests
         public void AssertTotal(IDestination dest, IMoney total)
         {
             var zero = total.Sub(total);
-            var address = dest.ScriptPubKey.GetDestinationAddress(Network.TestNet).ToColoredAddress();
+            var address = dest.ScriptPubKey.GetDestinationAddress(Network).ToColoredAddress();
             var summary = SendGet<BalanceSummary>("balances/" + address + "/summary");
             Assert.Equal(total, SelectAmount(zero, summary.UnConfirmed).Add(SelectAmount(zero, summary.Confirmed)).Add(SelectAmount(zero, summary.Immature)));
 
@@ -348,9 +348,17 @@ namespace QBitNinja.Tests
             return GetUnspentCoins(dest.ScriptPubKey);
         }
 
-        public ICoin[] GetUnspentCoins(Script dest)
+		public Network Network
+		{
+			get
+			{
+				return Configuration.Indexer.Network;
+			}
+		}
+
+		public ICoin[] GetUnspentCoins(Script dest)
         {
-            var balances = SendGet<BalanceModel>("balances/" + dest.GetDestinationAddress(Network.TestNet).ToColoredAddress());
+            var balances = SendGet<BalanceModel>("balances/" + dest.GetDestinationAddress(Network).ToColoredAddress());
 
             var spent = balances.Operations.SelectMany(o => o.SpentCoins).Select(c => c.Outpoint).ToDictionary(c => c);
             var received = balances.Operations.SelectMany(o => o.ReceivedCoins);

@@ -457,7 +457,7 @@ namespace QBitNinja.Tests
 				var listener = tester.CreateListenerTester();
 				var indexer = tester.Configuration.Indexer.CreateIndexerClient();
 
-				var bob = new Key().GetBitcoinSecret(Network.TestNet);
+				var bob = new Key().GetBitcoinSecret(Network.RegTest);
 
 
 				var wait = listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions);
@@ -594,7 +594,7 @@ namespace QBitNinja.Tests
 				Assert.True(response2.Block.ToBytes().SequenceEqual(block2.ToBytes()));
 
 				response2 = tester.SendGet<GetBlockResponse>("blocks/tip-10?headerOnly=true");
-				Assert.True(response2.AdditionalInformation.BlockHeader.ToBytes().SequenceEqual(Network.TestNet.GetGenesis().Header.ToBytes()));
+				Assert.True(response2.AdditionalInformation.BlockHeader.ToBytes().SequenceEqual(tester.Network.GetGenesis().Header.ToBytes()));
 
 				AssertEx.HttpError(404, () => tester.SendGet<byte[]>("blocks/tip+1?format=raw"));
 
@@ -724,8 +724,8 @@ namespace QBitNinja.Tests
 			{
 				tester.Configuration.CoinbaseMaturity = 4;
 				//Alice hit an invalid cached summary
-				var bob = new Key().GetBitcoinSecret(Network.TestNet);
-				var alice = new Key().GetBitcoinSecret(Network.TestNet);
+				var bob = new Key().GetBitcoinSecret(tester.Network);
+				var alice = new Key().GetBitcoinSecret(tester.Network);
 
 				tester.ChainBuilder.EmitMoney(Money.Parse("0.9"), alice, coinbase: true);
 				var firstCoinbase = tester.ChainBuilder.EmitBlock();
@@ -949,7 +949,7 @@ namespace QBitNinja.Tests
 			using(var tester = ServerTester.Create())
 			{
 				tester.Configuration.CoinbaseMaturity = 4;
-				var bob = new Key().GetBitcoinSecret(Network.TestNet);
+				var bob = new Key().GetBitcoinSecret(tester.Network);
 				tester.ChainBuilder.EmitMoney("0.01", bob, coinbase: false);
 				tester.ChainBuilder.EmitMoney("0.1", bob, coinbase: true);
 				var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
@@ -1271,7 +1271,7 @@ namespace QBitNinja.Tests
 				tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
 				{
 					MergePast = true,
-					Address = alice1.GetBitcoinSecret(Network.TestNet).GetAddress()
+					Address = alice1.GetBitcoinSecret(tester.Network).GetAddress()
 				});
 
 				var result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true");
@@ -1283,7 +1283,7 @@ namespace QBitNinja.Tests
 				tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
 				{
 					MergePast = true,
-					Address = alice2.GetBitcoinSecret(Network.TestNet).GetAddress()
+					Address = alice2.GetBitcoinSecret(tester.Network).GetAddress()
 				});
 
 				//Alice2 recieved money in the past, so cache should be invalidated
@@ -1630,8 +1630,8 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				var alice1 = new Key().GetBitcoinSecret(Network.TestNet);
-				var alice2 = new Key().GetBitcoinSecret(Network.TestNet);
+				var alice1 = new Key().GetBitcoinSecret(tester.Network);
+				var alice2 = new Key().GetBitcoinSecret(tester.Network);
 
 				tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), alice1);
 				tester.ChainBuilder.EmitMoney(Money.Coins(1.5m), alice2);
@@ -1700,8 +1700,8 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				var alice = new ExtKey().GetWif(Network.TestNet);
-				var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+				var alice = new ExtKey().GetWif(tester.Network);
+				var pubkeyAlice = alice.ExtKey.Neuter().GetWif(tester.Network);
 
 				tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
 				{
@@ -1741,18 +1741,18 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				var alice = new ExtKey().GetWif(Network.TestNet);
-				var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+				var alice = new ExtKey().GetWif(tester.Network);
+				var pubkeyAlice = alice.ExtKey.Neuter().GetWif(tester.Network);
 				var aliceName = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 10);
 
 				var listener = tester.CreateListenerTester();
 				tester.ChainBuilder.SkipIndexer = true;
 
-				var alice1 = pubkeyAlice.ExtPubKey.Derive(1).PubKey.GetAddress(Network.TestNet);
+				var alice1 = pubkeyAlice.ExtPubKey.Derive(1).PubKey.GetAddress(tester.Network);
 				tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), alice1);
-				var alice20 = pubkeyAlice.ExtPubKey.Derive(20).PubKey.GetAddress(Network.TestNet);
+				var alice20 = pubkeyAlice.ExtPubKey.Derive(20).PubKey.GetAddress(tester.Network);
 				tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), alice20); //Should be found because alice1 "extend" the scan
-				var alice41 = pubkeyAlice.ExtPubKey.Derive(41).PubKey.GetAddress(Network.TestNet);
+				var alice41 = pubkeyAlice.ExtPubKey.Derive(41).PubKey.GetAddress(tester.Network);
 				var waiter = listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions);
 				var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.2m), alice41); //But 41 is "outside" the gap limit
 				Assert.True(waiter.Wait(10000));
@@ -1779,7 +1779,7 @@ namespace QBitNinja.Tests
 				var keyset = tester.Send<KeySetData>(HttpMethod.Get, "wallets/" + aliceName + "/keysets/SingleNoP2SH");
 				Assert.Equal(21, keyset.State.NextUnused);
 
-				var alice21 = pubkeyAlice.ExtPubKey.Derive(21).PubKey.GetAddress(Network.TestNet);
+				var alice21 = pubkeyAlice.ExtPubKey.Derive(21).PubKey.GetAddress(tester.Network);
 				tester.ChainBuilder.EmitMoney(Money.Coins(1.3m), alice21); //Receiving on alice21 should fire a scan of 41
 
 				var waiter2 = listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks);
@@ -1801,8 +1801,8 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				var alice = new ExtKey().GetWif(Network.TestNet);
-				var pubkeyAlice = alice.ExtKey.Neuter().GetWif(Network.TestNet);
+				var alice = new ExtKey().GetWif(tester.Network);
+				var pubkeyAlice = alice.ExtKey.Neuter().GetWif(tester.Network);
 
 				tester.Send<WalletModel>(HttpMethod.Post, "wallets", new WalletModel()
 				{
@@ -1816,9 +1816,9 @@ namespace QBitNinja.Tests
 					P2SH = false
 				});
 				var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/0");
-				Assert.Equal(pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(Network.TestNet), result.Address);
+				Assert.Equal(pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(tester.Network), result.Address);
 				result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/1");
-				Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(Network.TestNet));
+				Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(tester.Network));
 				Assert.Equal(result.Path, KeyPath.Parse("1/2/3/1"));
 				Assert.Null(result.RedeemScript);
 
@@ -1830,12 +1830,12 @@ namespace QBitNinja.Tests
 				});
 				result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/Single/unused/0");
 				var redeem = pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.ScriptPubKey;
-				Assert.Equal(result.Address, redeem.Hash.GetAddress(Network.TestNet));
+				Assert.Equal(result.Address, redeem.Hash.GetAddress(tester.Network));
 				Assert.Equal(result.RedeemScript, redeem);
 				Assert.Equal(result.ScriptPubKey, redeem.Hash.ScriptPubKey);
 
-				var bob = new ExtKey().GetWif(Network.TestNet);
-				var pubkeyBob = bob.ExtKey.Neuter().GetWif(Network.TestNet);
+				var bob = new ExtKey().GetWif(tester.Network);
+				var pubkeyBob = bob.ExtKey.Neuter().GetWif(tester.Network);
 
 				//Can generate key on multi sig
 				tester.Send<HDKeySet>(HttpMethod.Post, "wallets/alice/keysets", new HDKeySet()
@@ -1853,7 +1853,7 @@ namespace QBitNinja.Tests
 							.GenerateScriptPubKey(1,
 							pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey,
 							pubkeyBob.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey);
-				Assert.Equal(result.Address, redeem.Hash.GetAddress(Network.TestNet));
+				Assert.Equal(result.Address, redeem.Hash.GetAddress(tester.Network));
 				Assert.Equal(result.RedeemScript, redeem);
 				Assert.Equal(result.ScriptPubKey, redeem.Hash.ScriptPubKey);
 
@@ -1885,8 +1885,8 @@ namespace QBitNinja.Tests
 				var gold = new AssetId(goldGuy);
 				var silver = new AssetId(silverGuy);
 
-				var bob = new Key().GetBitcoinSecret(Network.TestNet);
-				var alice = new Key().GetBitcoinSecret(Network.TestNet);
+				var bob = new Key().GetBitcoinSecret(tester.Network);
+				var alice = new Key().GetBitcoinSecret(tester.Network);
 
 				tester.AssertTotal(bob.GetAddress(), new Money(0));
 				tester.AssertTotal(bob.GetAddress(), new AssetMoney(gold, 0));
@@ -1996,7 +1996,7 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				var bob = new Key().GetBitcoinSecret(Network.TestNet);
+				var bob = new Key().GetBitcoinSecret(tester.Network);
 				var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
 
 				var tx1 = new TransactionBuilder()
@@ -2038,7 +2038,7 @@ namespace QBitNinja.Tests
 		{
 			using(var tester = ServerTester.Create())
 			{
-				var bob = new Key().GetBitcoinSecret(Network.TestNet);
+				var bob = new Key().GetBitcoinSecret(tester.Network);
 				var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
 				tester.AssertTotal(bob.GetAddress(), 0);
 				Assert.True(balance.Operations.Count == 0);
