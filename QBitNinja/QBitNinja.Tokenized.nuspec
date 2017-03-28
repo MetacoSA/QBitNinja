@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package >
 	<metadata>
-		<id>QBitNinja.Server</id>
-		<version>$version$</version>
-		<title>QBitNinja Server</title>
+		<id>NStratis.QBitNinja.Server</id>
+		<version>$version$-alpha</version>
+		<title>NStratis.QBitNinja Server</title>
 		<authors>QBitNinja</authors>
 		<owners>QBitNinja</owners>
 		<iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
@@ -12,11 +12,11 @@
 		<description>Server library for QBitNinja</description>
 		<summary>
 		</summary>
-		<projectUrl>https://github.com/QBitNinja/QBitNinja</projectUrl>
+		<projectUrl>https://github.com/MithrilMan/NStratis.QBitNinja</projectUrl>
 		<copyright>Copyright 2015</copyright>
-		<tags>bitcoin</tags>
+		<tags>stratis</tags>
 	</metadata>
 	<files>
-		<file src="bin\QBitNinja.pdb" target="lib\net45" />
+		<file src="bin\NStratis.QBitNinja.pdb" target="lib\net45" />
 	</files>
 </package>

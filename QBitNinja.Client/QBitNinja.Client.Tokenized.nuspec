@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package >
 	<metadata>
-		<id>QBitNinja.Client</id>
-		<version>$version$</version>
-		<title>QBitNinja Client</title>
+		<id>NStratis.QBitNinja.Client</id>
+		<version>$version$-alpha</version>
+		<title>NStratis.QBitNinja Client</title>
 		<authors>QBitNinja</authors>
 		<owners>QBitNinja</owners>
 		<iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
@@ -12,12 +12,12 @@
 		<description>Client library for QBitNinja server</description>
 		<summary>
 		</summary>
-		<projectUrl>https://github.com/QBitNinja/QBitNinja</projectUrl>
+		<projectUrl>https://github.com/MithrilMan/NStratis.QBitNinja</projectUrl>
 		<copyright>Copyright 2015</copyright>
-		<tags>bitcoin</tags>
+		<tags>stratis</tags>
 		<dependencies>
 			<group targetFramework="net45">
-				<dependency id="NBitcoin" version="3.0.0.51" />
+				<dependency id="NStratis" version="3.0.2.10" />
 			</group>
 
 			<group targetFramework=".NETStandard1.1">
@@ -25,7 +25,7 @@
 		</dependencies>
 	</metadata>	
 	<files>
-		<file src="bin\Release\QBitNinja.Client.*" target="lib\net45" />
+		<file src="bin\Release\NStratis.QBitNinja.Client.*" target="lib\net45" />
 		<file src="..\QBitNinja.Client.NETCore\bin\Release\netstandard1.1\*.*" target="lib\netstandard1.1" />
 	</files>
 </package>

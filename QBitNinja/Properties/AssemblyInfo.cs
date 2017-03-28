@@ -6,21 +6,21 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 #if SERVER
-[assembly: AssemblyTitle("QBitNinja")]
+[assembly: AssemblyTitle("NStratis.QBitNinja")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("QBitNinja")]
-[assembly: AssemblyProduct("QBitNinja")]
+[assembly: AssemblyCompany("NStratis.QBitNinja")]
+[assembly: AssemblyProduct("NStratis.QBitNinja")]
 [assembly: AssemblyCopyright("Copyright © QBitNinja 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: InternalsVisibleTo("QBitNinja.Tests")]
+[assembly: InternalsVisibleTo("NStratis.QBitNinja.Tests")]
 #else
-[assembly: AssemblyTitle("QBitNinja.Client")]
+[assembly: AssemblyTitle("NStratis.QBitNinja.Client")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("QBitNinja")]
-[assembly: AssemblyProduct("QBitNinja.Client")]
+[assembly: AssemblyCompany("NStratis.QBitNinja")]
+[assembly: AssemblyProduct("NStratis.QBitNinja.Client")]
 [assembly: AssemblyCopyright("Copyright © QBitNinja 2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -43,6 +43,6 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyInformationalVersion("1.0.3.38")]
-[assembly: AssemblyVersion("1.0.3.38")]
-[assembly: AssemblyFileVersion("1.0.3.38")]
+[assembly: AssemblyInformationalVersion("0.0.1.0")]
+[assembly: AssemblyVersion("0.0.1.0")]
+[assembly: AssemblyFileVersion("0.0.1.0")]

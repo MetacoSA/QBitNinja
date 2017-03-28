@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>QBitNinja.Listener.Console</RootNamespace>
-    <AssemblyName>QBitNinja.Listener.Console</AssemblyName>
+    <AssemblyName>NStratis.QBitNinja.Listener.Console</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -38,6 +38,10 @@
     <Reference Include="CommandLine">
       <HintPath>..\packages\CommandLineParser.1.9.71\lib\net45\CommandLine.dll</HintPath>
     </Reference>
+    <Reference Include="HashLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NStratis.3.0.2.10\lib\net45\HashLib.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Owin">
       <HintPath>..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
@@ -47,8 +51,8 @@
     <Reference Include="Microsoft.Owin.Hosting">
       <HintPath>..\packages\Microsoft.Owin.Hosting.3.0.1\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin, Version=3.0.1.7, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NBitcoin.3.0.1.7\lib\net45\NBitcoin.dll</HintPath>
+    <Reference Include="NBitcoin, Version=3.0.2.10, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NStratis.3.0.2.10\lib\net45\NBitcoin.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">

@@ -1,8 +1,8 @@
 {
     "version": "1.0.0-*",
-    "name" : "QBitNinja.Client",
+    "name" : "NStratis.QBitNinja.Client",
     "buildOptions": {
-        "outputName": "QBitNinja.Client",
+        "outputName": "NStratis.QBitNinja.Client",
         "define": ["CLIENT"],
         "compile": {
             "include": [
@@ -16,10 +16,10 @@
             ]
         }
     },
-    "dependencies": {
-        "System.Net.Http": "4.1.0",
-        "NBitcoin": "3.0.1.7"
-    },
+   "dependencies": {
+      "NStratis": "3.0.2.10",
+      "System.Net.Http": "4.1.0"
+   },
     "frameworks": {
         "netstandard1.1": {}
     }
