@@ -41,7 +41,7 @@ namespace Build
 
 
 			string output = input;
-			output = Replace(assemblyFile, output, "AssemblyVersion", "$version$");
+			output = Replace(assemblyFile, output, "AssemblyInformationalVersion", "$version$");
 			output = Replace(assemblyFile, output, "AssemblyProduct", "$author$");
 
 			File.WriteAllText(OutputFile, output);

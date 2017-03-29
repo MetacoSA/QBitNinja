@@ -52,7 +52,7 @@ namespace Build
             var manifest = Manifest.ReadFrom(new MemoryStream(File.ReadAllBytes(OriginalNuspec)), true);
             var assemblyFile = File.ReadAllText(AssemblyFile);
 
-            manifest.Metadata.Version = Find(assemblyFile, "AssemblyVersion");
+            manifest.Metadata.Version = Find(assemblyFile, "AssemblyInformationalVersion");
             NetPortableProfileTable.GetProfile("lol"); //prevent bug of concurrency on the table
             var tasks = Projects
                 .Select(i => System.Threading.Tasks.Task.Run(() =>

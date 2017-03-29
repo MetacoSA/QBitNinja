@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <package >
-	<metadata>
-		<id>NStratis.QBitNinja.Server</id>
-		<version>$version$-alpha</version>
-		<title>NStratis.QBitNinja Server</title>
-		<authors>QBitNinja</authors>
-		<owners>QBitNinja</owners>
-		<iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
-		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
-		<description>Server library for QBitNinja</description>
-		<summary>
-		</summary>
-		<projectUrl>https://github.com/MithrilMan/NStratis.QBitNinja</projectUrl>
-		<copyright>Copyright 2015</copyright>
-		<tags>stratis</tags>
-	</metadata>
-	<files>
-		<file src="bin\NStratis.QBitNinja.pdb" target="lib\net45" />
-	</files>
+   <metadata>
+      <id>NStratis.QBitNinja.Server</id>
+      <version>$version$</version>
+      <title>NStratis.QBitNinja Server</title>
+      <authors>QBitNinja</authors>
+      <owners>QBitNinja</owners>
+      <iconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</iconUrl>
+      <requireLicenseAcceptance>false</requireLicenseAcceptance>
+      <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+      <description>Server library for QBitNinja</description>
+      <summary>
+      </summary>
+      <projectUrl>https://github.com/MithrilMan/NStratis.QBitNinja</projectUrl>
+      <copyright>Copyright 2015</copyright>
+      <tags>stratis</tags>
+   </metadata>
+   <files>
+      <file src="bin\NStratis.QBitNinja.pdb" target="lib\net45"/>
+   </files>
 </package>

@@ -2,7 +2,7 @@
 <package >
 	<metadata>
 		<id>NStratis.QBitNinja.Client</id>
-		<version>$version$-alpha</version>
+		<version>$version$</version>
 		<title>NStratis.QBitNinja Client</title>
 		<authors>QBitNinja</authors>
 		<owners>QBitNinja</owners>
