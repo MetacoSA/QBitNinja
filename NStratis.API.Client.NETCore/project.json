@@ -1,0 +1,26 @@
+{
+   "version": "1.0.0-*",
+   "name": "NStratis.API.Client",
+   "buildOptions": {
+      "outputName": "NStratis.API.Client",
+      "define": [ "CLIENT" ],
+      "compile": {
+         "include": [
+            "../NStratis.API/JsonConverters/*.cs",
+            "../NStratis.API/Models/*.cs",
+            "../NStratis.API/Properties/AssemblyInfo.cs",
+            "../NStratis.API/Serializer.cs",
+            "../NStratis.API.Client/QBitNinjaClient.cs",
+            "../NStratis.API/CompressionHandler.cs",
+            "../NStratis.API/Compressors.cs"
+         ]
+      }
+   },
+   "dependencies": {
+      "NStratis": "3.0.2.10",
+      "System.Net.Http": "4.1.0"
+   },
+   "frameworks": {
+      "netstandard1.1": {}
+   }
+}
