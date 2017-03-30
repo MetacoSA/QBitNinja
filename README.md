@@ -1,15 +1,10 @@
-﻿QBit Ninja
+﻿NStratis.API
 ==========
 **An Open Source and powerful blockchain API**
 Showcase
 -------
-You can see the API documentation on [api.qbit.ninja](http://api.qbit.ninja/) and on [apiary](http://docs.qbitninja.apiary.io/).
 
-You can try the API in .NET with the [nuget package](http://www.nuget.org/packages/QBitninja.Client).
-
-Public servers : 
-* Mainnet : [api.qbit.ninja](http://api.qbit.ninja/)
-* Testnet : [tapi.qbit.ninja](http://tapi.qbit.ninja/)
+You can try the API in .NET with the [nuget package](http://www.nuget.org/packages/NStratis.API.Client).
 
 License
 -------

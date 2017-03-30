@@ -6,31 +6,31 @@
 	<UsingTask TaskName="Build.AddCoreDependencies" AssemblyFile="bin\Build.dll"></UsingTask>
 	
 	<ItemGroup>
-		<Projects Include="..\QBitNinja.Client/QBitNinja.Client.csproj"></Projects>
-		<ProjectsServer Include="..\QBitNinja/QBitNinja.csproj"></ProjectsServer>
+		<Projects Include="..\NStratis.API.Client/NStratis.API.Client.csproj"></Projects>
+		<ProjectsServer Include="..\NStratis.API/NStratis.API.csproj"></ProjectsServer>
 	</ItemGroup>
 	
 	<Target Name="Build">
 		<MSBuild Targets="Build" Properties="Configuration=$(Configuration)" Projects="@(Projects)"></MSBuild>
 
-		<Build.TokenizeTask InputFile="../QBitNinja.Client/QBitNinja.Client.Tokenized.nuspec"
-							AssemblyFile="../QBitNinja/Properties/AssemblyInfo.cs"
-							OutputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
+		<Build.TokenizeTask InputFile="../NStratis.API.Client/NStratis.API.Client.Tokenized.nuspec"
+							AssemblyFile="../NStratis.API/Properties/AssemblyInfo.cs"
+							OutputFile="../NStratis.API.Client/NStratis.API.Client.nuspec"
 							></Build.TokenizeTask>
 
 		<Build.AddCoreDependencies
 							TargetFramework=".NETStandard1.1"
 							FrameworkName="netstandard1.1"
-							InputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
-							ProjectJsonFile="../QBitNinja.Client.NETCore/project.json"
-							OutputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
+							InputFile="../NStratis.API.Client/NStratis.API.Client.nuspec"
+							ProjectJsonFile="../NStratis.API.Client.NETCore/project.json"
+							OutputFile="../NStratis.API.Client/NStratis.API.Client.nuspec"
 							></Build.AddCoreDependencies>
 
 		<MSBuild Targets="Build" Properties="Configuration=$(Configuration)" Projects="@(ProjectsServer)"></MSBuild>
 		<Build.CreateNuspec
-			OriginalNuspec="../QBitNinja/QBitNinja.Tokenized.nuspec"
-			ModifiedNuspec="../QBitNinja/QBitNinja.nuspec"
-			AssemblyFile="../QBitNinja/Properties/AssemblyInfo.cs"
+			OriginalNuspec="../NStratis.API/NStratis.API.Tokenized.nuspec"
+			ModifiedNuspec="../NStratis.API/NStratis.API.nuspec"
+			AssemblyFile="../NStratis.API/Properties/AssemblyInfo.cs"
 			Configuration="$(Configuration)"
 			Projects="@(ProjectsServer)"
 			></Build.CreateNuspec>

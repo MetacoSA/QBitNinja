@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package >
+   <metadata>
+      <id>NStratis.API.Server</id>
+      <version>$version$</version>
+      <title>NStratis.API Server</title>
+      <authors>Stratis Platform</authors>
+      <owners>$author$</owners>
+      <iconUrl>http://stratisplatform.com/files/2016/06/Stratis_Logo-Full_Colored_On-White.jpg</iconUrl>
+      <requireLicenseAcceptance>false</requireLicenseAcceptance>
+      <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+      <description>Server library for Stratis</description>
+      <summary>
+      </summary>
+      <projectUrl>https://github.com/stratisproject/NStratis.API</projectUrl>
+      <copyright>Copyright 2017</copyright>
+      <tags>bitcoin, blockchain, stratis</tags>
+   </metadata>
+   <files>
+      <file src="bin\NStratis.API.pdb" target="lib\net45"/>
+   </files>
+</package>
