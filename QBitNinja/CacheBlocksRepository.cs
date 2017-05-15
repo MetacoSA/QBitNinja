@@ -23,11 +23,15 @@ namespace QBitNinja
         List<Tuple<uint256, Block>> _LastAsked = new List<Tuple<uint256, Block>>();
 
 
-        #region IBlocksRepository Members
+		#region IBlocksRepository Members
+
+		int MaxBlocks = 70;
 
         public IEnumerable<NBitcoin.Block> GetBlocks(IEnumerable<NBitcoin.uint256> hashes, CancellationToken cancellation)
         {
             var asked = hashes.ToList();
+			if(asked.Count > MaxBlocks)
+				return _Repo.GetBlocks(hashes, cancellation);
             var lastAsked = _LastAsked;
 
             if(lastAsked != null && asked.SequenceEqual(lastAsked.Select(a => a.Item1)))
