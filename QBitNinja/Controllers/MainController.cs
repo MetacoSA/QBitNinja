@@ -468,6 +468,22 @@ namespace QBitNinja.Controllers
 		}
 
 		[HttpGet]
+		[Route("checkpoints")]
+		public async Task<JArray> GetCheckpoints()
+		{
+			JArray arr = new JArray();
+			var checkpoints = await this.Configuration.Indexer.CreateIndexer().GetCheckpointRepository().GetCheckpointsAsync();
+			foreach(var check in checkpoints)
+			{
+				var jobj = new JObject();
+				jobj.Add("Name", check.CheckpointName);
+				jobj.Add("Height", Chain.FindFork(check.BlockLocator).Height);
+				arr.Add(jobj);
+			}
+			return arr;
+		}
+
+		[HttpGet]
 		[Route("balances/{balanceId}/summary")]
 		public BalanceSummary AddressBalanceSummary(
 			[ModelBinder(typeof(BalanceIdModelBinder))]
