@@ -186,3 +186,5 @@ Build/*.nupkg
 /QBitNinja.Client.NETCore/project.lock.json
 /QBitNinja/Properties/PublishProfiles/bc2api - Web Deploy.pubxml
 /QBitNinja/Properties/PublishProfiles/bc2api - FTP.pubxml
+/QBitNinja/Properties/PublishProfiles/qbitninjawebapp - Web Deploy.pubxml
+/QBitNinja/Properties/PublishProfiles/qbitninjawebapp - FTP.pubxml
