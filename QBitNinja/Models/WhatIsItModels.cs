@@ -266,7 +266,69 @@ namespace QBitNinja.Client.Models
         }
     }
 
-    public class WhatIsAddress : WhatIsBase58
+	public class WhatIsExtPubKey : WhatIsBase58
+	{
+		public WhatIsExtPubKey(BitcoinExtPubKey data) : base(data)
+		{
+			PubKey = data.ExtPubKey.PubKey.ToString();
+			Hardened = data.ExtPubKey.IsHardened;
+			ChainCode = Encoders.Hex.EncodeData(data.ExtPubKey.ChainCode);
+			Child = data.ExtPubKey.Child;
+			Depth = data.ExtPubKey.Depth;
+			Fingerprint = Encoders.Hex.EncodeData(data.ExtPubKey.Fingerprint);
+		}
+
+		public string PubKey
+		{
+			get; set;
+		}
+
+		public bool Hardened
+		{
+			get; set;
+		}
+		public string ChainCode
+		{
+			get;
+			set;
+		}
+		public uint Child
+		{
+			get;
+			set;
+		}
+		public byte Depth
+		{
+			get;
+			set;
+		}
+		public string Fingerprint
+		{
+			get;
+			set;
+		}
+	}
+
+	public class WhatIsExtKey : WhatIsBase58
+	{
+		public WhatIsExtKey(BitcoinExtKey data) : base(data)
+		{
+			PrivateKey = Encoders.Hex.EncodeData(data.PrivateKey.ToBytes());
+			ExtPubKey = data.Neuter().ToString();
+		}
+
+		public string ExtPubKey
+		{
+			get; set;
+		}
+		public string PrivateKey
+		{
+			get; set;
+		}
+	}
+
+
+	public class WhatIsAddress : WhatIsBase58
     {
         public WhatIsAddress()
         {
@@ -384,7 +446,11 @@ namespace QBitNinja.Client.Models
                         return new WhatIsPrivateKey((BitcoinSecret)b58);
                     case Base58Type.COLORED_ADDRESS:
                         return new WhatIsColoredAddress((BitcoinColoredAddress)b58);
-                    default:
+					case Base58Type.EXT_SECRET_KEY:
+						return new WhatIsExtKey((BitcoinExtKey)b58);
+					case Base58Type.EXT_PUBLIC_KEY:
+						return new WhatIsExtPubKey((BitcoinExtPubKey)b58);
+					default:
                         return new WhatIsBase58(b58);
                 }
             }
