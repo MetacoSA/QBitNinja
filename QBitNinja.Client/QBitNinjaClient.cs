@@ -341,11 +341,11 @@ namespace QBitNinja.Client
             });
         }
 
-		private Base58Data AssertAddress(IDestination dest)
+		private IDestination AssertAddress(IDestination dest)
 		{
 			if(dest == null)
 				throw new ArgumentNullException("address");
-			var base58 = dest as Base58Data;
+			var base58 = dest as IBitcoinString;
 			var network = base58 == null ? Network : base58.Network;
 			var address = dest.ScriptPubKey.GetDestinationAddress(network);
 			if(address == null)

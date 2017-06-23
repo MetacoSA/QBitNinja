@@ -1,5 +1,6 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
+using System.Linq;
 using Newtonsoft.Json.Serialization;
 #if !CLIENT
 using QBitNinja.JsonConverters;
@@ -25,20 +26,11 @@ namespace QBitNinja.Client
 #endif
 		static void RegisterFrontConverters(JsonSerializerSettings settings, Network network = null)
         {
-            settings.Converters.Add(new BitcoinSerializableJsonConverter());
-            settings.Converters.Add(new MoneyJsonConverter());
-            settings.Converters.Add(new CoinJsonConverter(network));
-            settings.Converters.Add(new ScriptJsonConverter());
-            settings.Converters.Add(new UInt160JsonConverter());
-            settings.Converters.Add(new UInt256JsonConverter());
-            settings.Converters.Add(new NetworkJsonConverter());
-            settings.Converters.Add(new KeyPathJsonConverter());
-            settings.Converters.Add(new Base58DataJsonConverter()
-            {
-                Network = network
-            });
+			NBitcoin.JsonConverters.Serializer.RegisterFrontConverters(settings, network);
+			var unix = settings.Converters.OfType<NBitcoin.JsonConverters.DateTimeToUnixTimeConverter>().First();
+			settings.Converters.Remove(unix);
 #if !CLIENT
-            settings.Converters.Add(new BalanceLocatorJsonConverter());
+			settings.Converters.Add(new BalanceLocatorJsonConverter());
 #endif
             settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
         }

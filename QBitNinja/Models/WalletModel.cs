@@ -22,7 +22,7 @@ namespace QBitNinja.Client.Models
             get;
             set;
         }
-        public Base58Data Address
+        public IDestination Address
         {
             get;
             set;
@@ -81,7 +81,7 @@ namespace QBitNinja.Client.Models
             set;
         }
 
-        public Base58Data Address
+        public IDestination Address
         {
             get;
             set;

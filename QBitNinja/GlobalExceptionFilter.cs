@@ -1,4 +1,5 @@
 ﻿using Microsoft.WindowsAzure.Storage;
+using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
 using QBitNinja.JsonConverters;
 using QBitNinja.Models;

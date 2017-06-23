@@ -41,7 +41,7 @@ namespace QBitNinja
         public async Task<object> Find(string data)
         {
             data = data.Trim();
-            var b58 = NoException(() => WhatIsBase58.GetFromBase58Data(data));
+            var b58 = NoException(() => WhatIsBase58.GetFromBitcoinString(data));
             if (b58 != null)
             {
                 if (b58 is WhatIsAddress)
