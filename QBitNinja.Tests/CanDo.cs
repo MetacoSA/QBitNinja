@@ -1371,6 +1371,7 @@ namespace QBitNinja.Tests
 				var alice = new Key().GetBitcoinSecret(Network.TestNet);
 				AssertEx.HttpError(400, () => tester.SendGet<BalanceSummary>("balances/3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH")); //Do not accept mainnet
 				tester.SendGet<BalanceSummary>("balances/" + BitcoinAddress.Create("3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH").ToNetwork(Network.TestNet));
+				tester.CreateClient().GetBalanceSummary(BitcoinAddress.Create("3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH").ToNetwork(Network.TestNet)).GetAwaiter().GetResult();
 				var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
 				AssertEx.AssertJsonEqual(new BalanceSummary()
 				{

@@ -112,6 +112,11 @@ namespace QBitNinja.Tests
         }
 
 
+		public QBitNinja.Client.QBitNinjaClient CreateClient()
+		{
+			return new Client.QBitNinjaClient(Address, Network);
+		}
+
         public static ushort FindFreePort()
         {
             while(true)

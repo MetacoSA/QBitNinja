@@ -106,40 +106,39 @@ namespace QBitNinja.Client
 
 	internal class CompressedContent : HttpContent
 	{
-		private readonly HttpContent content;
-		private readonly Compressor compressor;
+		private readonly MemoryStream _Buffer = new MemoryStream();
 
 		public CompressedContent(HttpContent content, Compressor compressor)
 		{
-			this.content = content;
-			this.compressor = compressor;
-
-			AddHeaders();
+			using(content)
+			{
+				using(var compressionStream = compressor.CreateCompressionStream(_Buffer))
+				{
+					content.CopyToAsync(compressionStream).GetAwaiter().GetResult();
+					foreach(var header in content.Headers)
+					{
+						Headers.TryAddWithoutValidation(header.Key, header.Value);
+					}
+					Headers.ContentEncoding.Add(compressor.EncodingType);
+				}
+				Headers.ContentLength = _Buffer.Length;
+				_Buffer.Position = 0;
+			}
 		}
 
 		protected override bool TryComputeLength(out long length)
 		{
-			length = -1;
-			return false;
+			length = _Buffer.Length;
+			return true;
 		}
 
 		protected async override Task SerializeToStreamAsync(Stream stream, TransportContext context)
 		{
-			using(content)
+			using(_Buffer)
 			{
-				var contentStream = await content.ReadAsStreamAsync();
-				await compressor.Compress(contentStream, stream);
+				await _Buffer.CopyToAsync(stream);
 			}
 		}
 
-		private void AddHeaders()
-		{
-			foreach(var header in content.Headers)
-			{
-				Headers.TryAddWithoutValidation(header.Key, header.Value);
-			}
-
-			Headers.ContentEncoding.Add(compressor.EncodingType);
-		}
 	}
 }
