@@ -21,7 +21,7 @@ namespace QBitNinja.Client.Models
 		string _Name;
 		public override string ToString()
 		{
-			return base.ToString();
+			return _Name.ToString();
 		}
 	}
 	public class BalanceSelector
