@@ -3,91 +3,36 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9FC402ED-963F-4EC0-A5C0-38139473804E}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QBitNinja.Client", "QBitNinja.Client\QBitNinja.Client.csproj", "{E7D5192D-6003-488D-B0E0-A013CCA4C46F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja", "QBitNinja\QBitNinja.csproj", "{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QBitNinja", "QBitNinja\QBitNinja.csproj", "{CFC89FE3-4887-4830-ADE4-26F9C0D3E003}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Tests", "QBitNinja.Tests\QBitNinja.Tests.csproj", "{5CB38069-834E-4586-B101-036BDBCA7B92}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QBitNinja.Tests", "QBitNinja.Tests\QBitNinja.Tests.csproj", "{9FEEA244-F1EB-47AD-B441-DFB7CEEB8466}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client", "QBitNinja.Client\QBitNinja.Client.csproj", "{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client.Tests", "QBitNinja.Client.Tests\QBitNinja.Client.Tests.csproj", "{068A0D44-F058-4086-9EB5-9FF75B89EA74}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Build", "Build\Build.csproj", "{28BA4865-0990-4B5A-947E-143C700B1CB4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Listener.Console", "QBitNinja.Listener.Console\QBitNinja.Listener.Console.csproj", "{9A05CF5C-3BF7-4898-8268-53089008B64C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QBitNinja.Client.NETCore", "QBitNinja.Client.NETCore\QBitNinja.Client.NETCore.csproj", "{30AEC09B-8D39-417F-85C3-A33F8AFB2193}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QBitNinja.Listener.Console", "QBitNinja.Listener.Console\QBitNinja.Listener.Console.csproj", "{BDA34514-1BC1-4869-87E3-CE39D7E6FDDD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		QA|Any CPU = QA|Any CPU
-		QA-Testnet|Any CPU = QA-Testnet|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.QA|Any CPU.ActiveCfg = QA|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.QA|Any CPU.Build.0 = QA|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.QA-Testnet|Any CPU.ActiveCfg = QA-Testnet|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.QA-Testnet|Any CPU.Build.0 = QA-Testnet|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.QA|Any CPU.ActiveCfg = QA|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.QA|Any CPU.Build.0 = QA|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.QA-Testnet|Any CPU.ActiveCfg = QA-Testnet|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.QA-Testnet|Any CPU.Build.0 = QA-Testnet|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5CB38069-834E-4586-B101-036BDBCA7B92}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.QA|Any CPU.ActiveCfg = QA|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.QA|Any CPU.Build.0 = QA|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.QA-Testnet|Any CPU.ActiveCfg = QA-Testnet|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.QA-Testnet|Any CPU.Build.0 = QA-Testnet|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}.Release|Any CPU.Build.0 = Release|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.QA|Any CPU.ActiveCfg = QA|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.QA|Any CPU.Build.0 = QA|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.QA-Testnet|Any CPU.ActiveCfg = QA-Testnet|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.QA-Testnet|Any CPU.Build.0 = QA-Testnet|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.Release|Any CPU.Build.0 = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA|Any CPU.ActiveCfg = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA|Any CPU.Build.0 = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA-Testnet|Any CPU.ActiveCfg = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA-Testnet|Any CPU.Build.0 = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA|Any CPU.ActiveCfg = Release|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA|Any CPU.Build.0 = Release|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA-Testnet|Any CPU.ActiveCfg = Release|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA-Testnet|Any CPU.Build.0 = Release|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.QA|Any CPU.ActiveCfg = Debug|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.QA|Any CPU.Build.0 = Debug|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.QA-Testnet|Any CPU.ActiveCfg = Debug|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.QA-Testnet|Any CPU.Build.0 = Debug|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{30AEC09B-8D39-417F-85C3-A33F8AFB2193}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7D5192D-6003-488D-B0E0-A013CCA4C46F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7D5192D-6003-488D-B0E0-A013CCA4C46F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7D5192D-6003-488D-B0E0-A013CCA4C46F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7D5192D-6003-488D-B0E0-A013CCA4C46F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFC89FE3-4887-4830-ADE4-26F9C0D3E003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFC89FE3-4887-4830-ADE4-26F9C0D3E003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFC89FE3-4887-4830-ADE4-26F9C0D3E003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFC89FE3-4887-4830-ADE4-26F9C0D3E003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FEEA244-F1EB-47AD-B441-DFB7CEEB8466}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FEEA244-F1EB-47AD-B441-DFB7CEEB8466}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FEEA244-F1EB-47AD-B441-DFB7CEEB8466}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FEEA244-F1EB-47AD-B441-DFB7CEEB8466}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDA34514-1BC1-4869-87E3-CE39D7E6FDDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDA34514-1BC1-4869-87E3-CE39D7E6FDDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDA34514-1BC1-4869-87E3-CE39D7E6FDDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDA34514-1BC1-4869-87E3-CE39D7E6FDDD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
