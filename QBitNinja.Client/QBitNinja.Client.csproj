@@ -4,7 +4,8 @@
 		<DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
 		<Copyright>Copyright © Metaco SA 2017</Copyright>
 		<Description>Client library for QBitNinja server</Description>
-		<PackageId>QBitninja.Client</PackageId>
+		<PackageId>QBitNinja.Client</PackageId>
+		<Version>1.0.3.40</Version>
 		<PackageIconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</PackageIconUrl>
 		<PackageTags>bitcoin</PackageTags>
 		<PackageProjectUrl>https://github.com/MetacoSA/Qbitninja</PackageProjectUrl>
