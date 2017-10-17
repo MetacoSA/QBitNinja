@@ -1,8 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9FC402ED-963F-4EC0-A5C0-38139473804E}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja", "QBitNinja\QBitNinja.csproj", "{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Tests", "QBitNinja.Tests\QBitNinja.Tests.csproj", "{5CB38069-834E-4586-B101-036BDBCA7B92}"
@@ -15,14 +22,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Build", "Build\Build.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Listener.Console", "QBitNinja.Listener.Console\QBitNinja.Listener.Console.csproj", "{9A05CF5C-3BF7-4898-8268-53089008B64C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9FC402ED-963F-4EC0-A5C0-38139473804E}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "QBitNinja.Client.NETCore", "QBitNinja.Client.NETCore\QBitNinja.Client.NETCore.xproj", "{30AEC09B-8D39-417F-85C3-A33F8AFB2193}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QBitNinja.Client.NETCore", "QBitNinja.Client.NETCore\QBitNinja.Client.NETCore.csproj", "{30AEC09B-8D39-417F-85C3-A33F8AFB2193}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,5 +91,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D05EC165-7252-44F9-86D4-544A1C55D482}
 	EndGlobalSection
 EndGlobal

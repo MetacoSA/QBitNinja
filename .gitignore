@@ -184,7 +184,5 @@ Components/
 Build/*.nupkg
 /.vs/restore.dg
 /QBitNinja.Client.NETCore/project.lock.json
-/QBitNinja/Properties/PublishProfiles/bc2api - Web Deploy.pubxml
-/QBitNinja/Properties/PublishProfiles/bc2api - FTP.pubxml
-/QBitNinja/Properties/PublishProfiles/qbitninjawebapp - Web Deploy.pubxml
-/QBitNinja/Properties/PublishProfiles/qbitninjawebapp - FTP.pubxml
+/QBitNinja/Properties/PublishProfiles/*.pubxml
+/.vs/QBitNinja/v15/sqlite3/storage.ide
