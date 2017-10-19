@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
 		<TargetFramework>net452</TargetFramework>
 		<Version>1.0.3.41</Version>
@@ -13,6 +13,9 @@
 		<RepositoryType>git</RepositoryType>
 		<NoWarn>1591;1573;1572;1584;1570;3021</NoWarn>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<ApplicationIcon />
+		<OutputType>Library</OutputType>
+		<StartupObject />
 	</PropertyGroup>
 
 	<ItemGroup>
