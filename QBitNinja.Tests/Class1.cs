@@ -59,12 +59,6 @@ namespace QBitNinja.Client.Tests
         }
 
         [Fact]
-        public void temp()
-        {
-        }
-
-
-        [Fact]
         public void CanTryBroadcast()
         {
             var client = new QBitNinjaClient(Network.Main);

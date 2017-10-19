@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net452</TargetFramework>
-		<Version>1.0.3.40</Version>
+		<Version>1.0.3.41</Version>
 		<Copyright>Copyright © Metaco SA 2017</Copyright>
 		<Description>Server library for QBitNinja</Description>
 		<PackageId>QBitNinja.Server</PackageId>
@@ -16,17 +16,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NBitcoin" Version="4.0.0.3" />
-		<PackageReference Include="NBitcoin.Indexer" Version="2.0.7.23" />
+		<PackageReference Include="NBitcoin.Indexer" Version="2.0.7.25" />
 
 		<PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.3" />
 		<PackageReference Include="Microsoft.AspNet.WebApi" Version="5.2.3" />
 
-  		<PackageReference Include="Autofac.WebApi2" Version="3.4.0" />
-
-		<PackageReference Include="WindowsAzure.ServiceBus" Version="3.0.9" />
-		<PackageReference Include="WindowsAzure.Storage" Version="4.3.0" />
-		<PackageReference Include="Microsoft.WindowsAzure.ConfigurationManager" Version="3.1.0" />	
+  		<PackageReference Include="Autofac.WebApi2" Version="4.1.0" />
 
 		<Reference Include="System.Web" />
 		<Reference Include="System.Configuration" />
