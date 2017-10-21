@@ -1,39 +1,40 @@
-﻿using NBitcoin;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.DependencyInjection;
+using NBitcoin;
 using System;
-using System.Web.Http.ModelBinding;
-using System.Web.Http.ValueProviders;
+using System.Threading.Tasks;
 
 namespace QBitNinja.ModelBinders
 {
     public class Base58ModelBinder : IModelBinder
     {
-        #region IModelBinder Members
+		#region IModelBinder Members
 
-        public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
-        {
+		public Task BindModelAsync(ModelBindingContext bindingContext)
+		{
             if (!
                 (typeof(Base58Data).IsAssignableFrom(bindingContext.ModelType) ||
                 typeof(IDestination).IsAssignableFrom(bindingContext.ModelType)))
             {
-                return false;
-            }
+				return Task.CompletedTask;
+			}
 
             ValueProviderResult val = bindingContext.ValueProvider.GetValue(
                 bindingContext.ModelName);
-            if (val == null)
+            if (val.FirstValue == null)
             {
-                return false;
-            }
+				return Task.CompletedTask;
+			}
 
-            string key = val.RawValue as string;
+            string key = val.FirstValue;
 
-            var data = Network.Parse(key, actionContext.RequestContext.GetConfiguration().Indexer.Network);
+            var data = Network.Parse(key, bindingContext.ActionContext.HttpContext.RequestServices.GetRequiredService<Network>());
             if (!bindingContext.ModelType.IsInstanceOfType(data))
             {
                 throw new FormatException("Invalid base58 type");
             }
-            bindingContext.Model = data;
-            return true;
+            bindingContext.Result = ModelBindingResult.Success(data);
+            return Task.CompletedTask;
         }
 
         #endregion

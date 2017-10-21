@@ -100,9 +100,9 @@ namespace QBitNinja
 
         public void Delete()
         {
-            foreach (var child in Table.ExecuteQuery(AllInScope(Scope)))
+            foreach (var child in Table.ExecuteQueryAsync(AllInScope(Scope)).GetAwaiter().GetResult())
             {
-                Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
+                Ignore(404, () => Table.ExecuteAsync(TableOperation.Delete(child)).GetAwaiter().GetResult());
             }
         }
 
@@ -122,16 +122,16 @@ namespace QBitNinja
         {
             try
             {
-                Table.Execute(TableOperation.Delete(new DynamicTableEntity(Escape(Scope), Escape(itemId))
+                Table.ExecuteAsync(TableOperation.Delete(new DynamicTableEntity(Escape(Scope), Escape(itemId))
                 {
                     ETag = "*"
-                }));
+                })).GetAwaiter().GetResult();
                 if (includeChildren)
                 {
                     var children = Scope.GetChild(itemId);
-                    foreach (var child in Table.ExecuteQuery(AllInScope(children)))
+                    foreach (var child in Table.ExecuteQueryAsync(AllInScope(children)).GetAwaiter().GetResult())
                     {
-                        Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
+                        Ignore(404, () => Table.ExecuteAsync(TableOperation.Delete(child)).GetAwaiter().GetResult());
                     }
                 }
             }
@@ -154,10 +154,10 @@ namespace QBitNinja
 
         public T[] Read()
         {
-            return Table.ExecuteQuery(new TableQuery
+            return Table.ExecuteQueryAsync(new TableQuery
             {
                 FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
-            })
+            }).GetAwaiter().GetResult()
             .Select(e => Serializer.ToObject<T>(e.Properties["data"].StringValue))
             .ToArray();
         }

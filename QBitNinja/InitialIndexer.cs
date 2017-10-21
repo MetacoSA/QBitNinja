@@ -1,4 +1,5 @@
 ﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NBitcoin;
 using NBitcoin.DataEncoders;
@@ -77,9 +78,6 @@ namespace QBitNinja
             AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Balances), new IndexBalanceTask(_Conf.Indexer, null));
             AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Blocks), new IndexBlocksTask(_Conf.Indexer));
             AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Transactions), new IndexTransactionsTask(_Conf.Indexer));
-            AddTaskIndex(indexer.GetCheckpoint(IndexerCheckpoints.Wallets), new IndexBalanceTask(_Conf.Indexer, _Conf.Indexer.CreateIndexerClient().GetAllWalletRules()));
-            var subscription = indexer.GetCheckpointRepository().GetCheckpoint("subscriptions");
-            AddTaskIndex(subscription, new IndexNotificationsTask(_Conf, new SubscriptionCollection(_Conf.GetSubscriptionsTable().Read())));
         }
 
         Dictionary<string, Tuple<Checkpoint, IIndexTask>> _IndexTasks = new Dictionary<string, Tuple<Checkpoint, IIndexTask>>();
@@ -97,12 +95,12 @@ namespace QBitNinja
             {
                 try
                 {
-                    blobLock.Delete();
+                    blobLock.DeleteAsync().GetAwaiter().GetResult();
                 }
                 catch
                 {
-                    blobLock.BreakLease();
-                    blobLock.Delete();
+                    blobLock.BreakLeaseAsync(null).GetAwaiter().GetResult();
+                    blobLock.DeleteIfExistsAsync().GetAwaiter().GetResult();
                 }
             }
             catch (StorageException ex)
@@ -110,34 +108,33 @@ namespace QBitNinja
                 if (ex.RequestInformation == null || ex.RequestInformation.HttpStatusCode != 404)
                     throw;
             }
-            ListenerTrace.Info("Init blob deleted");
-            ListenerTrace.Info("Deleting queue...");
-            _Conf.Topics
-                 .InitialIndexing
-                 .GetNamespace().DeleteQueue(_Conf.Topics.InitialIndexing.Queue);
-            ListenerTrace.Info("Queue deleted");
+            Logs.Main.LogInformation("Init blob deleted");
+            Logs.Main.LogInformation("Deleting queue...");
+			_Conf.GetInitialIndexingQueued().Delete();
+			_Conf.GetInitialIndexingProcessing().Delete();
+            Logs.Main.LogInformation("Queue deleted");
         }
 
         public int Run(ChainBase chain = null)
         {
-            ListenerTrace.Info("Start initial indexing");
+            Logs.Main.LogInformation("Start initial indexing");
             int totalProcessed = 0;
             using (var node = _Conf.Indexer.ConnectToNode(false))
             {
 
-                ListenerTrace.Info("Handshaking...");
+                Logs.Main.LogInformation("Handshaking...");
                 node.VersionHandshake();
-                ListenerTrace.Info("Handshaked");
+                Logs.Main.LogInformation("Handshaked");
                 chain = chain ?? node.GetChain();
-                ListenerTrace.Info("Current chain at height " + chain.Height);
+                Logs.Main.LogInformation("Current chain at height " + chain.Height);
                 var blockRepository = new NodeBlocksRepository(node);
 
                 var blobLock = GetInitBlob();
                 string lease = null;
                 try
                 {
-                    blobLock.UploadText("Enqueuing");
-                    lease = blobLock.AcquireLease(null, null);
+                    blobLock.UploadTextAsync("Enqueuing").GetAwaiter().GetResult();
+                    lease = blobLock.AcquireLeaseAsync(null, null).GetAwaiter().GetResult();
                 }
                 catch (StorageException)
                 {
@@ -145,10 +142,10 @@ namespace QBitNinja
                 }
                 if (lease != null)
                 {
-                    ListenerTrace.Info("Queueing index jobs");
+                    Logs.Main.LogInformation("Queueing index jobs");
                     EnqueueJobs(blockRepository, chain, blobLock, lease);
                 }
-                ListenerTrace.Info("Dequeuing index jobs");
+                Logs.Main.LogInformation("Dequeuing index jobs");
 
                 while (true)
                 {
@@ -163,10 +160,10 @@ namespace QBitNinja
                     Console.WriteLine("Work remaining in the queue : " + description.MessageCountDetails.ActiveMessageCount);
                     if (msg == null)
                     {
-                        var state = blobLock.DownloadText();
+                        var state = blobLock.DownloadTextAsync().GetAwaiter().GetResult();
                         if (state == "Enqueuing" || description.MessageCountDetails.ActiveMessageCount != 0)
                         {
-                            ListenerTrace.Info("Additional work will be enqueued...");
+                            Logs.Main.LogInformation("Additional work will be enqueued...");
                             continue;
                         }
                         else
@@ -184,7 +181,7 @@ namespace QBitNinja
                         using(var sched = new CustomThreadPoolTaskScheduler(50, 100, range.ToString()))
                         {
 
-                            ListenerTrace.Info("Processing " + range.ToString());
+                            Logs.Main.LogInformation("Processing " + range.ToString());
                             totalProcessed++;
                             var task = _IndexTasks[range.Target];
                             BlockFetcher fetcher = new BlockFetcher(task.Item1, blockRepository, chain)
@@ -203,7 +200,7 @@ namespace QBitNinja
                                 while(!index.Wait(TimeSpan.FromMinutes(4)))
                                 {
                                     msg.Message.RenewLock();
-                                    ListenerTrace.Info("Lock renewed");
+                                    Logs.Main.LogInformation("Lock renewed");
                                 }
                             }
                             catch(AggregateException aex)
@@ -218,7 +215,7 @@ namespace QBitNinja
                     }
                 }
             }
-            ListenerTrace.Info("Initial indexing terminated");
+            Logs.Main.LogInformation("Initial indexing terminated");
             return totalProcessed;
         }
 
@@ -231,13 +228,13 @@ namespace QBitNinja
 
         private void UpdateCheckpoints(BlockLocator locator)
         {
-            ListenerTrace.Info("Work finished, updating checkpoints");
+            Logs.Main.LogInformation("Work finished, updating checkpoints");
             foreach (var chk in _IndexTasks.Select(kv => kv.Value.Item1))
             {
-                ListenerTrace.Info(chk.CheckpointName + "...");
+                Logs.Main.LogInformation(chk.CheckpointName + "...");
                 chk.SaveProgress(locator);
             }
-            ListenerTrace.Info("Checkpoints updated");
+            Logs.Main.LogInformation("Checkpoints updated");
         }
 
         private void EnqueueJobs(NodeBlocksRepository repo, ChainBase chain, CloudBlockBlob blobLock, string lease)
@@ -265,15 +262,15 @@ namespace QBitNinja
             EnqueueRange(chain, from, blockCount);
 
             var bytes = chain.Tip.GetLocator().ToBytes();
-            blobLock.UploadText(Encoders.Hex.EncodeData(bytes), null, new AccessCondition()
+            blobLock.UploadTextAsync(Encoders.Hex.EncodeData(bytes), null, new AccessCondition()
             {
                 LeaseId = lease
-            });
+            }, null, null).GetAwaiter().GetResult();
         }
 
         private void EnqueueRange(ChainBase chain, ChainedBlock startCumul, int blockCount)
         {
-            ListenerTrace.Info("Enqueing from " + startCumul.Height + " " + blockCount + " blocks");
+            Logs.Main.LogInformation("Enqueing from " + startCumul.Height + " " + blockCount + " blocks");
             if (blockCount == 0)
                 return;
             var tasks = _IndexTasks
@@ -284,7 +281,7 @@ namespace QBitNinja
                     Count = blockCount,
                     Target = t.Key
                 })
-                .Select(t => _Conf.Topics.InitialIndexing.AddAsync(t))
+                .Select(t => _Conf.GetInitialIndexingQueued().CreateAsync(t.ToString(), t, true))
                 .ToArray();
 
             try

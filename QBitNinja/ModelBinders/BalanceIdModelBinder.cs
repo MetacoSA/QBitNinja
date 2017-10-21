@@ -1,9 +1,10 @@
-﻿using NBitcoin;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.DependencyInjection;
+using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using System;
-using System.Web.Http.ModelBinding;
-using System.Web.Http.ValueProviders;
+using System.Threading.Tasks;
 
 namespace QBitNinja.ModelBinders
 {
@@ -11,42 +12,41 @@ namespace QBitNinja.ModelBinders
 	{
 		#region IModelBinder Members
 
-		public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
+		public async Task BindModelAsync(ModelBindingContext bindingContext)
 		{
 			if(!typeof(BalanceId).IsAssignableFrom(bindingContext.ModelType))
 			{
-				return false;
+				return;
 			}
 
 			ValueProviderResult val = bindingContext.ValueProvider.GetValue(
 				bindingContext.ModelName);
-			if(val == null)
+			if(val.FirstValue == null)
 			{
-				return false;
+				return;
 			}
 
-			string key = val.RawValue as string;
+			string key = val.FirstValue;
 			if(key.Length > 3 && key.Length < 5000 && key.StartsWith("0x"))
 			{
-				bindingContext.Model = new BalanceId(new Script(Encoders.Hex.DecodeData(key.Substring(2))));
-				return true;
+				bindingContext.Result = ModelBindingResult.Success(new BalanceId(new Script(Encoders.Hex.DecodeData(key.Substring(2)))));
+				return;
 			}
 			if(key.Length > 3 && key.Length < 5000 && key.StartsWith("W-"))
 			{
-				bindingContext.Model = new BalanceId(key.Substring(2));
-				return true;
+				bindingContext.Result = ModelBindingResult.Success(new BalanceId(key.Substring(2)));
+				return;
 			}
-			var data = Network.Parse(key, actionContext.RequestContext.GetConfiguration().Indexer.Network);
+			var data = Network.Parse(key, bindingContext.ActionContext.HttpContext.RequestServices.GetRequiredService<Network>());
 			if(!(data is IDestination))
 			{
 				throw new FormatException("Invalid base58 type");
 			}
 			if(data is BitcoinColoredAddress)
 			{
-				actionContext.Request.Properties["BitcoinColoredAddress"] = true;
+				bindingContext.ActionContext.HttpContext.Items["BitcoinColoredAddress"] = true;
 			}
-			bindingContext.Model = new BalanceId((IDestination)data);
-			return true;
+			bindingContext.Result = ModelBindingResult.Success(new BalanceId((IDestination)data));
 		}
 
 		#endregion

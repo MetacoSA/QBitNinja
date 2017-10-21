@@ -1,27 +1,29 @@
-﻿using NBitcoin.Indexer;
-using System.Web.Http.ModelBinding;
-using System.Web.Http.ValueProviders;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using NBitcoin.Indexer;
 
 namespace QBitNinja.ModelBinders
 {
     public class BalanceLocatorModelBinder : IModelBinder
     {
-        public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
-        {
+		public Task BindModelAsync(ModelBindingContext bindingContext)
+		{
             if (!typeof(BalanceLocator).IsAssignableFrom(bindingContext.ModelType))
             {
-                return false;
-            }
+				return Task.CompletedTask;
+			}
 
             ValueProviderResult val = bindingContext.ValueProvider.GetValue(
                 bindingContext.ModelName);
-            if (val == null)
+            if (val.FirstValue == null)
             {
-                return true;
-            }
-            string key = val.RawValue as string;
-            bindingContext.Model = BalanceLocator.Parse(key);
-            return true;
+				bindingContext.Model = null;
+				return Task.CompletedTask;
+			}
+            string key = val.FirstValue;
+            bindingContext.Result = ModelBindingResult.Success(BalanceLocator.Parse(key));
+			return Task.CompletedTask;
         }
-    }
+
+	}
 }

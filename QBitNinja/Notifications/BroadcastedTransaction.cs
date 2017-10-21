@@ -19,12 +19,12 @@ namespace QBitNinja.Notifications
         {
             Transaction = tx;
         }
-        public int Tried
-        {
-            get;
-            set;
-        }
-        public Transaction Transaction
+
+		public int Tried
+		{
+			get; set;
+		}
+		public Transaction Transaction
         {
             get;
             set;

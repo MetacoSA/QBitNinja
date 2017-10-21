@@ -1,5 +1,5 @@
-﻿using QBitNinja.Models;
-using System.Web.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using QBitNinja.Models;
 
 namespace QBitNinja.Controllers
 {

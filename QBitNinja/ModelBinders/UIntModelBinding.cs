@@ -1,72 +1,64 @@
-﻿using NBitcoin;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using NBitcoin;
 using System;
 using System.Reflection;
-using System.Web.Http.ModelBinding;
-using System.Web.Http.ValueProviders;
+using System.Threading.Tasks;
 
 namespace QBitNinja.ModelBinders
 {
     public class UInt256ModelBinding : IModelBinder
     {
-        #region IModelBinder Members
+		#region IModelBinder Members
 
-        public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
-        {
+		public Task BindModelAsync(ModelBindingContext bindingContext)
+		{
             if(!typeof(uint256).IsAssignableFrom(bindingContext.ModelType))
             {
-                return false;
+                return Task.CompletedTask;
             }
 
             ValueProviderResult val = bindingContext.ValueProvider.GetValue(
                 bindingContext.ModelName);
-            if(val == null)
-            {
-                return false;
-            }
 
-            string key = val.RawValue as string;
+            string key = val.FirstValue;
             if(key == null)
             {
-                bindingContext.Model = null;
-                return true;
+                bindingContext.Result = ModelBindingResult.Success(null);
+                return Task.CompletedTask;
             }
-            bindingContext.Model = uint256.Parse(key);
+            bindingContext.Result = ModelBindingResult.Success(uint256.Parse(key));
             if(bindingContext.Model.ToString().StartsWith(uint160.Zero.ToString()))
                 throw new FormatException("Invalid hash format");
-            return true;
-        }
+			return Task.CompletedTask;
+		}
 
         #endregion
     }
 
     public class UInt160ModelBinding : IModelBinder
     {
-        #region IModelBinder Members
+		#region IModelBinder Members
 
-        public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
-        {
+		public Task BindModelAsync(ModelBindingContext bindingContext)
+		{
             if(!typeof(uint160).IsAssignableFrom(bindingContext.ModelType))
             {
-                return false;
+                return Task.CompletedTask;
             }
 
             ValueProviderResult val = bindingContext.ValueProvider.GetValue(
                 bindingContext.ModelName);
-            if(val == null)
-            {
-                return false;
-            }
-
-            string key = val.RawValue as string;
+            
+            string key = val.FirstValue;
             if(key == null)
             {
-                bindingContext.Model = null;
-                return true;
+                bindingContext.Result = ModelBindingResult.Success(null);
+                return Task.CompletedTask;
             }
-            bindingContext.Model = uint160.Parse(key);
+            bindingContext.Result =	ModelBindingResult.Success(uint160.Parse(key));
             if(bindingContext.Model.ToString().StartsWith(uint160.Zero.ToString()))
                 throw new FormatException("Invalid hash format");
-            return true;
+            return Task.CompletedTask;
         }
 
         #endregion

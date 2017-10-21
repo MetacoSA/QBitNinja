@@ -7,9 +7,6 @@ using QBitNinja.JsonConverters;
 #else
 using QBitNinja.Client.JsonConverters;
 #endif
-#if !CLIENT
-using System.Net.Http.Formatting;
-#endif
 
 #if !CLIENT
 namespace QBitNinja
@@ -62,17 +59,5 @@ namespace QBitNinja.Client
         {
             return ToString<T>(response, null);
         }
-#if !CLIENT
-        public static MediaTypeFormatter JsonMediaTypeFormatter
-        {
-            get
-            {
-                var mediaFormat = new JsonMediaTypeFormatter();
-                RegisterFrontConverters(mediaFormat.SerializerSettings);
-                mediaFormat.Indent = true;
-                return mediaFormat;
-            }
-        }
-#endif
     }
 }

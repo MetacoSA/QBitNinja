@@ -1,6 +1,4 @@
-﻿using Microsoft.ServiceBus;
-using Microsoft.ServiceBus.Messaging;
-using NBitcoin.Indexer;
+﻿using NBitcoin.Indexer;
 using QBitNinja.Models;
 using QBitNinja.Notifications;
 using System;
@@ -8,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using System.Web.Http.Controllers;
 using System.Xml;
 
 namespace QBitNinja
@@ -24,10 +21,6 @@ namespace QBitNinja
                 RedeemScript = address.RedeemScript
             });
 
-        }
-        public static QBitNinjaConfiguration GetConfiguration(this HttpRequestContext ctx)
-        {
-            return ((QBitNinjaDependencyResolver)ctx.Configuration.DependencyResolver).Get<QBitNinjaConfiguration>();
         }
         public static T MinElement<T>(this IEnumerable<T> input, Func<T, int> predicate)
         {

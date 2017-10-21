@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage.Table;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
@@ -16,12 +17,10 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.ModelBinding;
 
 namespace QBitNinja.Controllers
 {
-	public class MainController : ApiController
+	public class MainController : Controller
 	{
 		public MainController(
 			ConcurrentChain chain,
@@ -36,7 +35,7 @@ namespace QBitNinja.Controllers
 			set;
 		}
 
-		public new QBitNinjaConfiguration Configuration
+		public QBitNinjaConfiguration Configuration
 		{
 			get;
 			set;
@@ -44,39 +43,37 @@ namespace QBitNinja.Controllers
 
 		[HttpPost]
 		[Route("transactions")]
-		public async Task<BroadcastResponse> Broadcast()
+		public async Task<IActionResult> Broadcast()
 		{
 			Transaction tx = null;
-			switch(this.Request.Content.Headers.ContentType.MediaType)
+			switch(this.Request.ContentType?.Split(";").FirstOrDefault())
 			{
 				case "application/json":
-					tx = NBitcoin.Transaction.Parse(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
+					tx = NBitcoin.Transaction.Parse(JsonConvert.DeserializeObject<string>(await ReadAsString(Request.Body)));
 					break;
-				case "application/octet-stream":
+				case "application/octet-stream" when Request.ContentLength.HasValue:
 					{
-						tx = new Transaction(await Request.Content.ReadAsByteArrayAsync());
+						tx = new Transaction(await Request.Body.ReadBytesAsync((int)Request.ContentLength.Value));
 						break;
 					}
 				default:
-					throw new HttpResponseException(HttpStatusCode.UnsupportedMediaType);
+					return new UnsupportedMediaTypeResult();
 			}
-			await Configuration
-				.Topics
-				.BroadcastedTransactions
-				.AddAsync(new BroadcastedTransaction(tx));
 
+			var broadcasted = new BroadcastedTransaction(tx);
+			
 			var hash = tx.GetHash();
 			for(int i = 0; i < 10; i++)
 			{
 				var indexed = await Configuration.Indexer.CreateIndexerClient().GetTransactionAsync(hash);
 				if(indexed != null)
-					return new BroadcastResponse()
+					return new ObjectResult(new BroadcastResponse()
 					{
 						Success = true
-					};
+					});
 				var reject = await Configuration.GetRejectTable().ReadOneAsync(hash.ToString());
 				if(reject != null)
-					return new BroadcastResponse()
+					return new ObjectResult(new BroadcastResponse()
 					{
 						Success = false,
 						Error = new BroadcastError()
@@ -84,10 +81,10 @@ namespace QBitNinja.Controllers
 							ErrorCode = reject.Code,
 							Reason = reject.Reason
 						}
-					};
+					});
 				await Task.Delay(100 * i);
 			}
-			return new BroadcastResponse()
+			return new ObjectResult(new BroadcastResponse()
 			{
 				Success = true,
 				Error = new BroadcastError()
@@ -95,7 +92,13 @@ namespace QBitNinja.Controllers
 					ErrorCode = NBitcoin.Protocol.RejectCode.INVALID,
 					Reason = "Unknown"
 				}
-			};
+			});
+		}
+
+		private async Task<string> ReadAsString(Stream body)
+		{
+			var stream = new StreamReader(body);
+			return await stream.ReadToEndAsync();
 		}
 
 		[HttpGet]
@@ -114,242 +117,11 @@ namespace QBitNinja.Controllers
 			return await RawTransaction(txId);
 		}
 
-		[HttpPost]
-		[Route("wallets")]
-		public WalletModel CreateWallet(WalletModel wallet)
-		{
-			if(string.IsNullOrEmpty(wallet.Name))
-				throw new FormatException("Invalid wallet name");
-			AssertValidUrlPart(wallet.Name, "wallet name");
-			var repo = Configuration.CreateWalletRepository();
-			if(!repo.Create(wallet))
-				throw Error(409, "wallet already exist");
-			return wallet;
-		}
-
-		[HttpPost]
-		[Route("subscriptions")]
-		public async Task<Subscription> AddSubscription(Subscription subscription)
-		{
-			if(subscription.Id == null)
-				subscription.Id = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
-
-			if(!await (Configuration
-			.GetSubscriptionsTable()
-			.CreateAsync(subscription.Id, subscription, false)))
-			{
-				throw Error(409, "notification already exist");
-			}
-
-			await Configuration
-				.Topics
-				.SubscriptionChanges
-				.AddAsync(new SubscriptionChange(subscription, true));
-			return subscription;
-		}
-
-		private void AssertValidUrlPart(string str, string fieldName)
-		{
-			if(str.Contains('/') || str.Contains('?'))
-				throw Error(400, "A field contains illegal characters (" + fieldName + ")");
-		}
-
 		private Exception Error(int httpCode, string reason)
 		{
 			return new QBitNinjaException(httpCode, reason);
 		}
-
-		[HttpGet]
-		[Route("wallets/{walletName}/balance")]
-		public BalanceModel WalletBalance(
-			string walletName,
-			[ModelBinder(typeof(BalanceLocatorModelBinder))]
-			BalanceLocator continuation = null,
-			[ModelBinder(typeof(BlockFeatureModelBinder))]
-			BlockFeature until = null,
-			[ModelBinder(typeof(BlockFeatureModelBinder))]
-			BlockFeature from = null,
-			bool includeImmature = false,
-			bool unspentOnly = false,
-			bool colored = false)
-		{
-			var balanceId = new BalanceId(walletName);
-			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
-		}
-
-		[HttpPost]
-		[Route("wallets/{walletname}/addresses")]
-		public WalletAddress AddWalletAddresses(
-			string walletName,
-			[FromBody]InsertWalletAddress insertAddress)
-		{
-			if(insertAddress.RedeemScript != null && insertAddress.Address == null)
-			{
-				insertAddress.Address = insertAddress.RedeemScript.GetScriptAddress(Network);
-			}
-			if(insertAddress.Address == null || !((insertAddress.Address) is IDestination))
-				throw Error(400, "Address is missing");
-
-			if(!insertAddress.IsCoherent())
-				throw Error(400, "The provided redeem script does not correspond to the given address");
-
-			var address = new WalletAddress();
-			address.Address = insertAddress.Address;
-			address.RedeemScript = insertAddress.RedeemScript;
-			address.UserData = insertAddress.UserData;
-			address.WalletName = walletName;
-
-			var repo = Configuration.CreateWalletRepository();
-
-			if(!repo.AddWalletAddress(address, insertAddress.MergePast))
-				throw Error(409, "This address already exist in the wallet");
-
-			var unused = Configuration.Topics.AddedAddresses.AddAsync(new[] { address });
-			return address;
-		}
-
-		[HttpGet]
-		[Route("wallets/{walletName}/addresses")]
-		public WalletAddress[] WalletAddresses(string walletName)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			return repo.GetAddresses(walletName);
-		}
-
-		[HttpDelete]
-		[Route("wallets/{walletName}/keysets/{keyset}")]
-		public bool DeleteKeyset(string walletName, string keyset)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			if(!repo.DeleteKeySet(walletName, keyset))
-			{
-				throw Error(404, "keyset not found");
-			}
-			return true;
-		}
-
-		[HttpPost]
-		[Route("wallets/{walletName}/keysets")]
-		public HDKeySet CreateKeyset(string walletName, [FromBody]HDKeySet keyset)
-		{
-			AssertValidUrlPart(keyset.Name, "Keyset name");
-			if(keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
-				throw Error(400, "ExtPubKeys not specified");
-			if(keyset.ExtPubKeys.Length < keyset.SignatureCount)
-				throw Error(400, "SignatureCount should not be higher than the number of HD Keys");
-			if(keyset.Path != null && keyset.Path.ToString().Contains("'"))
-				throw Error(400, "The keypath should not contains hardened children");
-			var repo = Configuration.CreateWalletRepository();
-
-			KeySetData keysetData = new KeySetData
-			{
-				KeySet = keyset,
-				State = new HDKeyState()
-			};
-			if(!repo.AddKeySet(walletName, keysetData))
-				throw Error(409, "Keyset already exists");
-
-			var newAddresses = repo.Scan(walletName, keysetData, 0, 20);
-
-			foreach(var addresses in newAddresses.Partition(20))
-			{
-				var unused = Configuration.Topics.AddedAddresses.AddAsync(addresses.ToArray());
-			}
-			return keyset;
-		}
-
-		[HttpGet]
-		[Route("wallets/{walletName}/keysets")]
-		public KeySetData[] GetKeysets(string walletName)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			var sets = repo.GetKeysets(walletName);
-			if(sets.Length == 0)
-				AssetWalletAndKeysetExists(walletName, null);
-			return sets;
-		}
-		[HttpGet]
-		[Route("wallets/{walletName}/keysets/{keysetName}")]
-		public KeySetData GetKeyset(string walletName, string keysetName)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			return AssetWalletAndKeysetExists(walletName, keysetName);
-		}
-
-		[HttpGet]
-		[Route("wallets/{walletName}/keysets/{keysetName}/unused/{lookahead}")]
-		public HDKeyData GetUnused(string walletName, string keysetName, int lookahead)
-		{
-			if(lookahead < 0 || lookahead > 20)
-				throw Error(400, "lookahead should be between 0 and 20");
-			var keySet = AssetWalletAndKeysetExists(walletName, keysetName);
-			var repo = Configuration.CreateWalletRepository();
-			return keySet.GetUnused(lookahead);
-		}
-
-		private KeySetData AssetWalletAndKeysetExists(string walletName, string keysetName)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			var wallet = repo.GetWallet(walletName);
-			if(wallet == null)
-				throw Error(404, "wallet does not exists");
-			if(keysetName != null)
-			{
-				var keyset = repo.GetKeySetData(walletName, keysetName);
-				if(keyset == null)
-				{
-					throw Error(404, "keyset does not exists");
-				}
-				return keyset;
-			}
-			return null;
-		}
-		[HttpGet]
-		[Route("wallets/{walletName}/keysets/{keysetName}/keys")]
-		public HDKeyData[] GetKeys(string walletName, string keysetName)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			var keys = repo.GetKeys(walletName, keysetName);
-			if(keys.Length == 0)
-			{
-				AssetWalletAndKeysetExists(walletName, keysetName);
-			}
-			return keys;
-		}
-
-		[HttpGet]
-		[Route("wallets/{walletName}/summary")]
-		public BalanceSummary AddressBalanceSummary(
-			string walletName,
-			[ModelBinder(typeof(BlockFeatureModelBinder))]
-			BlockFeature at = null,
-			bool debug = false,
-			bool colored = false)
-		{
-			BalanceId id = new BalanceId(walletName);
-			return BalanceSummary(id, at, debug, colored);
-		}
-
-		[HttpGet]
-		[Route("wallets")]
-		public WalletModel[] Wallets()
-		{
-			var repo = Configuration.CreateWalletRepository();
-			return repo.Get();
-		}
-
-
-		[HttpGet]
-		[Route("wallets/{walletName}")]
-		public WalletModel GetWallet(string walletName)
-		{
-			var repo = Configuration.CreateWalletRepository();
-			var result = repo.GetWallet(walletName);
-			if(result == null)
-				throw Error(404, "Wallet not found");
-			return result;
-		}
-
+		
 		internal async Task<GetTransactionResponse> JsonTransaction(uint256 txId, bool colored)
 		{
 			var client = Configuration.Indexer.CreateIndexerClient();
@@ -688,7 +460,7 @@ namespace QBitNinja.Controllers
 		//Property passed by BalanceIdModelBinder
 		private bool IsColoredAddress()
 		{
-			return ActionContext.Request.Properties.ContainsKey("BitcoinColoredAddress");
+			return HttpContext.Items["BitcoinColoredAddress"] is bool b && b;
 		}
 
 		TimeSpan Expiration = TimeSpan.FromHours(24.0);
@@ -874,7 +646,7 @@ namespace QBitNinja.Controllers
 		public JObject GetBIP9()
 		{
 			var stats = GetVersionStats();
-			var result = JObject.Parse(JsonConvert.SerializeObject(stats, base.Configuration.Formatters.JsonFormatter.SerializerSettings));
+			var result = JObject.Parse(Serializer.ToString(stats, Network));
 			foreach(var period in result.OfType<JProperty>().Select(p => (JObject)p.Value))
 			{
 				foreach(var stat in ((JArray)period["stats"]).OfType<JObject>().ToArray())

@@ -1,37 +1,38 @@
-﻿using QBitNinja.Models;
-using System.Web.Http.ModelBinding;
-using System.Web.Http.ValueProviders;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using QBitNinja.Models;
+using System.Threading.Tasks;
 
 namespace QBitNinja.ModelBinders
 {
     public class BlockFeatureModelBinder : IModelBinder
     {
-        #region IModelBinder Members
+		#region IModelBinder Members
 
-        public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
-        {
+		public Task BindModelAsync(ModelBindingContext bindingContext)
+		{
             if (!typeof(BlockFeature).IsAssignableFrom(bindingContext.ModelType))
             {
-                return false;
-            }
+				return Task.CompletedTask;
+			}
 
             ValueProviderResult val = bindingContext.ValueProvider.GetValue(
                 bindingContext.ModelName);
-            if (val == null)
+            if (val.FirstValue == null)
             {
-                return true;
+				bindingContext.Result = ModelBindingResult.Success(null);
+                return Task.CompletedTask;
             }
 
-            string key = val.RawValue as string;
+            string key = val.FirstValue as string;
             if (key == null)
             {
                 bindingContext.Model = null;
-                return true;
+                return Task.CompletedTask;
             }
 
             BlockFeature feature = BlockFeature.Parse(key);
             bindingContext.Model = feature;
-            return true;
+            return Task.CompletedTask;
         }
 
         #endregion

@@ -1,4 +1,6 @@
-﻿using NBitcoin;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using NBitcoin;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,21 +10,16 @@ using System.Threading.Tasks;
 
 namespace QBitNinja
 {
-    public static class ListenerTrace
+    internal static class Logs
     {
-        static TraceSource _Source = new TraceSource("QBitNinja.Listener");
-        public static void Error(string info, Exception ex)
-        {
-            _Source.TraceEvent(TraceEventType.Error, 0, info + "\r\n" + Utils.ExceptionToString(ex));
-        }
-        public static void Info(string info)
-        {
-            _Source.TraceInformation(info);
-        }
+		public static void Configure(ILoggerFactory logger)
+		{
+			Main = logger.CreateLogger("QBitNinja"); 
+		}
 
-        internal static void Verbose(string info)
-        {
-            _Source.TraceEvent(TraceEventType.Verbose, 0, info);
-        }
+		public static ILogger Main
+		{
+			get; set;
+		} = NullLogger.Instance;
     }
 }

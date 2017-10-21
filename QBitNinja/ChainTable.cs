@@ -40,7 +40,7 @@ namespace QBitNinja
             var str = Serializer.ToString(item);
             var entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
             PutData(entity, str);
-            Table.Execute(TableOperation.InsertOrReplace(entity));
+            Table.ExecuteAsync(TableOperation.InsertOrReplace(entity)).GetAwaiter().GetResult();
         }
 
 
@@ -51,16 +51,16 @@ namespace QBitNinja
             {
                 ETag = "*"
             };
-            Table.Execute(TableOperation.Delete(entity));
+            Table.ExecuteAsync(TableOperation.Delete(entity)).GetAwaiter().GetResult();
         }
         public void Delete()
         {
-            foreach(var entity in Table.ExecuteQuery(new TableQuery()
+            foreach(var entity in Table.ExecuteQueryAsync(new TableQuery()
             {
                 FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
-            }))
+            }).GetAwaiter().GetResult())
             {
-                Table.Execute(TableOperation.Delete(entity));
+                Table.ExecuteAsync(TableOperation.Delete(entity)).GetAwaiter().GetResult();
             }
         }
 
@@ -118,7 +118,7 @@ namespace QBitNinja
             do
             {
                 tableQuery.TakeCount = pagesEnumerator.MoveNext() ? (int?)pagesEnumerator.Current : null;
-                var segment = table.ExecuteQuerySegmented(tableQuery, continuation);
+                var segment = table.ExecuteQuerySegmentedAsync(tableQuery, continuation).GetAwaiter().GetResult();
                 continuation = segment.ContinuationToken;
                 foreach(var entity in segment)
                 {
