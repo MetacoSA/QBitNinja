@@ -182,7 +182,6 @@ Components/
 /.vs/config/applicationhost.config
 /QBitNinja.Hosting.Azure.sln
 Build/*.nupkg
-/.vs/restore.dg
 /QBitNinja.Client.NETCore/project.lock.json
 /QBitNinja/Properties/PublishProfiles/*.pubxml
-/.vs/QBitNinja/v15/sqlite3/storage.ide
+.vs/
