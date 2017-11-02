@@ -199,8 +199,8 @@ namespace QBitNinja.Client.Models
                             coloredDetail.Asset = coin.AssetId.GetWif(network);
                             coloredDetails.Add(coin.AssetId, coloredDetail);
                         }
-                        coloredDetail.Quantity += (long)coin.Asset.Quantity;
-                        coloredDetail.Received += (long)coin.Asset.Quantity;
+                        coloredDetail.Quantity += (long)coin.Amount.Quantity;
+                        coloredDetail.Received += (long)coin.Amount.Quantity;
                     }
                     foreach(var coin in change.SpentCoins.OfType<ColoredCoin>())
                     {
@@ -211,7 +211,7 @@ namespace QBitNinja.Client.Models
                             coloredDetail.Asset = coin.AssetId.GetWif(network);
                             coloredDetails.Add(coin.AssetId, coloredDetail);
                         }
-                        coloredDetail.Quantity -= (long)coin.Asset.Quantity;
+                        coloredDetail.Quantity -= (long)coin.Amount.Quantity;
                     }
                 }
                 details.Assets = coloredDetails.Values.ToArray();

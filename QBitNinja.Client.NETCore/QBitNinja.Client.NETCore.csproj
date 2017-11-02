@@ -21,8 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Net.Http" Version="4.1.1" />
-    <PackageReference Include="NBitcoin" Version="4.0.0.3" />
+    <PackageReference Include="NBitcoin" Version="4.0.0.38" />
   </ItemGroup>
 
 </Project>

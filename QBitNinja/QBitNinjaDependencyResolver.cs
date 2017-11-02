@@ -8,6 +8,7 @@ using NBitcoin;
 using NBitcoin.Indexer;
 using System.IO;
 using System.Threading;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace QBitNinja
 {
@@ -147,7 +148,7 @@ namespace QBitNinja
         {
             object result;
 
-            return _container.TryResolve(serviceType, out result) ? result : _defaultResolver.GetService(serviceType);
+			return _container.TryResolve(serviceType, out result) ? result : _defaultResolver.GetService(serviceType);
         }
 
         public IEnumerable<object> GetServices(Type serviceType)

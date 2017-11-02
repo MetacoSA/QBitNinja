@@ -110,7 +110,7 @@ namespace QBitNinja
             }
         }
 
-        private IEnumerable<DynamicTableEntity> ExecuteBalanceQuery(CloudTable table, TableQuery tableQuery, IEnumerable<int> pages)
+        private IEnumerable<DynamicTableEntity> ExecuteBalanceQuery(CloudTable table, TableQuery<DynamicTableEntity> tableQuery, IEnumerable<int> pages)
         {
             pages = pages ?? new int[0];
             var pagesEnumerator = pages.GetEnumerator();
