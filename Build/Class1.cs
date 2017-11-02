@@ -61,15 +61,9 @@ namespace Build
                     {
                         {"Configuration", Configuration}
                     });
-                    var project = collection.LoadProject(i.ItemSpec);
-                    bool portable = false;
-                    var prop = project.AllEvaluatedProperties.OfType<ProjectProperty>().FirstOrDefault(b => b.Name == "TargetFrameworkProfile");
-                    string targetFramework = "net45";
-                    if (prop != null)
-                    {
-                        targetFramework = FindMagicFreakingNugetString(prop.EvaluatedValue);
-                        portable = true;
-                    }
+
+					string targetFramework = "net462";
+					var project = collection.LoadProject(i.ItemSpec);
                     Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
                     var instance = project.CreateProjectInstance();
                     var result = new BuildManager().Build(new BuildParameters(), new BuildRequestData(instance, new string[] { "GetTargetPath" }));
@@ -78,7 +72,7 @@ namespace Build
                     {
                         Generated = dll,
                         PackageConfig = new PackageReferenceFile(Path.Combine(Path.GetDirectoryName(project.FullPath), "packages.config")),
-                        TargetFramework = portable ? "portable-" + targetFramework : targetFramework,
+                        TargetFramework = targetFramework,
                     };
                 })).ToArray();
 
@@ -120,10 +114,6 @@ namespace Build
 
         private string FindMagicFreakingNugetString(string profile)
         {
-            if (profile == "Profile259")
-                return "net45+win+wpa81+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10";
-            if (profile == "Profile111")
-                return "net45+win+wpa81+Xamarin.iOS10+MonoAndroid10+MonoTouch10";
             var prof = NetPortableProfileTable.GetProfile(profile);
             if(prof == null)
                 throw new NotSupportedException("Profile not supported " + profile);
