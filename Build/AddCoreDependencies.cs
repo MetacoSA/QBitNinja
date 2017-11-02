@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml;
 
 namespace Build
 {
@@ -42,23 +43,13 @@ namespace Build
 
 		public override bool Execute()
 		{
-			var projectJson = JObject.Parse(File.ReadAllText(ProjectJsonFile));
+			var projectProj = File.ReadAllText(ProjectJsonFile);
+			XmlDocument doc = new XmlDocument();
+			doc.LoadXml(projectProj);
 			StringBuilder builder = new StringBuilder();
-			foreach(var dep in projectJson["dependencies"].Children().OfType<JProperty>())
+			foreach(var node in doc.SelectNodes("//PackageReference").OfType<XmlNode>())
 			{
-				AddDependency(builder, dep);
-			}
-
-			if(!String.IsNullOrEmpty(FrameworkName))
-			{
-				var deps = projectJson["frameworks"][FrameworkName]["dependencies"];
-				if(deps != null)
-				{
-					foreach(var dep in deps.Children().OfType<JProperty>())
-					{
-						AddDependency(builder, dep);
-					}
-				}
+				AddDependency(builder, node);
 			}
 
 			var nuspec = File.ReadAllText(InputFile);
@@ -68,9 +59,9 @@ namespace Build
 			return true;
 		}
 
-		private static void AddDependency(StringBuilder builder, JProperty dep)
+		private static void AddDependency(StringBuilder builder, XmlNode dep)
 		{
-			builder.AppendLine("<dependency id=\"" + dep.Name + "\" version=\"[" + (string)dep.Value + ", )\" />");
+			builder.AppendLine("<dependency id=\"" + dep.Attributes["Include"].Value + "\" version=\"[" + dep.Attributes["Version"].Value + ", )\" />");
 		}
 	}
 }

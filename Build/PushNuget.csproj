@@ -22,7 +22,7 @@
 							TargetFramework=".NETStandard1.1"
 							FrameworkName="netstandard1.1"
 							InputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
-							ProjectJsonFile="../QBitNinja.Client.NETCore/project.json"
+							ProjectJsonFile="../QBitNinja.Client.NETCore/QBitNinja.Client.NETCore.csproj"
 							OutputFile="../QBitNinja.Client/QBitNinja.Client.nuspec"
 							></Build.AddCoreDependencies>
 

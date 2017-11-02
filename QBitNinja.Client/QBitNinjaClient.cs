@@ -379,7 +379,7 @@ namespace QBitNinja.Client
 		HttpClient Client = DefaultClient;
 		static QBitNinjaClient()
 		{
-			HttpClient client = CreateHttpClient(new HttpClientHandler());
+			HttpClient client = CreateHttpClient(new HttpClientHandler() { UseCookies = false });
 			DefaultClient = client;
 		}
 
@@ -397,7 +397,8 @@ namespace QBitNinja.Client
 
 		public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
         {
-            var uri = GetFullUri(relativePath, parameters);            
+            var uri = GetFullUri(relativePath, parameters);   
+			
             var message = new HttpRequestMessage(method, uri);
             if(body != null)
             {
