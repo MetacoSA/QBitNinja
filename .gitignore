@@ -185,3 +185,4 @@ Build/*.nupkg
 /QBitNinja.Client.NETCore/project.lock.json
 /QBitNinja/Properties/PublishProfiles/*.pubxml
 .vs/
+/Build/nuget.exe
