@@ -379,8 +379,12 @@ namespace QBitNinja.Client
 		HttpClient Client = DefaultClient;
 		static QBitNinjaClient()
 		{
-			HttpClient client = CreateHttpClient(new HttpClientHandler() { UseCookies = false }, true);
-			DefaultClient = client;
+			SetCompression(true);
+		}
+
+		public static void SetCompression(bool value)
+		{
+			DefaultClient = CreateHttpClient(new HttpClientHandler() { UseCookies = false }, value);
 		}
 
 		public void SetHttpMessageHandler(HttpMessageHandler innerHandler, bool compression = true)
