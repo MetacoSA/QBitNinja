@@ -33,6 +33,14 @@ Once everything is synched, run `QBitNinja.Listener.Console --Listen`.
 
 If you want the listener to run even if the server reboot, use the Windows Task Scheduler to run the program even when the user is not logged on.
 
+Unity
+==========
+In order for the API to work in Unity for Android devices you should:
+
+* QBitNinjaClient.SetCompression(false); Because it's missing the DLL MonoPosixHelper from the build
+* QBitNinjaClient client = new QBitNinjaClient("http://api.qbit.ninja/", NBitcoin.Network.Main); Because Mono v2.X only supporting SHA1, not SHA256
+* Scripting Runtime Version: Select "Experimental (.NET 4.6 Equivalent)"
+
 License
 -------
 This project is released under the terms of the GPLv3 license. See [LICENSE](LICENSE) for more information or see http://opensource.org/licenses/GPL-3.0.
