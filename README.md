@@ -35,10 +35,10 @@ If you want the listener to run even if the server reboot, use the Windows Task 
 
 Unity
 ==========
-In order for the API to work in Unity for Android devices you should:
+In order for the API to work in Unity with .NET 4.6 for Android devices you should:
 
-* QBitNinjaClient.SetCompression(false); Because it's missing the DLL MonoPosixHelper from the build
-* QBitNinjaClient client = new QBitNinjaClient("http://api.qbit.ninja/", NBitcoin.Network.Main); Because Mono v2.X only supporting SHA1, not SHA256
+* `QBitNinjaClient.SetCompression(false);` Because it's missing the DLL MonoPosixHelper from the build
+* `QBitNinjaClient client = new QBitNinjaClient("http://api.qbit.ninja/", NBitcoin.Network.Main);` because HTTPS with `HttpClient` seems to not work correctly.
 * Scripting Runtime Version: Select "Experimental (.NET 4.6 Equivalent)"
 
 License
