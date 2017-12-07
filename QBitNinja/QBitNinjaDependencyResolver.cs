@@ -12,174 +12,183 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace QBitNinja
 {
-    public class QBitNinjaDependencyResolver : IDependencyResolver
-    {
-        class AutoFacDependencyScope : IDependencyScope
-        {
-            private readonly ILifetimeScope _lifetimeScope;
-            private readonly IDependencyScope _dependencyScope;
+	public class QBitNinjaDependencyResolver : IDependencyResolver
+	{
+		class AutoFacDependencyScope : IDependencyScope
+		{
+			private readonly ILifetimeScope _lifetimeScope;
+			private readonly IDependencyScope _dependencyScope;
 
-            public AutoFacDependencyScope(ILifetimeScope lifetimeScope, IDependencyScope dependencyScope)
-            {
-                _lifetimeScope = lifetimeScope;
-                _dependencyScope = dependencyScope;
-            }
+			public AutoFacDependencyScope(ILifetimeScope lifetimeScope, IDependencyScope dependencyScope)
+			{
+				_lifetimeScope = lifetimeScope;
+				_dependencyScope = dependencyScope;
+			}
 
-            #region IDependencyScope Members
+			#region IDependencyScope Members
 
-            public object GetService(Type serviceType)
-            {
-                object result;
-                return _lifetimeScope.TryResolve(serviceType, out result) ? result : _dependencyScope.GetService(serviceType);
-            }
+			public object GetService(Type serviceType)
+			{
+				object result;
+				return _lifetimeScope.TryResolve(serviceType, out result) ? result : _dependencyScope.GetService(serviceType);
+			}
 
-            public IEnumerable<object> GetServices(Type serviceType)
-            {
-                var service = GetService(serviceType);
-                return service == null ? _dependencyScope.GetServices(serviceType) : new[] { service };
-            }
+			public IEnumerable<object> GetServices(Type serviceType)
+			{
+				var service = GetService(serviceType);
+				return service == null ? _dependencyScope.GetServices(serviceType) : new[] { service };
+			}
 
 
-            #endregion
+			#endregion
 
-            #region IDisposable Members
+			#region IDisposable Members
 
-            public void Dispose()
-            {
-                _lifetimeScope.Dispose();
-                _dependencyScope.Dispose();
-            }
+			public void Dispose()
+			{
+				_lifetimeScope.Dispose();
+				_dependencyScope.Dispose();
+			}
 
-            #endregion
-        }
+			#endregion
+		}
 
-        readonly IDependencyResolver _defaultResolver;
-        readonly IContainer _container;
+		readonly IDependencyResolver _defaultResolver;
+		readonly IContainer _container;
 
-        public QBitNinjaDependencyResolver(QBitNinjaConfiguration configuration, IDependencyResolver defaultResolver)
-        {
-            _defaultResolver = defaultResolver;
-            ContainerBuilder builder = new ContainerBuilder();
-            builder.Register(ctx => configuration).SingleInstance();
-            builder.Register(ctx => configuration.Indexer.CreateIndexerClient());
-            builder.Register(ctx =>
-            {
-                var client = ctx.Resolve<IndexerClient>();
-                ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
-                LoadCache(chain, configuration.LocalChain);
-                var changes = client.GetChainChangesUntilFork(chain.Tip, false);
-                try
-                {
-                    changes.UpdateChain(chain);
-                }
-                catch(ArgumentException) //Happen when chain in table is corrupted
-                {
-                    client.Configuration.GetChainTable().DeleteIfExists();
-                    for(int i = 0; i < 20; i++)
-                    {
-                        try
-                        {
-                            if(client.Configuration.GetChainTable().CreateIfNotExists())
-                                break;
-                        }
-                        catch
-                        {
-                        }
-                        Thread.Sleep(10000);
-                    }
-                    client.Configuration.CreateIndexer().IndexChain(chain);
-                }
-                SaveChainCache(chain, configuration.LocalChain);
-                return chain;
-            }).SingleInstance();
-            builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
-            _container = builder.Build();
-        }
+		public QBitNinjaDependencyResolver(QBitNinjaConfiguration configuration, IDependencyResolver defaultResolver)
+		{
+			_defaultResolver = defaultResolver;
+			ContainerBuilder builder = new ContainerBuilder();
+			builder.Register(ctx => configuration).SingleInstance();
+			builder.Register(ctx => configuration.Indexer.CreateIndexerClient());
+			builder.Register(ctx =>
+			{
+				var client = ctx.Resolve<IndexerClient>();
+				ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
+				LoadCache(chain, configuration.LocalChain);
+				var changes = client.GetChainChangesUntilFork(chain.Tip, false);
+				try
+				{
+					changes.UpdateChain(chain);
+				}
+				catch(ArgumentException) //Happen when chain in table is corrupted
+				{
+					client.Configuration.GetChainTable().DeleteIfExists();
+					for(int i = 0; i < 20; i++)
+					{
+						try
+						{
+							if(client.Configuration.GetChainTable().CreateIfNotExists())
+								break;
+						}
+						catch
+						{
+						}
+						Thread.Sleep(10000);
+					}
+					client.Configuration.CreateIndexer().IndexChain(chain);
+				}
+				SaveChainCache(chain, configuration.LocalChain);
+				return chain;
+			}).SingleInstance();
+			builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
+			_container = builder.Build();
+		}
 
-        private static void LoadCache(ConcurrentChain chain, string cacheLocation)
-        {
-            if (string.IsNullOrEmpty(cacheLocation))
-                return;
-            try
-            {
-                var bytes = File.ReadAllBytes(cacheLocation);
-                chain.Load(bytes);
-            }
-            catch //We don't care if it don't succeed
-            {
-            }
-        }
+		private static void LoadCache(ConcurrentChain chain, string cacheLocation)
+		{
+			if(string.IsNullOrEmpty(cacheLocation))
+				return;
+			try
+			{
+				var bytes = File.ReadAllBytes(cacheLocation);
+				chain.Load(bytes);
+			}
+			catch //We don't care if it don't succeed
+			{
+			}
+		}
 
-        private static void SaveChainCache(ConcurrentChain chain, string cacheLocation)
-        {
-            if (string.IsNullOrEmpty(cacheLocation))
-                return;
-            try
-            {
-                var file = new FileInfo(cacheLocation);
-                if (!file.Exists || (DateTime.UtcNow - file.LastWriteTimeUtc) > TimeSpan.FromDays(1))
-                    using (var fs = File.Open(cacheLocation, FileMode.Create))
-                    {
-                        chain.WriteTo(fs);
-                    }
-            }
-            catch //Don't care if fail
-            {
-            }
-        }
+		private static void SaveChainCache(ConcurrentChain chain, string cacheLocation)
+		{
+			if(string.IsNullOrEmpty(cacheLocation))
+			{
+				return;
+			}
+			try
+			{
+				var cacheFile = new FileInfo(cacheLocation);
+				var cacheFileNew = new FileInfo(cacheLocation + ".new");
+				using(var fs = new FileStream(cacheFileNew.FullName, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024 * 5))
+				{
+					chain.WriteTo(fs);
+				}
+				if(!cacheFile.Exists || cacheFile.Length < cacheFileNew.Length)
+				{
+					if(cacheFile.Exists)
+						cacheFile.Delete();
+					cacheFileNew.MoveTo(cacheLocation);
+				}
+				else
+					cacheFileNew.Delete();
+			}
+			catch //Don't care if fail
+			{
+			}
+		}
 
-        #region IDependencyResolver Members
+		#region IDependencyResolver Members
 
-        public IDependencyScope BeginScope()
-        {
-            return new AutoFacDependencyScope(_container.BeginLifetimeScope(), _defaultResolver.BeginScope());
-        }
+		public IDependencyScope BeginScope()
+		{
+			return new AutoFacDependencyScope(_container.BeginLifetimeScope(), _defaultResolver.BeginScope());
+		}
 
-        #endregion
+		#endregion
 
-        #region IDependencyScope Members
+		#region IDependencyScope Members
 
-        public T Get<T>()
-        {
-            return (T)GetService(typeof(T));
-        }
+		public T Get<T>()
+		{
+			return (T)GetService(typeof(T));
+		}
 
-        public object GetService(Type serviceType)
-        {
-            object result;
+		public object GetService(Type serviceType)
+		{
+			object result;
 
 			return _container.TryResolve(serviceType, out result) ? result : _defaultResolver.GetService(serviceType);
-        }
+		}
 
-        public IEnumerable<object> GetServices(Type serviceType)
-        {
-            var service = GetService(serviceType);
-            return service == null ? _defaultResolver.GetServices(serviceType) : new[] { service };
-        }
+		public IEnumerable<object> GetServices(Type serviceType)
+		{
+			var service = GetService(serviceType);
+			return service == null ? _defaultResolver.GetServices(serviceType) : new[] { service };
+		}
 
-        #endregion
+		#endregion
 
-        #region IDisposable Members
+		#region IDisposable Members
 
-        const string LocalChainLocation = "LocalChain.dat";
-        public void Dispose()
-        {
-            SaveChainCache(Get<ConcurrentChain>(), Get<QBitNinjaConfiguration>().LocalChain);
-            _container.Dispose();
+		public void Dispose()
+		{
+			SaveChainCache(Get<ConcurrentChain>(), Get<QBitNinjaConfiguration>().LocalChain);
+			_container.Dispose();
 
-        }
+		}
 
-        #endregion
+		#endregion
 
-        public bool UpdateChain()
-        {
-            var client = Get<IndexerClient>();
-            var chain = Get<ConcurrentChain>();
-            var oldTip = chain.Tip.HashBlock;
-            var changes = client.GetChainChangesUntilFork(chain.Tip, false);
-            changes.UpdateChain(chain);
-            var newTip = chain.Tip.HashBlock;
-            return newTip != oldTip;
-        }
-    }
+		public bool UpdateChain()
+		{
+			var client = Get<IndexerClient>();
+			var chain = Get<ConcurrentChain>();
+			var oldTip = chain.Tip.HashBlock;
+			var changes = client.GetChainChangesUntilFork(chain.Tip, false);
+			changes.UpdateChain(chain);
+			var newTip = chain.Tip.HashBlock;
+			return newTip != oldTip;
+		}
+	}
 }

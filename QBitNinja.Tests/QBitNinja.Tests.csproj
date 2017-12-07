@@ -91,6 +91,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Microsoft.WindowsAzure.ConfigurationManager.3.1.0\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
     </Reference>
+    <Reference Include="NBitcoin, Version=4.0.0.48, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NBitcoin.4.0.0.48\lib\net461\NBitcoin.dll</HintPath>
+    </Reference>
     <Reference Include="NBitcoin.Indexer, Version=3.0.0.5, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NBitcoin.Indexer.3.0.0.5\lib\netstandard2.0\NBitcoin.Indexer.dll</HintPath>
     </Reference>
@@ -100,9 +103,6 @@
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\WindowsAzure.Storage.8.5.0\lib\net45\Microsoft.WindowsAzure.Storage.dll</HintPath>
-    </Reference>
-    <Reference Include="NBitcoin, Version=4.0.0.38, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NBitcoin.4.0.0.38\lib\net461\NBitcoin.dll</HintPath>
     </Reference>
     <Reference Include="Owin">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
+using System.IO;
 
 namespace QBitNinja
 {
@@ -203,6 +204,14 @@ namespace QBitNinja
 				LocalChain = ConfigurationManager.AppSettings["LocalChain"],
 				ServiceBus = ConfigurationManager.AppSettings["ServiceBus"]
 			};
+			var nocache = ConfigurationManager.AppSettings["NoLocalChain"] == "true";
+			var qbitDirectory = QBitNinja.DefaultDataDirectory.GetDirectory("qbitninja", conf.Indexer.Network.ToString());
+			if(string.IsNullOrEmpty(conf.LocalChain))
+			{
+				conf.LocalChain = Path.Combine(qbitDirectory, "LocalChain.dat");
+			}
+			if(nocache)
+				conf.LocalChain = null;
 			conf.CoinbaseMaturity = conf.Indexer.Network.Consensus.CoinbaseMaturity;
 			return conf;
 		}
