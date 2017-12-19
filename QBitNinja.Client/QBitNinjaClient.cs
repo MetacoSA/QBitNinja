@@ -47,6 +47,7 @@ namespace QBitNinja.Client
 				return _Name;
 			}
 		}
+
 		public KeySetClient(WalletClient walletClient, string keySet)
 		{
 			if(keySet == null)
@@ -179,6 +180,15 @@ namespace QBitNinja.Client
 	}
 	public class QBitNinjaClient
 	{
+		/// <summary>
+		/// Hours to wait for QBitNinja server to "forget" an unconfirmed transaction (default is 24H)
+		/// </summary>
+		public int? UnconfirmedExpiration
+		{
+			get; set;
+		}
+
+
 		/// <summary>
 		/// Use qbit ninja public servers (api.qbit.ninja / tapi.qbit.ninja)
 		/// </summary>
@@ -313,11 +323,21 @@ namespace QBitNinja.Client
 
 		private string CreateParameters(params object[] parameters)
 		{
+			var parameterList = parameters.ToList();
 			if(Colored != null)
 			{
-				parameters = parameters.Concat(new object[] { "colored", Colored.Value }).ToArray();
+				parameterList.Add("colored");
+				parameterList.Add(Colored.Value);
 			}
 
+			var exp = UnconfirmedExpiration;
+			if(exp != null)
+			{
+				parameterList.Add("unconfExpiration");
+				parameterList.Add(exp.Value);
+			}
+
+			parameters = parameterList.ToArray();
 			StringBuilder builder = new StringBuilder();
 			for(int i = 0; i < parameters.Length - 1; i += 2)
 			{

@@ -171,10 +171,11 @@ namespace QBitNinja.Controllers
 			BlockFeature from = null,
 			bool includeImmature = false,
 			bool unspentOnly = false,
-			bool colored = false)
+			bool colored = false,
+			int? unconfExpiration = null)
 		{
 			var balanceId = new BalanceId(walletName);
-			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
+			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored, unconfExpiration);
 		}
 
 		[HttpPost]
@@ -324,10 +325,12 @@ namespace QBitNinja.Controllers
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
 			BlockFeature at = null,
 			bool debug = false,
-			bool colored = false)
+			bool colored = false,
+			int? unconfExpiration = null
+			)
 		{
 			BalanceId id = new BalanceId(walletName);
-			return BalanceSummary(id, at, debug, colored);
+			return BalanceSummary(id, at, debug, colored, unconfExpiration);
 		}
 
 		[HttpGet]
@@ -491,19 +494,21 @@ namespace QBitNinja.Controllers
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
 			BlockFeature at = null,
 			bool debug = false,
-			bool colored = false)
+			bool colored = false,
+			int? unconfExpiration = null)
 		{
 			colored = colored || IsColoredAddress();
-			return BalanceSummary(balanceId, at, debug, colored);
+			return BalanceSummary(balanceId, at, debug, colored, unconfExpiration);
 		}
 
 		public BalanceSummary BalanceSummary(
 			BalanceId balanceId,
 			BlockFeature at,
 			bool debug,
-			bool colored
-			)
+			bool colored,
+			int? unconfExpiration)
 		{
+			var expiration = GetExpiration(unconfExpiration);
 			var repo = Configuration.CreateWalletRepository();
 			CancellationTokenSource cancel = new CancellationTokenSource();
 			cancel.CancelAfter(30000);
@@ -519,7 +524,7 @@ namespace QBitNinja.Controllers
 			if(at != null)
 				query.From = ToBalanceLocator(atBlock);
 			if(query.From == null)
-				query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - Expiration);
+				query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - expiration);
 
 			query.PageSizes = new[] { 1, 10, 100 };
 
@@ -544,7 +549,7 @@ namespace QBitNinja.Controllers
 			};
 
 			int stopAtHeight = cachedSummary.Locator == null ? -1 : cachedLocator.Height;
-			int lookback = (int)(Expiration.Ticks / this.Network.Consensus.PowTargetSpacing.Ticks);
+			int lookback = (int)(expiration.Ticks / this.Network.Consensus.PowTargetSpacing.Ticks);
 			if(at == null)
 				stopAtHeight = stopAtHeight - lookback;
 
@@ -554,7 +559,7 @@ namespace QBitNinja.Controllers
 			var diff =
 				client
 				.GetOrderedBalance(balanceId, query)
-				.WhereNotExpired(Expiration)
+				.WhereNotExpired(expiration)
 				.TakeWhile(_ => !cancel.IsCancellationRequested)
 				//Some confirmation of the fetched unconfirmed may hide behind stopAtHeigh
 				.TakeWhile(_ => _.BlockId == null || _.Height > stopAtHeight - lookback)
@@ -679,10 +684,11 @@ namespace QBitNinja.Controllers
 			BlockFeature from = null,
 			bool includeImmature = false,
 			bool unspentOnly = false,
-			bool colored = false)
+			bool colored = false,
+			int? unconfExpiration = null)
 		{
 			colored = colored || IsColoredAddress();
-			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored);
+			return Balance(balanceId, continuation, until, from, includeImmature, unspentOnly, colored, unconfExpiration);
 		}
 
 		//Property passed by BalanceIdModelBinder
@@ -698,8 +704,10 @@ namespace QBitNinja.Controllers
 			BlockFeature from,
 			bool includeImmature,
 			bool unspentOnly,
-			bool colored)
+			bool colored,
+			int? unconfExpiration)
 		{
+			var expiration = GetExpiration(unconfExpiration);
 			CancellationTokenSource cancel = new CancellationTokenSource();
 			cancel.CancelAfter(30000);
 
@@ -725,7 +733,7 @@ namespace QBitNinja.Controllers
 
 			if(query.From == null)
 			{
-				query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - Expiration);
+				query.From = new UnconfirmedBalanceLocator(DateTimeOffset.UtcNow - expiration);
 			}
 
 			if(until != null)
@@ -743,7 +751,7 @@ namespace QBitNinja.Controllers
 				client
 				.GetOrderedBalance(balanceId, query)
 				.TakeWhile(_ => !cancel.IsCancellationRequested)
-				.WhereNotExpired(Expiration)
+				.WhereNotExpired(expiration)
 				.Where(o => includeImmature || IsMature(o, Chain.Tip))
 				.AsBalanceSheet(Chain);
 
@@ -797,6 +805,11 @@ namespace QBitNinja.Controllers
 				}
 			}
 			return result;
+		}
+
+		private TimeSpan GetExpiration(int? unconfExpiration)
+		{
+			return unconfExpiration == null ? Expiration : TimeSpan.FromHours(unconfExpiration.Value);
 		}
 
 		private List<OrderedBalanceChange> RemoveConflicts(BalanceSheet balance)

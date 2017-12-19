@@ -118,7 +118,7 @@ namespace QBitNinja.Notifications
             _Chain = chain;
             ListenerTrace.Info("Fetching headers from " + _Chain.Tip.Height + " (from azure)");
             var client = Configuration.Indexer.CreateIndexerClient();
-            client.SynchronizeChain(chain);
+			client.SynchronizeChain(chain);
             ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
 
             _Disposables.Add(_IndexerScheduler = new CustomThreadPoolTaskScheduler(50, 100, "Indexing Threads"));
