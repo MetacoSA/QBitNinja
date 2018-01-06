@@ -3,13 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9FC402ED-963F-4EC0-A5C0-38139473804E}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja", "QBitNinja\QBitNinja.csproj", "{39B56DA4-7986-4EA4-8F00-F1E28EFA0101}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Tests", "QBitNinja.Tests\QBitNinja.Tests.csproj", "{5CB38069-834E-4586-B101-036BDBCA7B92}"
@@ -17,8 +10,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client", "QBitNinja.Client\QBitNinja.Client.csproj", "{7C796B6B-86B5-4C57-ADAA-12CF1FECDA71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Client.Tests", "QBitNinja.Client.Tests\QBitNinja.Client.Tests.csproj", "{068A0D44-F058-4086-9EB5-9FF75B89EA74}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Build", "Build\Build.csproj", "{28BA4865-0990-4B5A-947E-143C700B1CB4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBitNinja.Listener.Console", "QBitNinja.Listener.Console\QBitNinja.Listener.Console.csproj", "{9A05CF5C-3BF7-4898-8268-53089008B64C}"
 EndProject
@@ -64,14 +55,6 @@ Global
 		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.QA-Testnet|Any CPU.Build.0 = QA-Testnet|Any CPU
 		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{068A0D44-F058-4086-9EB5-9FF75B89EA74}.Release|Any CPU.Build.0 = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA|Any CPU.ActiveCfg = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA|Any CPU.Build.0 = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA-Testnet|Any CPU.ActiveCfg = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.QA-Testnet|Any CPU.Build.0 = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28BA4865-0990-4B5A-947E-143C700B1CB4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9A05CF5C-3BF7-4898-8268-53089008B64C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A05CF5C-3BF7-4898-8268-53089008B64C}.QA|Any CPU.ActiveCfg = Release|Any CPU

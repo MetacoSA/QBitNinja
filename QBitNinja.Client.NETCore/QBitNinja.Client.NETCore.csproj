@@ -1,23 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.1</TargetFramework>
-    <DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
-    <AssemblyName>QBitNinja.Client</AssemblyName>
-    <PackageId>QBitNinja.Client.NETCore</PackageId>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+	  <TargetFrameworks>netstandard1.1;net452;net461</TargetFrameworks>
+	  <PackageId>QBitNinja.Client</PackageId>
+	  <Company>Metaco SA</Company>
+	  <Version>1.0.3.46</Version>
+	  <Copyright>Copyright © Metaco SA 2017</Copyright>
+	  <Description>Client library for QBitNinja server</Description>
+	  <PackageTags>bitcoin</PackageTags>
+	  <PackageIconUrl>https://aois.blob.core.windows.net/public/Bitcoin.png</PackageIconUrl>
+	  <PackageProjectUrl>https://github.com/MetacoSA/QBitNinja/</PackageProjectUrl>
+	  <PackageLicenseUrl>https://raw.githubusercontent.com/MetacoSA/QBitNinja/master/QBitNinja.Client/LICENSE</PackageLicenseUrl>
+	  <RepositoryUrl>https://github.com/MetacoSA/QBitNinja/</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
+	  <AssemblyName>QBitNinja.Client</AssemblyName>
+	  <RootNamespace>QBitNinja.Client</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\QBitNinja\JsonConverters\*.cs;..\QBitNinja\Models\*.cs;..\QBitNinja\Properties\AssemblyInfo.cs;..\QBitNinja\Serializer.cs;..\QBitNinja.Client\QBitNinjaClient.cs;..\QBitNinja\CompressionHandler.cs;..\QBitNinja\Compressors.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+    <Compile Include="..\QBitNinja\JsonConverters\*.cs;..\QBitNinja\Models\*.cs;..\QBitNinja\Serializer.cs;..\QBitNinja.Client\QBitNinjaClient.cs;..\QBitNinja\CompressionHandler.cs;..\QBitNinja\Compressors.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
   </ItemGroup>
 
   <ItemGroup>
