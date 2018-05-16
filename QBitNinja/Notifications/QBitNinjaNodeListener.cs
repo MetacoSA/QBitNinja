@@ -129,6 +129,11 @@ namespace QBitNinja.Notifications
 			_Group.AllowSameGroup = true;
 			_Group.MaximumNodeConnection = 2;
 			AddressManager addrman = new AddressManager();
+			
+			ListenerTrace.Info($"Connecting to node {_Configuration.Indexer.Node} wallet subscriptions...");
+			var ip = Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort);
+			ListenerTrace.Info($"Node ip {ip.ToString()} wallet subscriptions...");
+
 			addrman.Add(new NetworkAddress(Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort)),
 						IPAddress.Parse("127.0.0.1"));
 			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman));
