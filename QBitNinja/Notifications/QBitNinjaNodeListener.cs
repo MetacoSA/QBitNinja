@@ -290,7 +290,8 @@ namespace QBitNinja.Notifications
 					ListenerTrace.Info("Sending " + txId + " via RPC");
 					await rpc.SendRawTransactionAsync(tx);
 					ListenerTrace.Info("Successfully broadcasted");
-					_Broadcasting.TryRemove(txId, out var unused);
+					Transaction unused;
+					_Broadcasting.TryRemove(txId, out unused);
 				}
 				catch(NBitcoin.RPC.RPCException ex)
 				{

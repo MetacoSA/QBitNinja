@@ -341,7 +341,9 @@ namespace QBitNinja
 		{
 			if(string.IsNullOrEmpty(RPCConnectionString))
 				return null;
-			NBitcoin.RPC.RPCCredentialString.TryParse(RPCConnectionString, out var result);
+			RPCCredentialString result;
+			if(!NBitcoin.RPC.RPCCredentialString.TryParse(RPCConnectionString, out result))
+				return null;
 			return new RPCClient(result, Indexer.Network);
 		}
 	}
