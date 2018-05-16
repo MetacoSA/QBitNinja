@@ -94,8 +94,8 @@
     <Reference Include="NBitcoin, Version=4.1.1.7, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NBitcoin.4.1.1.7\lib\net461\NBitcoin.dll</HintPath>
     </Reference>
-    <Reference Include="NBitcoin.Indexer, Version=3.0.0.5, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NBitcoin.Indexer.3.0.0.5\lib\netstandard2.0\NBitcoin.Indexer.dll</HintPath>
+    <Reference Include="NBitcoin.Indexer, Version=3.0.0.6, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NBitcoin.Indexer.3.0.0.6\lib\netstandard2.0\NBitcoin.Indexer.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
