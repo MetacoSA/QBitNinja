@@ -134,9 +134,8 @@ namespace QBitNinja.Notifications
 			var ip = Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort);
 			ListenerTrace.Info($"Node ip {ip.ToString()} wallet subscriptions...");
 
-			addrman.Add(new NetworkAddress(Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort)),
-						IPAddress.Parse("127.0.0.1"));
-			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman));
+			addrman.Add(new NetworkAddress(ip), IPAddress.Parse("127.0.0.1"));
+			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman) { Mode = AddressManagerBehaviorMode.None });
 			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new ChainBehavior(_Chain));
 			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
 
