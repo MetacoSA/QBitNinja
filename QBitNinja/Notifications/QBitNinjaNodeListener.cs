@@ -303,7 +303,8 @@ namespace QBitNinja.Notifications
 						Code = RejectCode.INVALID,
 						Hash = txId
 					};
-					_Broadcasting.TryRemove(txId, out var unused);
+					Transaction unused;
+					_Broadcasting.TryRemove(txId, out unused);
 				}
 				return;
 			}
