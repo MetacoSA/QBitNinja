@@ -109,6 +109,15 @@ namespace QBitNinja.Notifications
 		List<IDisposable> _Disposables = new List<IDisposable>();
 		public void Listen(ConcurrentChain chain = null)
 		{
+			ListenerTrace.Info($"Connecting to node {_Configuration.Indexer.Node}");
+			var ip = Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort);
+			ListenerTrace.Info($"Connecting to node ip {ip.ToString()}");
+			var node = Node.Connect(Configuration.Indexer.Network, ip);
+			ListenerTrace.Info($"Connected, trying handshake...");
+			node.VersionHandshake();
+			ListenerTrace.Info($"Hanshaked");
+			node.Disconnect();
+
 			_Chain = new ConcurrentChain(_Configuration.Indexer.Network);
 			_Indexer = Configuration.Indexer.CreateIndexer();
 			if(chain == null)
@@ -129,12 +138,9 @@ namespace QBitNinja.Notifications
 			_Group.AllowSameGroup = true;
 			_Group.MaximumNodeConnection = 2;
 			AddressManager addrman = new AddressManager();
-			
-			ListenerTrace.Info($"Connecting to node {_Configuration.Indexer.Node} wallet subscriptions...");
-			var ip = Utils.ParseIpEndpoint(_Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort);
-			ListenerTrace.Info($"Node ip {ip.ToString()} wallet subscriptions...");
-
+		
 			addrman.Add(new NetworkAddress(ip), IPAddress.Parse("127.0.0.1"));
+
 			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman) { Mode = AddressManagerBehaviorMode.None });
 			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new ChainBehavior(_Chain));
 			_Group.NodeConnectionParameters.TemplateBehaviors.Add(new Behavior(this));
