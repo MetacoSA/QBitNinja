@@ -177,9 +177,8 @@ namespace QBitNinja.Notifications
                         _Broadcasting.TryAdd(hash, tx.Transaction);
                         if(indexedTx == null || !indexedTx.BlockIds.Any(id => Chain.Contains(id)))
                         {
-                            var unused = SendMessageAsync(new InvPayload(tx.Transaction));
+                            var unused = SendMessageAsync(tx.Transaction);
                         }
-
                         var reschedule = new[]
                         {
                             TimeSpan.FromMinutes(5),
@@ -277,10 +276,36 @@ namespace QBitNinja.Notifications
         }
 
         NodesGroup _Group;
-        private async Task SendMessageAsync(Payload payload)
+        private async Task SendMessageAsync(Transaction tx)
         {
+			var payload = new InvPayload(tx);
             int[] delays = new int[] { 50, 100, 200, 300, 1000, 2000, 3000, 6000, 12000 };
             int i = 0;
+			var rpc = Configuration.TryCreateRPCClient();
+			var txId = tx.GetHash();
+			if(rpc != null)
+			{
+				try
+				{
+					ListenerTrace.Info($"Sending {txId} via RPC");
+					await rpc.SendRawTransactionAsync(tx);
+					ListenerTrace.Info($"Successfully broadcasted");
+					_Broadcasting.TryRemove(txId, out var unused);
+				}
+				catch(NBitcoin.RPC.RPCException ex)
+				{
+					ListenerTrace.Info("Broadcasted transaction rejected (" + ex.Message + ") " + txId);
+					var reject = new RejectPayload()
+					{
+						Message = "tx",
+						Reason = ex.Message,
+						Code = RejectCode.INVALID,
+						Hash = txId
+					};
+					_Broadcasting.TryRemove(txId, out var unused);
+				}
+				return;
+			}
             while(_Group.ConnectedNodes.Count != 2)
             {
                 i++;

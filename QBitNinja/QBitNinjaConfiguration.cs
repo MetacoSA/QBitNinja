@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using System.IO;
+using NBitcoin.RPC;
 
 namespace QBitNinja
 {
@@ -202,7 +203,8 @@ namespace QBitNinja
 			{
 				Indexer = IndexerConfiguration.FromConfiguration(new ConfigurationManagerConfiguration()),
 				LocalChain = ConfigurationManager.AppSettings["LocalChain"],
-				ServiceBus = ConfigurationManager.AppSettings["ServiceBus"]
+				ServiceBus = ConfigurationManager.AppSettings["ServiceBus"],
+				RPCConnectionString = ConfigurationManager.AppSettings["RPCConnectionString"],
 			};
 			var nocache = ConfigurationManager.AppSettings["NoLocalChain"] == "true";
 			var qbitDirectory = QBitNinja.DefaultDataDirectory.GetDirectory("qbitninja", conf.Indexer.Network.ToString());
@@ -328,6 +330,19 @@ namespace QBitNinja
 		{
 			get;
 			set;
+		}
+		public string RPCConnectionString
+		{
+			get;
+			set;
+		}
+
+		public RPCClient TryCreateRPCClient()
+		{
+			if(string.IsNullOrEmpty(RPCConnectionString))
+				return null;
+			NBitcoin.RPC.RPCCredentialString.TryParse(RPCConnectionString, out var result);
+			return new RPCClient(result, Indexer.Network);
 		}
 	}
 }
