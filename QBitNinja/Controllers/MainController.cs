@@ -50,11 +50,14 @@ namespace QBitNinja.Controllers
 			switch(this.Request.Content.Headers.ContentType.MediaType)
 			{
 				case "application/json":
-					tx = NBitcoin.Transaction.Parse(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()));
+					tx = NBitcoin.Transaction.Parse(JsonConvert.DeserializeObject<string>(await Request.Content.ReadAsStringAsync()), Network);
 					break;
 				case "application/octet-stream":
 					{
-						tx = new Transaction(await Request.Content.ReadAsByteArrayAsync());
+                        tx = this.ConsensusFactory.CreateTransaction();
+                        BitcoinStream bitcoinStream = new BitcoinStream(await Request.Content.ReadAsByteArrayAsync());
+                        bitcoinStream.ConsensusFactory = ConsensusFactory;
+                        tx.ReadWrite(bitcoinStream);
 						break;
 					}
 				default:
@@ -966,6 +969,8 @@ namespace QBitNinja.Controllers
 			}
 		}
 
+        public ConsensusFactory ConsensusFactory => Network.Consensus.ConsensusFactory;
+
 		internal GetBlockResponse JsonBlock(BlockFeature blockFeature, bool headerOnly, bool extended)
 		{
 			var block = GetBlock(blockFeature, headerOnly);
@@ -1039,7 +1044,7 @@ namespace QBitNinja.Controllers
 			if(hash == null)
 				return null;
 			if(chainedBlock != null && chainedBlock.Height == 0)
-				return headerOnly ? new NBitcoin.Block(Network.GetGenesis().Header) : Network.GetGenesis();
+				return headerOnly ? CreateBlock(Network.GetGenesis().Header) : Network.GetGenesis();
 			var client = Configuration.Indexer.CreateIndexerClient();
 			return headerOnly ? GetHeader(hash, client) : client.GetBlock(hash);
 		}
@@ -1052,12 +1057,26 @@ namespace QBitNinja.Controllers
 				var b = client.GetBlock(hash);
 				if(b == null)
 					return null;
-				return new Block(b.Header);
+				return CreateBlock(b.Header);
 			}
-			return new Block(header.Header);
+			return CreateBlock(header.Header);
 		}
 
-		private static HttpResponseMessage Response(IBitcoinSerializable obj)
+        private Block CreateBlock(BlockHeader header)
+        {
+            var ms = new MemoryStream(100);
+            BitcoinStream bs = new BitcoinStream(ms, true);
+            bs.ConsensusFactory = ConsensusFactory;
+            bs.ReadWrite(header);
+
+            var block = ConsensusFactory.CreateBlock();
+            ms.Position = 0;
+            bs = new BitcoinStream(ms, false);
+            block.Header.ReadWrite(bs);
+            return block;
+        }
+
+        private static HttpResponseMessage Response(IBitcoinSerializable obj)
 		{
 			HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK)
 			{

@@ -54,7 +54,7 @@ namespace QBitNinja.Tests
         void ChainBuilder_NewBlock(Block obj)
         {
             _Blocks.AddOrUpdate(obj.GetHash(), obj, (a, b) => b);
-            foreach(var node in _Nodes)
+            foreach(var node in _NodeServer.ConnectedNodes)
             {
                 node.SendMessage(new InvPayload(obj));
             }
@@ -63,7 +63,7 @@ namespace QBitNinja.Tests
         void ChainBuilder_NewTransaction(Transaction obj)
         {
             _Transactions.AddOrUpdate(obj.GetHash(), obj, (a, b) => b);
-            foreach(var node in _Nodes)
+            foreach(var node in _NodeServer.ConnectedNodes)
             {
                 node.SendMessage(new InvPayload(obj));
             }
@@ -71,10 +71,6 @@ namespace QBitNinja.Tests
 
         void NewNodeMessage(IncomingMessage message)
         {
-            if(message.Message.Payload is VerAckPayload)
-            {
-                _Nodes.Add(message.Node);
-            }
             if(message.Message.Payload is InvPayload)
             {
                 InvPayload invPayload = (InvPayload)message.Message.Payload;
@@ -92,7 +88,7 @@ namespace QBitNinja.Tests
                 TxPayload txPayload = (TxPayload)message.Message.Payload;
                 _ReceivedTransactions.AddOrUpdate(txPayload.Object.GetHash(), txPayload.Object, (k, v) => v);
                 _Transactions.AddOrUpdate(txPayload.Object.GetHash(), txPayload.Object, (k, v) => v);
-                foreach(var node in _Nodes)
+                foreach(var node in _NodeServer.ConnectedNodes)
                 {
                     if(node != message.Node)
                         node.SendMessage(new InvPayload(txPayload.Object));
@@ -152,7 +148,6 @@ namespace QBitNinja.Tests
             }
         }
 
-        List<Node> _Nodes = new List<Node>();
         ConcurrentDictionary<uint256, Transaction> _ReceivedTransactions = new ConcurrentDictionary<uint256, Transaction>();
         ConcurrentDictionary<uint256, Transaction> _Transactions = new ConcurrentDictionary<uint256, Transaction>();
         ConcurrentDictionary<uint256, Block> _Blocks = new ConcurrentDictionary<uint256, Block>();

@@ -36,18 +36,18 @@ namespace QBitNinja.Client.Tests
             client = new QBitNinjaClient(Network.Main);
             var balance = client.GetBalance(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
             Assert.NotNull(balance);
-            Assert.True(balance.Operations.Any(o => o.Amount == Money.Coins(0.02m)));
+            Assert.Contains(balance.Operations, o => o.Amount == Money.Coins(0.02m));
 
             var balanceSummary = client.GetBalanceSummary(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
             Assert.True(balanceSummary.Confirmed.TransactionCount > 60);
 
 
 			//http://api.qbit.ninja/balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=336410&until=336409
-			var ops = client.GetBalanceBetween(new BalanceSelector(BitcoinAddress.Create("1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp")), new BlockFeature(336410), new BlockFeature(336409)).Result;
+			var ops = client.GetBalanceBetween(new BalanceSelector(BitcoinAddress.Create("1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp", client.Network)), new BlockFeature(336410), new BlockFeature(336409)).Result;
 			Assert.Equal(3, ops.Operations.Count);
 
 			//http://api.qbit.ninja/balances/1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp?from=177000
-			ops = client.GetBalanceBetween(new BalanceSelector(BitcoinAddress.Create("1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp")), new BlockFeature(177000), null).Result;
+			ops = client.GetBalanceBetween(new BalanceSelector(BitcoinAddress.Create("1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp", client.Network)), new BlockFeature(177000), null).Result;
 			Assert.Equal(4, ops.Operations.Count);
 		}
 
@@ -59,25 +59,15 @@ namespace QBitNinja.Client.Tests
         }
 
         [Fact]
-        public void temp()
-        {
-        }
-
-
-        [Fact]
         public void CanTryBroadcast()
         {
             var client = new QBitNinjaClient(Network.Main);
-            var result = client.Broadcast(new Transaction()
+            var tx = client.Network.Consensus.ConsensusFactory.CreateTransaction();
+            tx.AddInput(new TxIn()
             {
-                Inputs =
-                {
-                    new TxIn()
-                    {
-                        ScriptSig = new Script(Op.GetPushOp(RandomUtils.GetBytes(32)))
-                    }
-                }
-            }).Result;
+                ScriptSig = new Script(Op.GetPushOp(RandomUtils.GetBytes(32)))
+            });
+            var result = client.Broadcast(tx).Result;
 
             Assert.False(result.Success);
             Assert.True(result.Error.ErrorCode == RejectCode.INVALID);
@@ -89,7 +79,6 @@ namespace QBitNinja.Client.Tests
         {
             try
             {
-
                 var client = new QBitNinjaClient(Network.TestNet);
                 var balance = client.GetBalance(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
                 Assert.False(true, "Should have thrown");
@@ -109,8 +98,8 @@ namespace QBitNinja.Client.Tests
             var client = new QBitNinjaClient(Network.Main);
             var wallet = client.GetWalletClient("temp-1Nicolas Dorier");
             wallet.CreateIfNotExists().Wait();
-            wallet.CreateAddressIfNotExists(BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Wait();
-            wallet.CreateAddressIfNotExists(BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB")).Wait();
+            wallet.CreateAddressIfNotExists(BitcoinAddress.Create("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", client.Network)).Wait();
+            wallet.CreateAddressIfNotExists(BitcoinAddress.Create("1KF8kUVHK42XzgcmJF4Lxz4wcL5WDL97PB", client.Network)).Wait();
 
             var balance = wallet.GetBalance().Result;
             Assert.True(balance.Operations.Count > 70);

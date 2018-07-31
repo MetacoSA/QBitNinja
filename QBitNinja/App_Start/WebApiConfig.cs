@@ -54,7 +54,7 @@ namespace QBitNinja
         {
             SetThrottling();
             if(QBitNinja == null)
-                QBitNinja = QBitNinjaConfiguration.FromConfiguration();
+                QBitNinja = QBitNinjaConfiguration.FromConfiguration(new ConfigurationManagerConfiguration());
             if(setup)
                 QBitNinja.EnsureSetup();
             config.MapHttpAttributeRoutes();

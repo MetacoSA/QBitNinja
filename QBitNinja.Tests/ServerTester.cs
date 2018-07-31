@@ -1,4 +1,5 @@
 ﻿using Microsoft.Owin.Hosting;
+using Microsoft.Extensions.Configuration;
 using Owin;
 using NBitcoin;
 using System;
@@ -51,7 +52,7 @@ namespace QBitNinja.Tests
         {
             CleanTable = true;
             Address = "http://localhost:" + FindFreePort() + "/";
-            Configuration = QBitNinjaConfiguration.FromConfiguration();
+            Configuration = QBitNinjaConfiguration.FromConfiguration(new ConfigurationManagerConfiguration());
 			Configuration.Indexer.Network = Network.RegTest;
             Configuration.Indexer.StorageNamespace = ns;
             Stopwatch watch = new Stopwatch();

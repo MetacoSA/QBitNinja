@@ -29,6 +29,8 @@ namespace QBitNinja
             }
         }
 
+        public ConsensusFactory ConsensusFactory => Network.Consensus.ConsensusFactory;
+
         public QBitNinjaConfiguration Configuration
         {
             get
@@ -103,7 +105,7 @@ namespace QBitNinja
             {
                 var blockHeader = NoException(() =>
                 {
-                    var h = new BlockHeader();
+                    var h = ConsensusFactory.CreateBlockHeader();
                     h.ReadWrite(Encoders.Hex.DecodeData(data));
                     return h;
                 });

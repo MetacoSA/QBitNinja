@@ -88,7 +88,9 @@ namespace QBitNinja.Listener.Console
                     }
                     AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", new FileInfo(options.Configuration).FullName);
                 }
-                var conf = QBitNinjaConfiguration.FromConfiguration();
+
+                var iconf = new ConfigurationManagerConfiguration();
+                var conf = QBitNinjaConfiguration.FromConfiguration(iconf);
                 conf.EnsureSetup();
                 if (options.CancelInit)
                 {
@@ -120,7 +122,7 @@ namespace QBitNinja.Listener.Console
                         var server = WebApp.Start("http://*:" + options.Port, appBuilder =>
                         {
                             var config = new HttpConfiguration();
-                            var qbit = QBitNinjaConfiguration.FromConfiguration();
+                            var qbit = QBitNinjaConfiguration.FromConfiguration(iconf);
                             qbit.EnsureSetup();
                             WebApiConfig.Register(config, qbit);
                             UpdateChainListener listener = new UpdateChainListener();

@@ -51,16 +51,21 @@ namespace QBitNinja.Tests
 
         readonly List<Transaction> _ongoingTransactions = new List<Transaction>();
 
+        bool _First = true;
         public Transaction EmitMoney(Money money, Script destination, bool broadcast = true, bool coinbase = false)
         {
-            var funding = new Transaction()
+            // Here, we make sure our transaction is spent from the coinbase of the genesis, which should be indexed
+            if(_First)
             {
-                Outputs =
-                {
-                    new TxOut(money, destination),
-                    //CreateRandom()
-                }
-            };
+                _First = false;
+                CreateIndexer().IndexTransactions(0, _Network.GetGenesis());
+            }
+            var funding = _Network.Consensus.ConsensusFactory.CreateTransaction();
+            if(!coinbase)
+                funding.AddInput(new TxIn(_Network.GetGenesis().Transactions[0].Outputs.AsCoins().First().Outpoint, Script.Empty));
+            /////
+            funding.AddOutput(new TxOut(money, destination));
+            
             if (coinbase)
             {
                 funding.Inputs.Add(new TxIn()
@@ -90,7 +95,7 @@ namespace QBitNinja.Tests
 
         internal ChainedBlock AddToChain()
         {
-            var header = new BlockHeader();
+            var header = _Network.Consensus.ConsensusFactory.CreateBlockHeader();
             header.HashPrevBlock = Chain.Tip.HashBlock;
             header.Nonce = RandomUtils.GetUInt32();
             var prev = Chain.GetBlock(header.HashPrevBlock);
@@ -109,7 +114,7 @@ namespace QBitNinja.Tests
         }
 		internal Block EmitBlock(uint? nonce = null, int blockVersion = 2)
         {
-            var block = new Block();
+            var block = _Network.Consensus.ConsensusFactory.CreateBlock();
             block.Header.Version = blockVersion;
 			block.Header.Bits = Chain.Tip.GetNextWorkRequired(_Network);
 			block.Transactions.AddRange(_ongoingTransactions.ToList());

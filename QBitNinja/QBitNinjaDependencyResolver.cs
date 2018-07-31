@@ -66,7 +66,7 @@ namespace QBitNinja
 			{
 				var client = ctx.Resolve<IndexerClient>();
 				ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
-				LoadCache(chain, configuration.LocalChain);
+				LoadCache(chain, configuration.LocalChain, configuration.Indexer.Network);
 				var changes = client.GetChainChangesUntilFork(chain.Tip, false);
 				try
 				{
@@ -96,14 +96,14 @@ namespace QBitNinja
 			_container = builder.Build();
 		}
 
-		private static void LoadCache(ConcurrentChain chain, string cacheLocation)
+		private static void LoadCache(ConcurrentChain chain, string cacheLocation, Network network)
 		{
 			if(string.IsNullOrEmpty(cacheLocation))
 				return;
 			try
 			{
 				var bytes = File.ReadAllBytes(cacheLocation);
-				chain.Load(bytes);
+				chain.Load(bytes, network);
 			}
 			catch //We don't care if it don't succeed
 			{

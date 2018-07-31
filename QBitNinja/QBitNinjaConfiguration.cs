@@ -164,49 +164,20 @@ namespace QBitNinja
 	}
 	public class QBitNinjaConfiguration
 	{
-		class ConfigurationManagerConfiguration : IConfiguration
-		{
-			public string this[string key]
-			{
-				get
-				{
-					return ConfigurationManager.AppSettings[key];
-				}
-				set
-				{
-					ConfigurationManager.AppSettings[key] = value;
-				}
-			}
-
-			public IEnumerable<IConfigurationSection> GetChildren()
-			{
-				return new IConfigurationSection[0];
-			}
-
-			public IChangeToken GetReloadToken()
-			{
-				return null;
-			}
-
-			public IConfigurationSection GetSection(string key)
-			{
-				return null;
-			}
-		}
 		public QBitNinjaConfiguration()
 		{
 			CoinbaseMaturity = 100;
 		}
-		public static QBitNinjaConfiguration FromConfiguration()
+		public static QBitNinjaConfiguration FromConfiguration(IConfiguration configuration)
 		{
 			var conf = new QBitNinjaConfiguration
 			{
-				Indexer = IndexerConfiguration.FromConfiguration(new ConfigurationManagerConfiguration()),
-				LocalChain = ConfigurationManager.AppSettings["LocalChain"],
-				ServiceBus = ConfigurationManager.AppSettings["ServiceBus"],
-				RPCConnectionString = ConfigurationManager.AppSettings["RPCConnectionString"],
+				Indexer = IndexerConfiguration.FromConfiguration(configuration),
+				LocalChain = configuration["LocalChain"],
+				ServiceBus = configuration["ServiceBus"],
+				RPCConnectionString = configuration["RPCConnectionString"],
 			};
-			var nocache = ConfigurationManager.AppSettings["NoLocalChain"] == "true";
+			var nocache = configuration["NoLocalChain"] == "true";
 			var qbitDirectory = QBitNinja.DefaultDataDirectory.GetDirectory("qbitninja", conf.Indexer.Network.ToString());
 			if(string.IsNullOrEmpty(conf.LocalChain))
 			{
