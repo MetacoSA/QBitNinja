@@ -33,6 +33,16 @@ Once everything is synched, run `QBitNinja.Listener.Console --Listen`.
 
 If you want the listener to run even if the server reboot, use the Windows Task Scheduler to run the program even when the user is not logged on.
 
+How to build?
+==========
+
+Ensure MSBuild version is a least  15.5:
+
+```
+msbuild.exe /restore
+msbuild.exe /p:Configuration=Release
+```
+
 Unity
 ==========
 In order for the API to work in Unity with .NET 4.6 for Android devices you should:
