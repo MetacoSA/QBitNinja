@@ -1,15 +1,8 @@
-﻿using Microsoft.ServiceBus;
-using Microsoft.ServiceBus.Messaging;
-using NBitcoin.Indexer;
+﻿using NBitcoin.Indexer;
 using QBitNinja.Models;
-using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Threading.Tasks;
 using System.Web.Http.Controllers;
-using System.Xml;
 
 namespace QBitNinja
 {

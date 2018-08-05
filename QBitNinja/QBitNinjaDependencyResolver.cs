@@ -8,7 +8,6 @@ using NBitcoin;
 using NBitcoin.Indexer;
 using System.IO;
 using System.Threading;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace QBitNinja
 {

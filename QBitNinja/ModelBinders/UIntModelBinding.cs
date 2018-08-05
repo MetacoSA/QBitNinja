@@ -1,6 +1,5 @@
 ﻿using NBitcoin;
 using System;
-using System.Reflection;
 using System.Web.Http.ModelBinding;
 using System.Web.Http.ValueProviders;
 

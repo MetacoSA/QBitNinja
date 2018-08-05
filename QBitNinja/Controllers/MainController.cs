@@ -1,5 +1,4 @@
-﻿using Microsoft.WindowsAzure.Storage.Table;
-using NBitcoin;
+﻿using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Indexer;
 using Newtonsoft.Json;

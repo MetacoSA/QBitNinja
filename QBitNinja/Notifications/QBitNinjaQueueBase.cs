@@ -3,12 +3,9 @@ using Microsoft.ServiceBus.Messaging;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications

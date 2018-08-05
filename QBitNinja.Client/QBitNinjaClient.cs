@@ -6,11 +6,9 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using NBitcoin.DataEncoders;
 using System.Net.Http.Headers;
 #if CLIENT
-using QBitNinja.Client.JsonConverters;
 using QBitNinja.Client.Models;
 #else
 using QBitNinja.JsonConverters;

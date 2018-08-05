@@ -5,8 +5,7 @@ using Newtonsoft.Json.Linq;
 using QBitNinja.Client.JsonConverters;
 using QBitNinja.Client.Models;
 #else
-using QBitNinja.JsonConverters;
-using QBitNinja.Models;
+
 #endif
 
 #if !CLIENT

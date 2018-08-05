@@ -1,14 +1,10 @@
 ﻿using NBitcoin;
-using NBitcoin.Indexer;
 using NBitcoin.Protocol;
 using QBitNinja.Notifications;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;

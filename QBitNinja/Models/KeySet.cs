@@ -1,8 +1,6 @@
 ﻿using NBitcoin;
 using System.Linq;
-using Newtonsoft.Json;
 using System.Collections.Generic;
-using System;
 
 #if !CLIENT
 namespace QBitNinja.Models

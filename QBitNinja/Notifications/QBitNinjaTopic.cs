@@ -1,23 +1,10 @@
-﻿using Microsoft.Data.OData;
-using Microsoft.ServiceBus;
-using Microsoft.ServiceBus.Messaging;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
-using NBitcoin;
+﻿using Microsoft.ServiceBus.Messaging;
 using NBitcoin.DataEncoders;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using QBitNinja.Notifications;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.ExceptionServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace QBitNinja.Notifications
 {

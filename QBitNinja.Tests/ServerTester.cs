@@ -1,5 +1,4 @@
 ﻿using Microsoft.Owin.Hosting;
-using Microsoft.Extensions.Configuration;
 using Owin;
 using NBitcoin;
 using System;
@@ -21,7 +20,6 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
-using System.IO.IsolatedStorage;
 using System.IO;
 
 namespace QBitNinja.Tests

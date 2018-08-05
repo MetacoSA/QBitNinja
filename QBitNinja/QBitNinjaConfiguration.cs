@@ -8,11 +8,9 @@ using QBitNinja.Models;
 using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Primitives;
 using System.IO;
 using NBitcoin.RPC;
 

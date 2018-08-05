@@ -2,11 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Owin;
-using Microsoft.Owin.Builder;
-using Microsoft.Owin.Extensions;
 using Owin;
 using System.Threading;
 using Xunit;

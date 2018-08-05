@@ -1,14 +1,11 @@
 ﻿using CommandLine;
 using CommandLine.Text;
 using Microsoft.Owin.Hosting;
-using NBitcoin;
 using QBitNinja.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Owin;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Runtime.ExceptionServices;

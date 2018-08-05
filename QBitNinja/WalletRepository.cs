@@ -7,7 +7,6 @@ using QBitNinja.Models;
 using System;
 using System.Text;
 using NBitcoin.DataEncoders;
-using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 

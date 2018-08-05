@@ -5,7 +5,7 @@ using Newtonsoft.Json.Serialization;
 #if !CLIENT
 using QBitNinja.JsonConverters;
 #else
-using QBitNinja.Client.JsonConverters;
+
 #endif
 #if !CLIENT
 using System.Net.Http.Formatting;

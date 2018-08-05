@@ -1,8 +1,5 @@
 ﻿using NBitcoin;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 #if !CLIENT
 namespace QBitNinja.Models

@@ -1,12 +1,5 @@
-﻿using Microsoft.ServiceBus;
-using Microsoft.ServiceBus.Messaging;
-using NBitcoin;
-using NBitcoin.DataEncoders;
+﻿using Microsoft.ServiceBus.Messaging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace QBitNinja.Notifications

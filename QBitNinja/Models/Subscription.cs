@@ -1,19 +1,10 @@
 ﻿using Newtonsoft.Json;
-using System.Reflection;
 #if !CLIENT
 using QBitNinja.JsonConverters;
-using QBitNinja.Models;
 #else
 using QBitNinja.Client.JsonConverters;
 using QBitNinja.Client.Models;
 #endif
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using Newtonsoft.Json.Linq;
 
 #if !CLIENT
 namespace QBitNinja.Models

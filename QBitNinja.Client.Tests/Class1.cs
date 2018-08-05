@@ -1,9 +1,7 @@
 ﻿using NBitcoin;
-using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
 using QBitNinja.Client.Models;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
