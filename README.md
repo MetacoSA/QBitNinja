@@ -112,18 +112,14 @@ msbuild.exe /restore
 msbuild.exe /p:Configuration=Release
 ```
 
-Configuration file example
-==========
+## Unity
 
-
-Unity
-==========
 In order for the API to work in Unity with .NET 4.6 for Android devices you should:
 
 * `QBitNinjaClient.SetCompression(false);` Because it's missing the DLL MonoPosixHelper from the build
 * `QBitNinjaClient client = new QBitNinjaClient("http://api.qbit.ninja/", NBitcoin.Network.Main);` because HTTPS with `HttpClient` seems to not work correctly.
 * Scripting Runtime Version: Select "Experimental (.NET 4.6 Equivalent)"
 
-License
--------
+## License
+
 This project is released under the terms of the MIT license. See [LICENSE](LICENSE).
