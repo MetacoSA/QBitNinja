@@ -82,6 +82,8 @@ Example of `RPCConnectionString`:
 * `server=http://127.0.0.1:29292;myuser:password`: If you run `bitcoind` RPC with `rpcuser` and `rpcpassword`, on a different port than default.
 * `server=http://127.0.0.1:29292;cookiefile=C:\path\to\.cookie`: If you run `bitcoind` RPC with `rpcuser` and `rpcpassword`, in a different data directory with default authentication.
 
+By careful：You need to compile QBitNinja in (preferably in Release mode) for the configuration to be effective, because QBitNinja will ultimately use the `QBitNinja.Listener.Console.exe.config` file which is in the same folder as `QBitNinja.Listener.Console.exe` for its configuration.
+
 Unity
 ==========
 In order for the API to work in Unity with .NET 4.6 for Android devices you should:
