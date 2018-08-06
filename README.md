@@ -126,4 +126,4 @@ In order for the API to work in Unity with .NET 4.6 for Android devices you shou
 
 License
 -------
-This project is released under the terms of the GPLv3 license. See [LICENSE](LICENSE) for more information or see http://opensource.org/licenses/GPL-3.0.
+This project is released under the terms of the MIT license. See [LICENSE](LICENSE).
