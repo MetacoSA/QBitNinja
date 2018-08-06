@@ -1,4 +1,6 @@
 ﻿using QBitNinja.Models;
+using System.IO;
+using System.Text;
 using System.Web.Mvc;
 
 namespace QBitNinja.Controllers
@@ -7,7 +9,8 @@ namespace QBitNinja.Controllers
     {
         public ActionResult Index()
         {
-            return View(new HelpModel
+            var sb = new StringBuilder();
+            var model = new HelpModel
             {
                 Routes = new[] 
                 { 
@@ -121,7 +124,27 @@ namespace QBitNinja.Controllers
 						}
 					},
 				}
-            });
+            };
+
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html><head></head><body>");
+            sb.AppendLine("More documentation on <a href=\"http://docs.qbitninja.apiary.io/\">http://docs.qbitninja.apiary.io/</a>.");
+            sb.AppendLine("<h2>Methods</h2><ul>");
+            foreach (var route in model.Routes)
+            {
+                sb.AppendLine($"<li>{route.Template}");
+                sb.AppendLine($"<ul>");
+                foreach (var sample in route.Samples)
+                {
+                    sb.AppendLine($"<li>{sample.Comment ?? ""}");
+                    sb.AppendLine($"<a href=\"{sample.Url}\">{sample.Url}</a></li>");
+                }
+                sb.AppendLine($"</ul></li>");
+            }
+            sb.AppendLine("</ul>");
+            sb.AppendLine("</ul></body></html>");
+
+            return this.Content(sb.ToString(), "text/html");
         }
     }
 }
