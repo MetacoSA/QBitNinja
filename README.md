@@ -1,6 +1,6 @@
-﻿QBit Ninja
-==========
-**An Open Source and powerful blockchain API**
+﻿# QBit Ninja
+
+## An Open Source and powerful blockchain API
 Showcase
 -------
 You can see the API documentation on [api.qbit.ninja](http://api.qbit.ninja/) and on [apiary](http://docs.qbitninja.apiary.io/).
@@ -11,48 +11,34 @@ Public servers :
 * Mainnet : [api.qbit.ninja](http://api.qbit.ninja/)
 * Testnet : [tapi.qbit.ninja](http://tapi.qbit.ninja/)
 
-How to setup your own?
-==========
+## How to setup your own?
+
+### Pre-Requisite
+
+* Download and install [.NET Framework 7.2 Dev Pack](https://www.microsoft.com/net/download/thank-you/net472-developer-pack).
+* Download and install [Visual studio 2017](https://visualstudio.microsoft.com/downloads/). You need to enable .NET Development and ASP.NET Web development.
+* Download and install [Bitcoin Core 0.16.2](https://bitcoincore.org/bin/bitcoin-core-0.16.2/bitcoin-0.16.2-win64-setup.exe), and wait it is synchronized.
+* Get a Microsoft Azure account.
 
 In Azure, create one App resource group then you need to create:
 
 * Storage resource
 * Azure Bus resource
 * Web App resource,
-* Azure VM with 1 data disk of 1 TB attachd to it. (I advise you an A5)
+* Azure VM with 1 data disk of 1 TB attachd to it. (I advise you `D1 v2`)
 
-Download and install [.NET Framework 7.2 Dev Pack](https://www.microsoft.com/net/download/thank-you/net472-developer-pack).
+### Setup the indexer
 
-Download and install [Visual studio 2017](https://visualstudio.microsoft.com/downloads/). You need to enable .NET Development and ASP.NET Web development.
+The indexer is the application which will listener your full node and index everything into your `Azure Storage`.
+You can run it through the `QBitNinja.Listener.Console` project.
 
-Download and install [Bitcoin Core 0.16.2](https://bitcoincore.org/bin/bitcoin-core-0.16.2/bitcoin-0.16.2-win64-setup.exe), and wait it is synchronized.
+Assuming your Bitcoin node is fully synched,
 
-You deploy the QBitNinja project in the Web App, you configure the appsettings to point to the Storage and AzureBus correctly.
-
-On the VM, you setup a fully sync bitcoin node with the datadir in the data disk of 1TB, you then run `QBitNinja.Listener.Console --init` after having configured the `app.config` with same info as the web app, and wait for 1 week.
-
-You can run this command line on several machine concurrently to speedup indexing.
-
-Take a very good VM for the indexing. You can scale down once everything is synched.
-
-Once everything is synched, run `QBitNinja.Listener.Console --Listen`.
-
-If you want the listener to run even if the server reboot, use the Windows Task Scheduler to run the program even when the user is not logged on.
-
-How to build?
-==========
-
-Ensure MSBuild version is a least  15.5:
-
-```
-msbuild.exe /restore
-msbuild.exe /p:Configuration=Release
+```bash
+git clone https://github.com/MetacoSA/QBitNinja/
 ```
 
-Or use Download and install [Visual studio 2017](https://visualstudio.microsoft.com/downloads/). (You need to enable .NET Development and ASP.NET Web development.)
-
-Configuration file example
-==========
+Then edit `QBitNinja.Listener.Console/App.config`.
 
 Your `QBitNinja.Listener.Console` `app.config` file should looks like.
 
@@ -83,6 +69,52 @@ Example of `RPCConnectionString`:
 * `server=http://127.0.0.1:29292;cookiefile=C:\path\to\.cookie`: If you run `bitcoind` RPC with `rpcuser` and `rpcpassword`, in a different data directory with default authentication.
 
 By careful：You need to compile QBitNinja in (preferably in Release mode) for the configuration to be effective, because QBitNinja will ultimately use the `QBitNinja.Listener.Console.exe.config` file which is in the same folder as `QBitNinja.Listener.Console.exe` for its configuration.
+
+One you have setup everything, build `QBitNinja.Listener.Console` in `Release` mode and run `QBitNinja.Listener.Console.exe --init`.
+
+You can repeat the same operation on multiple machine to index faster.
+
+Once it finished, run `QBitNinja.Listener.Console.exe`.
+
+We advise you to the Windows Task Scheduler to run `QBitNinja.Listener.Console.exe` and `bitcoind.exe` automatically even when the user is not logged on or when the virtual machine reboot.
+
+### Setup the front
+
+The front is a web application which will query your `Azure Storage` for blocks/transactions/balances indexed by the indexer.
+You can run find it in the `QBitNinja` project.
+
+The easiest is deploy via `Visual Studio 2017`.
+
+* Download your Web App profile by going into your Web App resource settings in Azure, and clicking on `Get publish profile`
+* Open the solution under `Visual Studio 2017`
+* Setup the `Web.config` exactly how you set up the `App.config` in the previous step
+* Right click on the `QBitNinja` project and click on `Publish`.
+* Click on `New profile...`
+* In the new window, click on the bottom left `Import Profiles` and select your downloaded publish profile
+* Click on `Publish`
+
+## How to build?
+
+### Via visual studio (recommended)
+
+* Download and install [Visual studio 2017](https://visualstudio.microsoft.com/downloads/). (You need to enable .NET Development and ASP.NET Web development)
+* Download and install [.NET Framework 7.2 Dev Pack](https://www.microsoft.com/net/download/thank-you/net472-developer-pack).
+
+Open the solution and build.
+
+### By command line
+
+* Download and install [Build Tools for Visual studio 2017](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017).
+
+Then use `msbuild.exe`:
+```powershell
+msbuild.exe /restore
+msbuild.exe /p:Configuration=Release
+```
+
+Configuration file example
+==========
+
 
 Unity
 ==========
