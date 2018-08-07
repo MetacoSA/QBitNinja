@@ -15,7 +15,7 @@ Public servers :
 
 ### Pre-Requisite
 
-* Download and install [.NET Framework 7.2 Dev Pack](https://www.microsoft.com/net/download/thank-you/net472-developer-pack).
+* Download and install [.NET Framework 4.7.1 Dev Pack](https://www.microsoft.com/net/download/thank-you/net471-developer-pack).
 * Download and install [Visual studio 2017](https://visualstudio.microsoft.com/downloads/). You need to enable .NET Development and ASP.NET Web development.
 * Download and install [Bitcoin Core 0.16.2](https://bitcoincore.org/bin/bitcoin-core-0.16.2/bitcoin-0.16.2-win64-setup.exe), and wait it is synchronized.
 * Get a Microsoft Azure account.
@@ -98,7 +98,7 @@ The easiest is deploy via `Visual Studio 2017`.
 ### Via visual studio (recommended)
 
 * Download and install [Visual studio 2017](https://visualstudio.microsoft.com/downloads/). (You need to enable .NET Development and ASP.NET Web development)
-* Download and install [.NET Framework 7.2 Dev Pack](https://www.microsoft.com/net/download/thank-you/net472-developer-pack).
+* Download and install [.NET Framework 4.7.1 Dev Pack](https://www.microsoft.com/net/download/thank-you/net471-developer-pack).
 
 Open the solution and build.
 
