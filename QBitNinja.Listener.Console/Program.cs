@@ -62,7 +62,7 @@ namespace QBitNinja.Listener.Console
         [HelpOption('?', "help", HelpText = "Display this help screen.")]
         public string GetUsage()
         {
-            if (_Usage == null)
+            if(_Usage == null)
             {
                 _Usage = HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
             }
@@ -75,9 +75,9 @@ namespace QBitNinja.Listener.Console
         static void Main(string[] args)
         {
             var options = new ListenerOptions();
-            if (args.Length == 0)
+            if(args.Length == 0)
                 System.Console.WriteLine(options.GetUsage());
-            if (Parser.Default.ParseArguments(args, options))
+            if(Parser.Default.ParseArguments(args, options))
             {
                 if(options.Configuration != null)
                 {
@@ -92,15 +92,27 @@ namespace QBitNinja.Listener.Console
                 var iconf = new ConfigurationManagerConfiguration();
                 var conf = QBitNinjaConfiguration.FromConfiguration(iconf);
                 conf.EnsureSetup();
-                if (options.CancelInit)
+                if(options.CancelInit)
                 {
                     var indexer = new InitialIndexer(conf);
                     indexer.Cancel();
                 }
-                if (options.Init)
+                if(options.Init)
                 {
                     var indexer = new InitialIndexer(conf);
-                    indexer.Run();
+                    while(true)
+                    {
+                        try
+                        {
+                            indexer.Run();
+                            break;
+                        }
+                        catch(Exception ex)
+                        {
+                            ListenerTrace.Error("Error while Running the initial sync indexer, retrying...", ex);
+                            System.Threading.Thread.Sleep(5000);
+                        }
+                    }
                 }
 
                 List<IDisposable> dispo = new List<IDisposable>();
@@ -108,7 +120,7 @@ namespace QBitNinja.Listener.Console
                 try
                 {
 
-                    if (options.Listen)
+                    if(options.Listen)
                     {
                         QBitNinjaNodeListener listener = new QBitNinjaNodeListener(conf);
                         dispo.Add(listener);
@@ -116,7 +128,7 @@ namespace QBitNinja.Listener.Console
                         running.Add(listener.Running);
                     }
 
-                    if (options.Web)
+                    if(options.Web)
                     {
                         System.Console.WriteLine("Trying to listen on http://*:" + options.Port + "/");
                         var server = WebApp.Start("http://*:" + options.Port, appBuilder =>
@@ -136,14 +148,14 @@ namespace QBitNinja.Listener.Console
                         Process.Start("http://localhost:" + options.Port + "/blocks/tip");
                     }
 
-                    if (running.Count != 0)
+                    if(running.Count != 0)
                     {
                         try
                         {
                             running.Add(WaitInput());
                             Task.WaitAny(running.ToArray());
                         }
-                        catch (AggregateException aex)
+                        catch(AggregateException aex)
                         {
                             ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
                             throw;
