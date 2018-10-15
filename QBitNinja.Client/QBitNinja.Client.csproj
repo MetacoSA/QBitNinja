@@ -26,7 +26,7 @@
 		<Reference Include="System.Net.Http" Condition="'$(TargetFramework)' == 'net472'"></Reference>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="NBitcoin" Version="4.1.1.34" />
+		<PackageReference Include="NBitcoin" Version="4.1.1.53" />
 		<PackageReference Include="System.Net.Http">
 		  <Version>4.3.3</Version>
 		  <ExcludeAssets Condition=" '$(TargetFramework)' == 'net472' ">All</ExcludeAssets>
