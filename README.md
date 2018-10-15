@@ -47,14 +47,16 @@ Your `QBitNinja.Listener.Console` `app.config` file should looks like.
 		<add key="Azure.AccountName" value="azurestorageaccountname" />
 		<add key="Azure.Key" value="azurestoragekey" />
         <add key="RPCConnectionString" value="default"/>
-		<add key="Bitcoin.Network" value="mainnet" />
+		<add key="Network" value="mainnet" />
+		<add key="Chain" value="BTC" />
 		<add key="Node" value="127.0.0.1" />
 		<add key="ServiceBus" value="Endpoint=sb://example.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=mysecretkey" />
 	</appSettings>
 ```
 
 * `Azure.AccountName` and `Azure.Key` are in the Azure Portal, in the settings of your Azure Storage Resource,
-* `Bitcoin.Network` can be `mainnet`, `testnet`, `regtest`.
+* `Network` can be `mainnet`, `testnet`, `regtest`.
+* `Chain` can be `BTC` or `LTC` or any chain
 * `Node` represented the P2P connection to your bitcoin node. Do not forget to whitelist the indexer in your node's settings (typically adding `whitelist=127.0.0.1` in `bitcoin.conf`)
 * `ServiceBus` connection string to your Service Bus Namespace (in `Shared access policies` inside Azure)
 * `RPCConnectionString` optional, but needed for more reliably broadcast transactions. 
