@@ -78,7 +78,7 @@ You can repeat the same operation on multiple machine to index faster.
 
 Once it finished, run `QBitNinja.Listener.Console.exe`.
 
-We advise you to the Windows Task Scheduler to run `QBitNinja.Listener.Console.exe` and `bitcoind.exe` automatically even when the user is not logged on or when the virtual machine reboot.
+We advise you to the Windows Task Scheduler to run `QBitNinja.Listener.Console.exe --Listen` and `bitcoind.exe` automatically even when the user is not logged on or when the virtual machine reboot.
 
 ### Setup the front
 
