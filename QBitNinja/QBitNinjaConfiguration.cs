@@ -170,6 +170,8 @@ namespace QBitNinja
 		}
 		public static QBitNinjaConfiguration FromConfiguration(IConfiguration configuration)
 		{
+            // Make sure the networks are registered
+            NBitcoin.Altcoins.AltNetworkSets.GetAll().Select(c => c.Regtest).ToList();
 			var conf = new QBitNinjaConfiguration
 			{
 				Indexer = IndexerConfiguration.FromConfiguration(configuration),
