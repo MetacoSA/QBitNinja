@@ -1029,7 +1029,7 @@ namespace QBitNinja.Controllers
 			int halvings = nHeight / Configuration.Indexer.Network.Consensus.SubsidyHalvingInterval;
 			// Force block reward to zero when right shift is undefined.
 			if(halvings >= 64)
-				return 0;
+				return Money.Zero;
 
 			Money nSubsidy = Money.Coins(50);
 			// Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.

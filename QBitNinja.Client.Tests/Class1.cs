@@ -63,10 +63,7 @@ namespace QBitNinja.Client.Tests
         {
             var client = new QBitNinjaClient(Network.Main);
             var tx = client.Network.Consensus.ConsensusFactory.CreateTransaction();
-            tx.AddInput(new TxIn()
-            {
-                ScriptSig = new Script(Op.GetPushOp(RandomUtils.GetBytes(32)))
-            });
+            tx.Inputs.Add(scriptSig: new Script(Op.GetPushOp(RandomUtils.GetBytes(32))));
             var result = client.Broadcast(tx).Result;
 
             Assert.False(result.Success);

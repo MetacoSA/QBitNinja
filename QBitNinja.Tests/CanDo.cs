@@ -55,7 +55,7 @@ namespace QBitNinja.Tests
 
                 //Previously spent coins should be in the response
                 var prevTx = tx;
-                TransactionBuilder txBuilder = new TransactionBuilder();
+                TransactionBuilder txBuilder = tester.Network.CreateTransactionBuilder();
                 tx =
                     txBuilder
                     .AddKeys(bob)
@@ -120,10 +120,9 @@ namespace QBitNinja.Tests
                 tx = tester.ChainBuilder.EmitMoney(Money.Coins(95), silverGuy);
                 var silverIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
 
-                tx = new TransactionBuilder()
-                {
-                    StandardTransactionPolicy = Policy
-                }
+                txBuilder = tester.Network.CreateTransactionBuilder();
+                txBuilder.StandardTransactionPolicy = Policy;
+                tx = txBuilder
                      .AddKeys(goldGuy)
                      .AddCoins(goldIssuance)
                      .IssueAsset(bob, new AssetMoney(gold, 1000))
@@ -134,7 +133,6 @@ namespace QBitNinja.Tests
                      .Send(goldGuy, Money.Coins(5.0m))
                      .Send(silverGuy, Money.Coins(31.0m))
                      .SetChange(bob)
-                     .Shuffle()
                      .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
@@ -148,10 +146,9 @@ namespace QBitNinja.Tests
                 //SilverGuy receives 31BTC
                 Assert.Contains(response.ReceivedCoins.OfType<Coin>(), c => c.Amount == Money.Coins(31.0m) && c.TxOut.ScriptPubKey == silverGuy.ScriptPubKey);
 
-                tx = new TransactionBuilder()
-                {
-                    StandardTransactionPolicy = Policy
-                }
+                txBuilder = tester.Network.CreateTransactionBuilder();
+                txBuilder.StandardTransactionPolicy = Policy;
+                tx = txBuilder
                      .AddKeys(silverGuy)
                      .AddCoins(silverIssuance)
                      .IssueAsset(bob, new AssetMoney(silver, 1500))
@@ -162,7 +159,6 @@ namespace QBitNinja.Tests
                      .Send(silverGuy, Money.Coins(37.0m))
                      .Send(silverGuy, new AssetMoney(gold, 600))
                      .SetChange(bob)
-                     .Shuffle()
                      .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
@@ -306,10 +302,7 @@ namespace QBitNinja.Tests
         private Transaction CreateRandomTx(Network network)
         {
             var tx = network.Consensus.ConsensusFactory.CreateTransaction();
-            tx.AddInput(new TxIn()
-            {
-                ScriptSig = new Script(Op.GetPushOp(RandomUtils.GetBytes(32)))
-            });
+            tx.Inputs.Add(scriptSig: new Script(Op.GetPushOp(RandomUtils.GetBytes(32))));
             return tx;
         }
 
@@ -1825,7 +1818,7 @@ namespace QBitNinja.Tests
             }
         }
 
-        static Money Dust = new Money(546);
+        static Money Dust = new Money(546L);
         static StandardTransactionPolicy Policy = new StandardTransactionPolicy()
         {
             MinRelayTxFee = new FeeRate(Money.Satoshis(1000))
@@ -1843,7 +1836,7 @@ namespace QBitNinja.Tests
                 var bob = new Key().GetBitcoinSecret(tester.Network);
                 var alice = new Key().GetBitcoinSecret(tester.Network);
 
-                tester.AssertTotal(bob.GetAddress(), new Money(0));
+                tester.AssertTotal(bob.GetAddress(), Money.Zero);
                 tester.AssertTotal(bob.GetAddress(), new AssetMoney(gold, 0));
                 tester.AssertTotal(bob.GetAddress(), new AssetMoney(silver, 0));
 
@@ -1862,10 +1855,9 @@ namespace QBitNinja.Tests
                 tester.UpdateServerChain();
 
                 //Send gold to bob
-                tx = new TransactionBuilder()
-                {
-                    StandardTransactionPolicy = Policy
-                }
+                var txbuilder = tester.Network.CreateTransactionBuilder();
+                txbuilder.StandardTransactionPolicy = Policy;
+                tx = txbuilder
                      .AddKeys(goldGuy)
                      .AddCoins(goldIssuance)
                      .IssueAsset(bob, new AssetMoney(gold, 1000))
@@ -1883,10 +1875,9 @@ namespace QBitNinja.Tests
                 tester.AssertTotal(bob, new AssetMoney(silver, 0));
 
                 //Send silver to Alice
-                tx = new TransactionBuilder()
-                {
-                    StandardTransactionPolicy = Policy
-                }
+                txbuilder = tester.Network.CreateTransactionBuilder();
+                txbuilder.StandardTransactionPolicy = Policy;
+                tx = txbuilder
                      .AddKeys(silverGuy)
                      .AddCoins(silverIssuance)
                      .IssueAsset(alice, new AssetMoney(silver, 100))
@@ -1906,10 +1897,9 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
 
                 //Bob and alice swap
-                tx = new TransactionBuilder()
-                {
-                    StandardTransactionPolicy = Policy
-                }
+                txbuilder = tester.Network.CreateTransactionBuilder();
+                txbuilder.StandardTransactionPolicy = Policy;
+                tx = txbuilder
                      .AddKeys(alice)
                      .AddCoins(tester.GetUnspentCoins(alice))
                      .SendAsset(bob, new AssetMoney(silver, 9))
@@ -1953,15 +1943,18 @@ namespace QBitNinja.Tests
             {
                 var bob = new Key().GetBitcoinSecret(tester.Network);
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
-
-                var tx1 = new TransactionBuilder()
+                var txbuilder = tester.Network.CreateTransactionBuilder();
+                txbuilder.StandardTransactionPolicy = Policy;
+                var tx1 = txbuilder
                       .AddKeys(bob)
                       .AddCoins(new Coin(tx, 0U))
                       .SendFees(Money.Coins(0.05m))
                       .SetChange(bob)
                       .BuildTransaction(true);
                 Thread.Sleep(1000);
-                var tx2 = new TransactionBuilder()
+                txbuilder = tester.Network.CreateTransactionBuilder();
+                txbuilder.StandardTransactionPolicy = Policy;
+                var tx2 = txbuilder
                       .AddKeys(bob)
                       .AddCoins(new Coin(tx, 0U))
                       .SendFees(Money.Coins(0.06m))
@@ -1995,7 +1988,7 @@ namespace QBitNinja.Tests
             {
                 var bob = new Key().GetBitcoinSecret(tester.Network);
                 var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
-                tester.AssertTotal(bob.GetAddress(), 0);
+                tester.AssertTotal(bob.GetAddress(), Money.Zero);
                 Assert.True(balance.Operations.Count == 0);
 
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
@@ -2016,7 +2009,7 @@ namespace QBitNinja.Tests
                 Assert.True(balance.Operations[0].Confirmations == 1);
                 Assert.True(balance.Operations[0].BlockId == b.GetHash());
 
-                tx = new TransactionBuilder()
+                tx = tester.Network.CreateTransactionBuilder()
                       .AddKeys(bob)
                       .AddCoins(new Coin(tx, 0U))
                       .SendFees(Money.Coins(0.05m))
@@ -2151,7 +2144,8 @@ namespace QBitNinja.Tests
                 ////
 
                 //Can find public key from address if divulged
-                tx = new TransactionBuilder()
+                var txbuilder = tester.Network.CreateTransactionBuilder();
+                tx = txbuilder
                         .AddKeys(bob)
                         .AddCoins(new Coin(tx, 0U))
                         .SendFees(Money.Coins(0.05m))
@@ -2173,7 +2167,8 @@ namespace QBitNinja.Tests
 
                 //Can find redeem script if divulged
                 tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob.PrivateKey.PubKey.ScriptPubKey.Hash);
-                tx = new TransactionBuilder()
+                txbuilder = tester.Network.CreateTransactionBuilder();
+                tx = txbuilder
                         .AddKeys(bob)
                         .AddCoins(new Coin(tx, 0U))
                         .AddKnownRedeems(bob.PrivateKey.PubKey.ScriptPubKey)

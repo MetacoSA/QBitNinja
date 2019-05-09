@@ -62,9 +62,9 @@ namespace QBitNinja.Tests
             }
             var funding = _Network.Consensus.ConsensusFactory.CreateTransaction();
             if(!coinbase)
-                funding.AddInput(new TxIn(_Network.GetGenesis().Transactions[0].Outputs.AsCoins().First().Outpoint, Script.Empty));
+                funding.Inputs.Add(_Network.GetGenesis().Transactions[0].Outputs.AsCoins().First().Outpoint, Script.Empty);
             /////
-            funding.AddOutput(new TxOut(money, destination));
+            funding.Outputs.Add(money, destination);
             
             if (coinbase)
             {
@@ -187,7 +187,7 @@ namespace QBitNinja.Tests
         public Transaction SendMoney(BitcoinSecret from, BitcoinSecret to, Transaction tx, Money amount)
         {
             var result =
-                new TransactionBuilder()
+                from.Network.CreateTransactionBuilder()
                 .AddKeys(from)
                 .AddCoins(tx.Outputs.Select(o => new Coin(tx, o)).ToArray())
                 .Send(to, amount)

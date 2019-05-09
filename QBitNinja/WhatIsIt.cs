@@ -106,7 +106,7 @@ namespace QBitNinja
                 var blockHeader = NoException(() =>
                 {
                     var h = ConsensusFactory.CreateBlockHeader();
-                    h.ReadWrite(Encoders.Hex.DecodeData(data));
+                    h.ReadWrite(Encoders.Hex.DecodeData(data), ConsensusFactory);
                     return h;
                 });
                 if (blockHeader != null)

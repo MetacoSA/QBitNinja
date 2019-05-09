@@ -110,8 +110,8 @@ namespace QBitNinja.Notifications
         public void Listen(ConcurrentChain chain = null)
         {
             ListenerTrace.Info($"Connecting to node {_Configuration.Indexer.Node}");
-            var ip = Utils.ParseIpEndpoint(string.IsNullOrWhiteSpace(_Configuration.Indexer.Node) ? "127.0.0.1" : _Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort);
-            ListenerTrace.Info($"Connecting to node ip {ip.ToString()}");
+            var ip = Utils.ParseEndpoint(string.IsNullOrWhiteSpace(_Configuration.Indexer.Node) ? "127.0.0.1" : _Configuration.Indexer.Node, Configuration.Indexer.Network.DefaultPort);
+            ListenerTrace.Info($"Connecting to node ip {ip.ToEndpointString()}");
             var node = Node.Connect(Configuration.Indexer.Network, ip);
             ListenerTrace.Info($"Connected, trying handshake...");
             node.VersionHandshake();
@@ -139,7 +139,8 @@ namespace QBitNinja.Notifications
             _Group.MaximumNodeConnection = 2;
             AddressManager addrman = new AddressManager();
 
-            addrman.Add(new NetworkAddress(ip), IPAddress.Parse("127.0.0.1"));
+            
+            addrman.AddAsync(ip, IPAddress.Parse("127.0.0.1")).GetAwaiter().GetResult();
 
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new AddressManagerBehavior(addrman) { Mode = AddressManagerBehaviorMode.None });
             _Group.NodeConnectionParameters.TemplateBehaviors.Add(new ChainBehavior(_Chain) { SkipPoWCheck = true });

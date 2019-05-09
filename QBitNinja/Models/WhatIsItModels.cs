@@ -275,7 +275,7 @@ namespace QBitNinja.Client.Models
 			ChainCode = Encoders.Hex.EncodeData(data.ExtPubKey.ChainCode);
 			Child = data.ExtPubKey.Child;
 			Depth = data.ExtPubKey.Depth;
-			Fingerprint = Encoders.Hex.EncodeData(data.ExtPubKey.Fingerprint);
+			Fingerprint = data.ExtPubKey.ParentFingerprint.ToString();
 		}
 
 		public string PubKey
