@@ -70,7 +70,9 @@ Example of `RPCConnectionString`:
 * `server=http://127.0.0.1:29292;myuser:password`: If you run `bitcoind` RPC with `rpcuser` and `rpcpassword`, on a different port than default.
 * `server=http://127.0.0.1:29292;cookiefile=C:\path\to\.cookie`: If you run `bitcoind` RPC with `rpcuser` and `rpcpassword`, in a different data directory with default authentication.
 
-By careful：You need to compile QBitNinja in (preferably in Release mode) for the configuration to be effective, because QBitNinja will ultimately use the `QBitNinja.Listener.Console.exe.config` file which is in the same folder as `QBitNinja.Listener.Console.exe` for its configuration.
+Be careful：You need to compile QBitNinja in (preferably in Release mode) for the configuration to be effective, because QBitNinja will ultimately use the `QBitNinja.Listener.Console.exe.config` file which is in the same folder as `QBitNinja.Listener.Console.exe` for its configuration.
+
+Do not forget to disable `Secure transfer Required` [in your storage configuration](https://github.com/MetacoSA/QBitNinja/issues/97#issuecomment-499482539).
 
 One you have setup everything, build `QBitNinja.Listener.Console` in `Release` mode and run `QBitNinja.Listener.Console.exe --init`.
 
