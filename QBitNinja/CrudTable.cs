@@ -1,87 +1,74 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
-using NBitcoin.Indexer;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
+using NBitcoin.Indexer;
 
 namespace QBitNinja
 {
     public class CrudTableFactory
     {
+        private readonly Func<CloudTable> _createTable;
+        public Scope Scope { get; }
+
         public CrudTableFactory(Func<CloudTable> createTable, Scope scope = null)
         {
-            if (createTable == null)
-                throw new ArgumentNullException("createTable");
-            if (scope == null)
-                scope = new Scope();
-            _createTable = createTable;
-            Scope = scope;
-        }
-
-        readonly Func<CloudTable> _createTable;
-        public Scope Scope
-        {
-            get;
-            private set;
+            _createTable = createTable ?? throw new ArgumentNullException("createTable");
+            Scope = scope ?? new Scope();
         }
 
         public CrudTable<T> GetTable<T>(string tableName)
         {
-            var table = _createTable();
+            CloudTable table = _createTable();
             return new CrudTable<T>(table)
             {
                 Scope = Scope.GetChild(tableName)
             };
         }
     }
+
     public class CrudTable<T>
     {
         public CrudTable(CloudTable table)
         {
-            if (table == null)
-                throw new ArgumentNullException("table");
-            _table = table;
+            Table = table ?? throw new ArgumentNullException("table");
             Scope = new Scope();
         }
 
-        public Scope Scope
-        {
-            get;
-            set;
-        }
-        private readonly CloudTable _table;
-        public CloudTable Table
-        {
-            get
-            {
-                return _table;
-            }
-        }
+        public Scope Scope { get; set; }
+
+        public CloudTable Table { get; }
 
         public async Task<bool> CreateAsync(string itemId, T item, bool orReplace = true)
         {
             try
             {
-                var callbackStr = Serializer.ToString(item);
-                var entity = new DynamicTableEntity(Escape(Scope), Escape(itemId))
+                string callbackStr = Serializer.ToString(item);
+                DynamicTableEntity entity = new DynamicTableEntity(Escape(Scope), Escape(itemId))
                 {
                     Properties =
-                {
-                    new KeyValuePair<string,EntityProperty>("data",new EntityProperty(callbackStr))
-                }
+                    {
+                        new KeyValuePair<string, EntityProperty>("data", new EntityProperty(callbackStr))
+                    }
                 };
                 await Table.ExecuteAsync(orReplace ? TableOperation.InsertOrReplace(entity) : TableOperation.Insert(entity)).ConfigureAwait(false);
             }
             catch (StorageException ex)
             {
-                if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 409 && !orReplace)
+                if (ex.RequestInformation != null
+                    && ex.RequestInformation.HttpStatusCode == 409
+                    && !orReplace)
+                {
                     return false;
+                }
+
                 throw;
             }
+
             return true;
         }
 
@@ -93,20 +80,20 @@ namespace QBitNinja
             }
             catch (AggregateException aex)
             {
-                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+                ExceptionDispatchInfo.Capture(aex.InnerException ?? aex).Throw();
                 throw;
             }
         }
 
         public void Delete()
         {
-            foreach (var child in Table.ExecuteQuery(AllInScope(Scope)))
+            foreach (DynamicTableEntity child in Table.ExecuteQuery(AllInScope(Scope)))
             {
                 Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
             }
         }
 
-        void Ignore(int errorCode, Action act)
+        private void Ignore(int errorCode, Action act)
         {
             try
             {
@@ -114,10 +101,14 @@ namespace QBitNinja
             }
             catch (StorageException ex)
             {
-                if (ex.RequestInformation == null || ex.RequestInformation.HttpStatusCode != errorCode)
+                if (ex.RequestInformation == null
+                    || ex.RequestInformation.HttpStatusCode != errorCode)
+                {
                     throw;
+                }
             }
         }
+
         public bool Delete(string itemId, bool includeChildren = false)
         {
             try
@@ -126,10 +117,11 @@ namespace QBitNinja
                 {
                     ETag = "*"
                 }));
+
                 if (includeChildren)
                 {
-                    var children = Scope.GetChild(itemId);
-                    foreach (var child in Table.ExecuteQuery(AllInScope(children)))
+                    Scope children = Scope.GetChild(itemId);
+                    foreach (DynamicTableEntity child in Table.ExecuteQuery(AllInScope(children)))
                     {
                         Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
                     }
@@ -137,18 +129,26 @@ namespace QBitNinja
             }
             catch (StorageException ex)
             {
-                if (ex.RequestInformation != null && ex.RequestInformation.HttpStatusCode == 404)
+                if (ex.RequestInformation != null
+                    && ex.RequestInformation.HttpStatusCode == 404)
+                {
                     return false;
+                }
+
                 throw;
             }
+
             return true;
         }
 
-        private static TableQuery AllInScope(QBitNinja.Scope children)
+        private static TableQuery AllInScope(Scope children)
         {
-            return new TableQuery()
+            return new TableQuery
             {
-                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(children))
+                FilterString = TableQuery.GenerateFilterCondition(
+                    "PartitionKey",
+                    QueryComparisons.Equal,
+                    Escape(children))
             };
         }
 
@@ -156,7 +156,10 @@ namespace QBitNinja
         {
             return Table.ExecuteQuery(new TableQuery
             {
-                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
+                FilterString = TableQuery.GenerateFilterCondition(
+                    "PartitionKey",
+                    QueryComparisons.Equal,
+                    Escape(Scope))
             })
             .Select(e => Serializer.ToObject<T>(e.Properties["data"].StringValue))
             .ToArray();
@@ -169,18 +172,17 @@ namespace QBitNinja
 
         private static string Escape(string key)
         {
-            var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(key));
-            return result;
+            return FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(key));
         }
 
 
 
         public async Task<T> ReadOneAsync(string item)
         {
-            var e = (await Table.ExecuteAsync(TableOperation.Retrieve(Escape(Scope), Escape(item))).ConfigureAwait(false)).Result as DynamicTableEntity;
-            if (e == null)
-                return default(T);
-            return Serializer.ToObject<T>(e.Properties["data"].StringValue);
+            DynamicTableEntity e = (await Table.ExecuteAsync(TableOperation.Retrieve(Escape(Scope), Escape(item))).ConfigureAwait(false)).Result as DynamicTableEntity;
+            return e == null
+                ? default(T)
+                : Serializer.ToObject<T>(e.Properties["data"].StringValue);
         }
 
 
@@ -188,12 +190,11 @@ namespace QBitNinja
         {
             try
             {
-
                 return ReadOneAsync(item).Result;
             }
             catch (AggregateException aex)
             {
-                ExceptionDispatchInfo.Capture(aex.InnerException).Throw();
+                ExceptionDispatchInfo.Capture(aex.InnerException ?? aex).Throw();
                 throw;
             }
         }

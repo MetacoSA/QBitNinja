@@ -1,10 +1,10 @@
-﻿using Microsoft.WindowsAzure.Storage.Table;
-using NBitcoin;
-using NBitcoin.Indexer;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.WindowsAzure.Storage.Table;
+using NBitcoin;
+using NBitcoin.Indexer;
 
 namespace QBitNinja
 {
@@ -13,21 +13,12 @@ namespace QBitNinja
     /// </summary>
     public class ChainTable<T>
     {
-        readonly CloudTable _cloudTable;
         public ChainTable(CloudTable cloudTable)
         {
-            if(cloudTable == null)
-                throw new ArgumentNullException("cloudTable");
-            _cloudTable = cloudTable;
+            Table = cloudTable ?? throw new ArgumentNullException("cloudTable");
         }
 
-        public CloudTable Table
-        {
-            get
-            {
-                return _cloudTable;
-            }
-        }
+        public CloudTable Table { get; }
 
         public Scope Scope
         {
@@ -37,8 +28,8 @@ namespace QBitNinja
 
         public void Create(ConfirmedBalanceLocator locator, T item)
         {
-            var str = Serializer.ToString(item);
-            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
+            string str = Serializer.ToString(item);
+            DynamicTableEntity entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
             PutData(entity, str);
             Table.Execute(TableOperation.InsertOrReplace(entity));
         }
@@ -47,18 +38,24 @@ namespace QBitNinja
 
         public void Delete(ConfirmedBalanceLocator locator)
         {
-            var entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
+            DynamicTableEntity entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
             {
                 ETag = "*"
             };
             Table.Execute(TableOperation.Delete(entity));
         }
+
         public void Delete()
         {
-            foreach(var entity in Table.ExecuteQuery(new TableQuery()
+            IEnumerable<DynamicTableEntity> queryResult = Table.ExecuteQuery(new TableQuery
             {
-                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
-            }))
+                FilterString = TableQuery.GenerateFilterCondition(
+                    "PartitionKey",
+                    QueryComparisons.Equal,
+                    Escape(Scope))
+            });
+
+            foreach (DynamicTableEntity entity in queryResult)
             {
                 Table.Execute(TableOperation.Delete(entity));
             }
@@ -66,9 +63,8 @@ namespace QBitNinja
 
         public IEnumerable<T> Query(ChainBase chain, BalanceQuery query = null)
         {
-            if(query == null)
-                query = new BalanceQuery();
-            var tableQuery = query.CreateTableQuery(Escape(Scope), "");
+            query = query ?? new BalanceQuery();
+            TableQuery<DynamicTableEntity> tableQuery = query.CreateTableQuery(Escape(Scope), string.Empty);
             return ExecuteBalanceQuery(Table, tableQuery, query.PageSizes)
                    .Where(_ => chain.Contains(((ConfirmedBalanceLocator)UnEscapeLocator(_.RowKey)).BlockHash))
                    .Select(_ => Serializer.ToObject<T>(ParseData(_)));
@@ -76,22 +72,27 @@ namespace QBitNinja
 
         private string ParseData(DynamicTableEntity entity)
         {
-            int i = 0;
+            var index = 0;
             StringBuilder builder = new StringBuilder();
-            while(true)
+            while (true)
             {
-                string name = i == 0 ? "data" : "data" + i;
-                if(!entity.Properties.ContainsKey(name))
+                string name = index == 0 ? "data" : "data" + index;
+                if (!entity.Properties.ContainsKey(name))
+                {
                     break;
+                }
+
                 builder.Append(entity.Properties[name].StringValue);
-                i++;
+                index++;
             }
+
             return builder.ToString();
         }
+
         private void PutData(DynamicTableEntity entity, string str)
         {
-            int i = 0;
-            foreach(var part in Split(str, 30000))
+            var i = 0;
+            foreach (string part in Split(str, 30000))
             {
                 string name = i == 0 ? "data" : "data" + i;
                 entity.Properties.Add(name, new EntityProperty(part));
@@ -101,36 +102,43 @@ namespace QBitNinja
 
         private IEnumerable<string> Split(string str, int charCount)
         {
-            int index = 0;
-            while(index != str.Length)
+            var index = 0;
+            while (index != str.Length)
             {
-                var count = Math.Min(charCount, str.Length - index);
+                int count = Math.Min(charCount, str.Length - index);
                 yield return str.Substring(index, count);
                 index += count;
             }
         }
 
-        private IEnumerable<DynamicTableEntity> ExecuteBalanceQuery(CloudTable table, TableQuery<DynamicTableEntity> tableQuery, IEnumerable<int> pages)
+        private IEnumerable<DynamicTableEntity> ExecuteBalanceQuery(
+            CloudTable table,
+            TableQuery<DynamicTableEntity> tableQuery,
+            IEnumerable<int> pages)
         {
             pages = pages ?? new int[0];
-            var pagesEnumerator = pages.GetEnumerator();
-            TableContinuationToken continuation = null;
-            do
+            using (IEnumerator<int> pagesEnumerator = pages.GetEnumerator())
             {
-                tableQuery.TakeCount = pagesEnumerator.MoveNext() ? (int?)pagesEnumerator.Current : null;
-                var segment = table.ExecuteQuerySegmented(tableQuery, continuation);
-                continuation = segment.ContinuationToken;
-                foreach(var entity in segment)
+                TableContinuationToken continuation = null;
+                do
                 {
-                    yield return entity;
+                    tableQuery.TakeCount = pagesEnumerator.MoveNext() ? pagesEnumerator.Current : (int?)null;
+                    TableQuerySegment<DynamicTableEntity> segment = table.ExecuteQuerySegmented(
+                        tableQuery,
+                        continuation);
+                    continuation = segment.ContinuationToken;
+                    foreach (DynamicTableEntity entity in segment)
+                    {
+                        yield return entity;
+                    }
                 }
-            } while(continuation != null);
+                while (continuation != null);
+            }
         }
 
         private static string Escape(ConfirmedBalanceLocator locator)
         {
-            locator = Normalize(locator);
-            return "-" + locator.ToString(true);
+            return "-" + Normalize(locator).ToString(true);
         }
 
         private static BalanceLocator UnEscapeLocator(string str)
@@ -140,14 +148,15 @@ namespace QBitNinja
 
         private static ConfirmedBalanceLocator Normalize(ConfirmedBalanceLocator locator)
         {
-            locator = new ConfirmedBalanceLocator(locator.Height, locator.BlockHash ?? new uint256(0), locator.TransactionId ?? new uint256(0));
-            return locator;
+            return new ConfirmedBalanceLocator(
+                locator.Height,
+                locator.BlockHash ?? new uint256(0),
+                locator.TransactionId ?? new uint256(0));
         }
 
         private static string Escape(string scope)
         {
-            var result = FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(scope));
-            return result;
+            return FastEncoder.Instance.EncodeData(Encoding.UTF8.GetBytes(scope));
         }
 
         private static string Escape(Scope scope)

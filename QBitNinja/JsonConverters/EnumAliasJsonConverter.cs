@@ -1,11 +1,9 @@
-﻿using Newtonsoft.Json;
-using System.Reflection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using NBitcoin.JsonConverters;
+using Newtonsoft.Json;
 
 #if !CLIENT
 namespace QBitNinja.JsonConverters
@@ -36,47 +34,59 @@ namespace QBitNinja.Client.JsonConverters
 #endif
 	class EnumAliasJsonConverter : JsonConverter
     {
-        Dictionary<string, object> _Values = null;
-        void EnsureInit(Type type)
-        {
-            if (_Values != null)
-                return;
-            _Values = new Dictionary<string, object>();
-            foreach (var member in type.GetTypeInfo().DeclaredFields)
-            {
-                var alias = member.GetCustomAttribute<EnumAliasAttribute>();
-                if (alias != null)
-                {
-                    _Values.Add(alias.Name, (object)Enum.Parse(type, member.Name.Split().Last()));
-                }
-            }
-        }
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType.GetTypeInfo().IsEnum;
-        }
+        private Dictionary<string, object> _Values;
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override bool CanConvert(Type objectType) => objectType.GetTypeInfo().IsEnum;
+
+        public override object ReadJson(
+            JsonReader reader,
+            Type objectType,
+            object existingValue,
+            JsonSerializer serializer)
         {
             EnsureInit(objectType);
             var val = (string)reader.Value;
-            object result;
-            if (!_Values.TryGetValue(val, out result))
+            if (!_Values.TryGetValue(val, out object result))
             {
                 throw new JsonObjectException("Invalid notification type, available are " + string.Join(",", _Values.Select(kv => kv.Key).ToArray()), reader);
             }
+
             return result;
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             if (value == null)
+            {
                 return;
+            }
+
             EnsureInit(value.GetType());
-            var str = _Values.FirstOrDefault(v => v.Value.Equals((object)value));
+            KeyValuePair<string, object> str = _Values.FirstOrDefault(v => v.Value.Equals(value));
             if (str.Equals(default(KeyValuePair<string, object>)))
+            {
                 throw new NotSupportedException(value.ToString());
+            }
+
             writer.WriteValue(str.Key);
+        }
+
+        private void EnsureInit(Type type)
+        {
+            if (_Values != null)
+            {
+                return;
+            }
+
+            _Values = new Dictionary<string, object>();
+            foreach (FieldInfo member in type.GetTypeInfo().DeclaredFields)
+            {
+                EnumAliasAttribute alias = member.GetCustomAttribute<EnumAliasAttribute>();
+                if (alias != null)
+                {
+                    _Values.Add(alias.Name, (object)Enum.Parse(type, member.Name.Split().Last()));
+                }
+            }
         }
     }
 }

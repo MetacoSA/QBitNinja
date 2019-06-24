@@ -5,6 +5,7 @@ using QBitNinja.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using NBitcoin.Indexer;
 
 namespace QBitNinja
 {
@@ -15,42 +16,25 @@ namespace QBitNinja
             Controller = controller;
         }
 
-        public MainController Controller
-        {
-            get;
-            set;
-        }
+        public MainController Controller { get; set; }
 
-        public Network Network
-        {
-            get
-            {
-                return Controller.Network;
-            }
-        }
+        public Network Network => Controller.Network;
 
         public ConsensusFactory ConsensusFactory => Network.Consensus.ConsensusFactory;
 
-        public QBitNinjaConfiguration Configuration
-        {
-            get
-            {
-                return Controller.Configuration;
-            }
-        }
-
+        public QBitNinjaConfiguration Configuration => Controller.Configuration;
 
         public async Task<object> Find(string data)
         {
             data = data.Trim();
-            var b58 = NoException(() => WhatIsBase58.GetFromBitcoinString(data));
+            WhatIsBase58 b58 = NoException(() => WhatIsBase58.GetFromBitcoinString(data));
             if (b58 != null)
             {
-                if (b58 is WhatIsAddress)
+                if (b58 is WhatIsAddress address)
                 {
-                    var address = (WhatIsAddress)b58;
                     TryFetchRedeemOrPubKey(address);
                 }
+
                 return b58;
             }
 
@@ -64,77 +48,102 @@ namespace QBitNinja
                 {
                 }
             }
-            var b = NoException(() => Controller.JsonBlock(BlockFeature.Parse(data), true, false));
+
+            GetBlockResponse b = NoException(() => Controller.JsonBlock(BlockFeature.Parse(data), true, false));
             if (b != null)
+            {
                 return b;
+            }
 
             if (data.Length == 0x28) //Hash of pubkey or script
             {
                 TxDestination dest = new KeyId(data);
-                var address = new WhatIsAddress(dest.GetAddress(Network));
+                WhatIsAddress address = new WhatIsAddress(dest.GetAddress(Network));
                 if (TryFetchRedeemOrPubKey(address))
+                {
                     return address;
+                }
 
                 dest = new ScriptId(data);
                 address = new WhatIsAddress(dest.GetAddress(Network));
                 if (TryFetchRedeemOrPubKey(address))
+                {
                     return address;
+                }
             }
 
 
-            var script = NoException(() => GetScriptFromBytes(data));
+            Script script = NoException(() => GetScriptFromBytes(data));
             if (script != null)
+            {
                 return new WhatIsScript(script, Network);
+            }
+
             script = NoException(() => GetScriptFromText(data));
             if (script != null)
+            {
                 return new WhatIsScript(script, Network);
+            }
 
-            var sig = NoException(() => new TransactionSignature(Encoders.Hex.DecodeData(data)));
+            TransactionSignature sig = NoException(() => new TransactionSignature(Encoders.Hex.DecodeData(data)));
             if (sig != null)
+            {
                 return new WhatIsTransactionSignature(sig);
+            }
 
-            var pubkeyBytes = NoException(() => Encoders.Hex.DecodeData(data));
+            byte[] pubkeyBytes = NoException(() => Encoders.Hex.DecodeData(data));
             if (pubkeyBytes != null && PubKey.Check(pubkeyBytes, true))
             {
-                var pubKey = NoException(() => new PubKey(data));
+                PubKey pubKey = NoException(() => new PubKey(data));
                 if (pubKey != null)
+                {
                     return new WhatIsPublicKey(pubKey, Network);
+                }
             }
 
             if (data.Length == 80 * 2)
             {
-                var blockHeader = NoException(() =>
+                BlockHeader blockHeader = NoException(() =>
                 {
-                    var h = ConsensusFactory.CreateBlockHeader();
+                    BlockHeader h = ConsensusFactory.CreateBlockHeader();
                     h.ReadWrite(Encoders.Hex.DecodeData(data), ConsensusFactory);
                     return h;
                 });
+
                 if (blockHeader != null)
+                {
                     return new WhatIsBlockHeader(blockHeader);
+                }
             }
+
             return null;
         }
 
         private static Script GetScriptFromText(string data)
         {
-            if (!data.Contains(' '))
-                return null;
-            return GetScriptFromBytes(Encoders.Hex.EncodeData(new Script(data).ToBytes(true)));
+            return data.Contains(' ')
+                       ? GetScriptFromBytes(Encoders.Hex.EncodeData(new Script(data).ToBytes(true)))
+                       : null;
         }
 
         private static Script GetScriptFromBytes(string data)
         {
-            var bytes = Encoders.Hex.DecodeData(data);
-            var script = Script.FromBytesUnsafe(bytes);
-            bool hasOps = false;
-            var reader = script.CreateReader();
-            foreach (var op in reader.ToEnumerable())
+            byte[] bytes = Encoders.Hex.DecodeData(data);
+            Script script = Script.FromBytesUnsafe(bytes);
+            var hasOps = false;
+            ScriptReader reader = script.CreateReader();
+            foreach (Op op in reader.ToEnumerable())
             {
                 hasOps = true;
-                if (op.IsInvalid || (op.Name == "OP_UNKNOWN" && op.PushData == null))
+                if (op.IsInvalid
+                    || op.Name == "OP_UNKNOWN"
+                    && op.PushData == null)
+                {
                     return null;
+                }
             }
-            return !hasOps ? null : script;
+
+            return hasOps ? script : null;
         }
 
 
@@ -145,6 +154,7 @@ namespace QBitNinja
                 address.RedeemScript = TryFetchRedeem(address);
                 return address.RedeemScript != null;
             }
+
             address.PublicKey = TryFetchPublicKey(address);
             return address.PublicKey != null;
         }
@@ -152,8 +162,8 @@ namespace QBitNinja
 
         private Script FindScriptSig(WhatIsAddress address)
         {
-            var indexer = Configuration.Indexer.CreateIndexerClient();
-            var scriptSig = indexer
+            IndexerClient indexer = Configuration.Indexer.CreateIndexerClient();
+            Script scriptSig = indexer
                             .GetOrderedBalance(address.ScriptPubKey.Raw)
                             .Where(b => b.SpentCoins.Count != 0)
                             .Select(b => new
@@ -169,20 +179,30 @@ namespace QBitNinja
 
         private WhatIsScript TryFetchRedeem(WhatIsAddress address)
         {
-            var scriptSig = FindScriptSig(address);
+            Script scriptSig = FindScriptSig(address);
             if (scriptSig == null)
+            {
                 return null;
-            var result = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
-            return result == null ? null : new WhatIsScript(result.RedeemScript, Network);
+            }
+
+            PayToScriptHashSigParameters result = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
+            return result != null
+                       ? new WhatIsScript(result.RedeemScript, Network)
+                       : null;
         }
 
         private WhatIsPublicKey TryFetchPublicKey(WhatIsAddress address)
         {
-            var scriptSig = FindScriptSig(address);
+            Script scriptSig = FindScriptSig(address);
             if (scriptSig == null)
+            {
                 return null;
-            var result = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
-            return result == null ? null : new WhatIsPublicKey(result.PublicKey, Network);
+            }
+
+            PayToPubkeyHashScriptSigParameters result = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
+            return result != null
+                       ? new WhatIsPublicKey(result.PublicKey, Network)
+                       : null;
         }
 
         public T NoException<T>(Func<T> act) where T : class

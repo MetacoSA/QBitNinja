@@ -1,4 +1,5 @@
-﻿using System.Web.Mvc;
+﻿using System;
+using System.Web.Mvc;
 using System.Web.Routing;
 
 namespace QBitNinja
@@ -10,9 +11,8 @@ namespace QBitNinja
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
             routes.MapRoute(
                 name: "Default",
-                url: "",
-                defaults: new { controller="Help", action = "Index" }
-            );
+                url: string.Empty,
+                defaults: new { controller = "Help", action = "Index" });
         }
     }
 }

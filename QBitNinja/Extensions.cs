@@ -1,15 +1,8 @@
-﻿using Microsoft.ServiceBus;
-using Microsoft.ServiceBus.Messaging;
+﻿using System;
+using System.Collections.Generic;
+using System.Web.Http.Controllers;
 using NBitcoin.Indexer;
 using QBitNinja.Models;
-using QBitNinja.Notifications;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Threading.Tasks;
-using System.Web.Http.Controllers;
-using System.Xml;
 
 namespace QBitNinja
 {
@@ -23,26 +16,27 @@ namespace QBitNinja
                 ScriptPubKey = address.ScriptPubKey,
                 RedeemScript = address.RedeemScript
             });
-
         }
+
         public static QBitNinjaConfiguration GetConfiguration(this HttpRequestContext ctx)
         {
             return ((QBitNinjaDependencyResolver)ctx.Configuration.DependencyResolver).Get<QBitNinjaConfiguration>();
         }
+
         public static T MinElement<T>(this IEnumerable<T> input, Func<T, int> predicate)
         {
             int min = int.MaxValue;
             T element = default(T);
-
-            foreach (var el in input)
+            foreach (T el in input)
             {
-                var val = predicate(el);
+                int val = predicate(el);
                 if (val < min)
                 {
                     min = predicate(el);
                     element = el;
                 }
             }
+
             return element;
         }
     }

@@ -1,6 +1,6 @@
-﻿using QBitNinja.Models;
-using System.Web.Http.ModelBinding;
+﻿using System.Web.Http.ModelBinding;
 using System.Web.Http.ValueProviders;
+using QBitNinja.Models;
 
 namespace QBitNinja.ModelBinders
 {
@@ -8,7 +8,9 @@ namespace QBitNinja.ModelBinders
     {
         #region IModelBinder Members
 
-        public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
+        public bool BindModel(
+            System.Web.Http.Controllers.HttpActionContext actionContext,
+            ModelBindingContext bindingContext)
         {
             if (!typeof(BlockFeature).IsAssignableFrom(bindingContext.ModelType))
             {
@@ -22,8 +24,7 @@ namespace QBitNinja.ModelBinders
                 return true;
             }
 
-            string key = val.RawValue as string;
-            if (key == null)
+            if (!(val.RawValue is string key))
             {
                 bindingContext.Model = null;
                 return true;

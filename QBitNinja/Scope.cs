@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace QBitNinja
@@ -7,38 +8,33 @@ namespace QBitNinja
     {
         public Scope()
         {
-            _parents = new string[0];
+            Parents = new string[0];
         }
+
         public Scope(string[] parents)
         {
             if (parents == null)
+            {
                 parents = new string[0];
+            }
+
             if (parents.Any(parent => parent.Contains("/")))
             {
                 throw new ArgumentException("'/' is not authorized for naming a scope");
             }
-            _parents = parents;
+
+            Parents = parents;
         }
 
-        private readonly string[] _parents;
-        public string[] Parents
-        {
-            get
-            {
-                return _parents;
-            }
-        }
+        public string[] Parents { get; }
 
         public Scope GetChild(params string[] names)
         {
-            var parents = _parents.ToList();
+            List<string> parents = Parents.ToList();
             parents.AddRange(names);
             return new Scope(parents.ToArray());
         }
 
-        public override string ToString()
-        {
-            return String.Join("/", _parents);
-        }
+        public override string ToString() => string.Join("/", Parents);
     }
 }

@@ -1,10 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Primitives;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
-using System.Web;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 
 namespace QBitNinja
 {
@@ -12,14 +9,8 @@ namespace QBitNinja
     {
         public string this[string key]
         {
-            get
-            {
-                return ConfigurationManager.AppSettings[key];
-            }
-            set
-            {
-                ConfigurationManager.AppSettings[key] = value;
-            }
+            get => ConfigurationManager.AppSettings[key];
+            set => ConfigurationManager.AppSettings[key] = value;
         }
 
         public IEnumerable<IConfigurationSection> GetChildren()

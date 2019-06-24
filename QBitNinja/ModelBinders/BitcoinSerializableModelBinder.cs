@@ -1,8 +1,8 @@
-﻿using NBitcoin;
-using System;
+﻿using System;
 using System.Reflection;
 using System.Web.Http.ModelBinding;
 using System.Web.Http.ValueProviders;
+using NBitcoin;
 
 namespace QBitNinja.ModelBinders
 {
@@ -12,28 +12,28 @@ namespace QBitNinja.ModelBinders
 
         public bool BindModel(System.Web.Http.Controllers.HttpActionContext actionContext, ModelBindingContext bindingContext)
         {
-            if(typeof(uint160).IsAssignableFrom(bindingContext.ModelType))
+            if (typeof(uint160).IsAssignableFrom(bindingContext.ModelType))
             {
                 return new UInt160ModelBinding().BindModel(actionContext, bindingContext);
             }
-            if(typeof(uint256).IsAssignableFrom(bindingContext.ModelType))
+
+            if (typeof(uint256).IsAssignableFrom(bindingContext.ModelType))
             {
                 return new UInt256ModelBinding().BindModel(actionContext, bindingContext);
             }
+
             if (!typeof(IBitcoinSerializable).IsAssignableFrom(bindingContext.ModelType))
             {
                 return false;
             }
 
-            ValueProviderResult val = bindingContext.ValueProvider.GetValue(
-                bindingContext.ModelName);
+            ValueProviderResult val = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
             if (val == null)
             {
                 return false;
             }
 
-            string key = val.RawValue as string;
-            if (key == null)
+            if (!(val.RawValue is string key))
             {
                 bindingContext.Model = null;
                 return true;
@@ -43,15 +43,19 @@ namespace QBitNinja.ModelBinders
             {
                 bindingContext.Model = Activator.CreateInstance(bindingContext.ModelType, key);
             }
-            catch(TargetInvocationException ex)
+            catch (TargetInvocationException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
+
             if (bindingContext.Model is uint256 || bindingContext.Model is uint160)
             {
                 if (bindingContext.Model.ToString().StartsWith(uint160.Zero.ToString()))
+                {
                     throw new FormatException("Invalid hash format");
+                }
             }
+
             return true;
         }
 
