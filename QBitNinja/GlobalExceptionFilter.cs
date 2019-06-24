@@ -14,43 +14,47 @@ namespace QBitNinja
     {
         public override void OnException(HttpActionExecutedContext actionExecutedContext)
         {
-            switch (actionExecutedContext.Exception)
+            if (actionExecutedContext.Exception is FormatException)
             {
-                case FormatException _:
-                    actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message);
-                    break;
-                case JsonObjectException _:
-                    actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message)
-                    {
-                        Location = ((JsonObjectException)actionExecutedContext.Exception).Path
-                    };
-                    break;
-                case JsonReaderException _:
-                    actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message)
-                    {
-                        Location = ((JsonReaderException)actionExecutedContext.Exception).Path
-                    };
-                    break;
-                case QBitNinjaException _:
-                    QBitNinjaException rapidEx = actionExecutedContext.Exception as QBitNinjaException;
+                actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message);
+            }
+
+            if (actionExecutedContext.Exception is JsonObjectException jsonEx)
+            {
+                actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message)
+                {
+                    Location = jsonEx.Path
+                };
+            }
+
+            if (actionExecutedContext.Exception is JsonReaderException jsonReaderException)
+            {
+                actionExecutedContext.Exception = new QBitNinjaException(400, actionExecutedContext.Exception.Message)
+                {
+                    Location = jsonReaderException.Path
+                };
+            }
+
+            if (actionExecutedContext.Exception is QBitNinjaException rapidEx)
+            {
+                actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage
+                {
+                    StatusCode = (HttpStatusCode)rapidEx.StatusCode,
+                    ReasonPhrase = rapidEx.Message + (rapidEx.Location == null ? "" : " at " + rapidEx.Location),
+                    Content = new ObjectContent<QBitNinjaError>(rapidEx.ToError(), actionExecutedContext.ActionContext.ControllerContext.Configuration.Formatters.JsonFormatter, "application/json")
+                });
+            }
+
+            if (actionExecutedContext.Exception is StorageException storageEx)
+            {
+                if (storageEx.RequestInformation != null
+                    && storageEx.RequestInformation.HttpStatusCode == 404)
+                {
                     actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage
                     {
-                        StatusCode = (HttpStatusCode)rapidEx.StatusCode,
-                        ReasonPhrase = rapidEx.Message + (rapidEx.Location == null ? "" : " at " + rapidEx.Location),
-                        Content = new ObjectContent<QBitNinjaError>(rapidEx.ToError(), actionExecutedContext.ActionContext.ControllerContext.Configuration.Formatters.JsonFormatter, "application/json")
+                        StatusCode = HttpStatusCode.NotFound
                     });
-                    break;
-                case StorageException _:
-                    StorageException storageEx = actionExecutedContext.Exception as StorageException;
-                    if (storageEx?.RequestInformation != null && storageEx.RequestInformation.HttpStatusCode == 404)
-                    {
-                        actionExecutedContext.Exception = new HttpResponseException(new HttpResponseMessage
-                        {
-                            StatusCode = HttpStatusCode.NotFound
-                        });
-                    }
-
-                    break;
+                }
             }
 
             base.OnException(actionExecutedContext);
