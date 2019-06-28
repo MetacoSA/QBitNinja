@@ -48,7 +48,7 @@ namespace QBitNinja.Client
 
 				if(compressor != null)
 				{
-					response.Content = new CompressedContent(response.Content, compressor);
+					response.Content = await CompressedContent.Create(response.Content, compressor);
 				}
 			}
 
@@ -108,25 +108,36 @@ namespace QBitNinja.Client
 	{
 		private readonly MemoryStream _Buffer = new MemoryStream();
 
-		public CompressedContent(HttpContent content, Compressor compressor)
+		private CompressedContent()
 		{
-			using(content)
-			{
-				using(var compressionStream = compressor.CreateCompressionStream(_Buffer))
-				{
-					content.CopyToAsync(compressionStream).GetAwaiter().GetResult();
-					foreach(var header in content.Headers)
-					{
-						Headers.TryAddWithoutValidation(header.Key, header.Value);
-					}
-					Headers.ContentEncoding.Add(compressor.EncodingType);
-				}
-				Headers.ContentLength = _Buffer.Length;
-				_Buffer.Position = 0;
-			}
+			
 		}
+        public static async Task<CompressedContent> Create(HttpContent content, Compressor compressor)
+        {
+            var result = new CompressedContent();
+            await result.CompressContent(content, compressor);
+            return result;
+        }
 
-		protected override bool TryComputeLength(out long length)
+        private async Task CompressContent(HttpContent content, Compressor compressor)
+        {
+            using (content)
+            {
+                using (var compressionStream = compressor.CreateCompressionStream(_Buffer))
+                {
+                    await content.CopyToAsync(compressionStream);
+                    foreach (var header in content.Headers)
+                    {
+                        Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    }
+                    Headers.ContentEncoding.Add(compressor.EncodingType);
+                }
+                Headers.ContentLength = _Buffer.Length;
+                _Buffer.Position = 0;
+            }
+        }
+
+        protected override bool TryComputeLength(out long length)
 		{
 			length = _Buffer.Length;
 			return true;

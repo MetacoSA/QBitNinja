@@ -428,6 +428,7 @@ namespace QBitNinja.Client
 
 		public async Task<T> Send<T>(HttpMethod method, object body, string relativePath, params object[] parameters)
 		{
+            retry:
 			var uri = GetFullUri(relativePath, parameters);
 
 			var message = new HttpRequestMessage(method, uri);
@@ -438,6 +439,11 @@ namespace QBitNinja.Client
 			var result = await Client.SendAsync(message).ConfigureAwait(false);
 			if(result.StatusCode == HttpStatusCode.NotFound)
 				return default(T);
+            if (result.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                await Task.Delay(10000);
+                goto retry;
+            }
 			if(!result.IsSuccessStatusCode)
 			{
 				string error = await result.Content.ReadAsStringAsync().ConfigureAwait(false);

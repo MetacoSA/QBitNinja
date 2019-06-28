@@ -25,15 +25,23 @@ namespace QBitNinja.Controllers
 	{
 		public MainController(
 			ConcurrentChain chain,
-			QBitNinjaConfiguration config)
+			QBitNinjaConfiguration config,
+            ChainSynchronizeStatus status)
 		{
 			Configuration = config;
-			Chain = chain;
+            this.status = status;
+            this.chain = chain;
 		}
-		public ConcurrentChain Chain
+        ConcurrentChain chain;
+
+        public ConcurrentChain Chain
 		{
-			get;
-			set;
+			get
+            {
+                if (status.Synchronizing)
+                    throw Error((int)HttpStatusCode.ServiceUnavailable, "The chain is still synching");
+                return chain;
+            }
 		}
 
 		public new QBitNinjaConfiguration Configuration
@@ -164,7 +172,7 @@ namespace QBitNinja.Controllers
 
 		[HttpGet]
 		[Route("wallets/{walletName}/balance")]
-		public BalanceModel WalletBalance(
+		public Task<BalanceModel> WalletBalance(
 			string walletName,
 			[ModelBinder(typeof(BalanceLocatorModelBinder))]
 			BalanceLocator continuation = null,
@@ -183,7 +191,7 @@ namespace QBitNinja.Controllers
 
 		[HttpPost]
 		[Route("wallets/{walletname}/addresses")]
-		public WalletAddress AddWalletAddresses(
+		public async Task<WalletAddress> AddWalletAddresses(
 			string walletName,
 			[FromBody]InsertWalletAddress insertAddress)
 		{
@@ -205,7 +213,7 @@ namespace QBitNinja.Controllers
 
 			var repo = Configuration.CreateWalletRepository();
 
-			if(!repo.AddWalletAddress(address, insertAddress.MergePast))
+			if(!(await repo.AddWalletAddress(address, insertAddress.MergePast)).Added)
 				throw Error(409, "This address already exist in the wallet");
 
 			var unused = Configuration.Topics.AddedAddresses.AddAsync(new[] { address });
@@ -234,7 +242,7 @@ namespace QBitNinja.Controllers
 
 		[HttpPost]
 		[Route("wallets/{walletName}/keysets")]
-		public HDKeySet CreateKeyset(string walletName, [FromBody]HDKeySet keyset)
+		public async Task<HDKeySet> CreateKeyset(string walletName, [FromBody]HDKeySet keyset)
 		{
 			AssertValidUrlPart(keyset.Name, "Keyset name");
 			if(keyset.ExtPubKeys == null || keyset.ExtPubKeys.Length == 0)
@@ -253,7 +261,7 @@ namespace QBitNinja.Controllers
 			if(!repo.AddKeySet(walletName, keysetData))
 				throw Error(409, "Keyset already exists");
 
-			var newAddresses = repo.Scan(walletName, keysetData, 0, 20);
+			var newAddresses = await repo.Scan(walletName, keysetData, 0, 20);
 
 			foreach(var addresses in newAddresses.Partition(20))
 			{
@@ -323,7 +331,7 @@ namespace QBitNinja.Controllers
 
 		[HttpGet]
 		[Route("wallets/{walletName}/summary")]
-		public BalanceSummary AddressBalanceSummary(
+		public Task<BalanceSummary> AddressBalanceSummary(
 			string walletName,
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
 			BlockFeature at = null,
@@ -491,7 +499,7 @@ namespace QBitNinja.Controllers
 
 		[HttpGet]
 		[Route("balances/{balanceId}/summary")]
-		public BalanceSummary AddressBalanceSummary(
+		public Task<BalanceSummary> AddressBalanceSummary(
 			[ModelBinder(typeof(BalanceIdModelBinder))]
 			BalanceId balanceId,
 			[ModelBinder(typeof(BlockFeatureModelBinder))]
@@ -504,7 +512,7 @@ namespace QBitNinja.Controllers
 			return BalanceSummary(balanceId, at, debug, colored, unconfExpiration);
 		}
 
-		public BalanceSummary BalanceSummary(
+		public async Task<BalanceSummary> BalanceSummary(
 			BalanceId balanceId,
 			BlockFeature at,
 			bool debug,
@@ -560,8 +568,8 @@ namespace QBitNinja.Controllers
 			client.ColoredBalance = colored;
 
 			var diff =
-				client
-				.GetOrderedBalance(balanceId, query)
+				(await client
+				.GetOrderedBalance(balanceId, query))
 				.WhereNotExpired(expiration)
 				.TakeWhile(_ => !cancel.IsCancellationRequested)
 				//Some confirmation of the fetched unconfirmed may hide behind stopAtHeigh
@@ -577,7 +585,6 @@ namespace QBitNinja.Controllers
 				});
 			}
 			RemoveBehind(diff, stopAtHeight);
-			RemoveConflicts(diff);
 
 			var unconfs = diff.Unconfirmed;
 			var confs = cachedLocator == null ?
@@ -676,7 +683,7 @@ namespace QBitNinja.Controllers
 
 		[HttpGet]
 		[Route("balances/{balanceId}")]
-		public BalanceModel AddressBalance(
+		public Task<BalanceModel> AddressBalance(
 			[ModelBinder(typeof(BalanceIdModelBinder))]
 			BalanceId balanceId,
 			[ModelBinder(typeof(BalanceLocatorModelBinder))]
@@ -701,7 +708,7 @@ namespace QBitNinja.Controllers
 		}
 
 		TimeSpan Expiration = TimeSpan.FromHours(24.0);
-		BalanceModel Balance(BalanceId balanceId,
+		async Task<BalanceModel> Balance(BalanceId balanceId,
 			BalanceLocator continuation,
 			BlockFeature until,
 			BlockFeature from,
@@ -751,8 +758,8 @@ namespace QBitNinja.Controllers
 			var client = Configuration.Indexer.CreateIndexerClient();
 			client.ColoredBalance = colored;
 			var balance =
-				client
-				.GetOrderedBalance(balanceId, query)
+				(await client
+				.GetOrderedBalance(balanceId, query))
 				.TakeWhile(_ => !cancel.IsCancellationRequested)
 				.WhereNotExpired(expiration)
 				.Where(o => includeImmature || IsMature(o, Chain.Tip))
@@ -781,7 +788,7 @@ namespace QBitNinja.Controllers
 				}
 			}
 
-			var conflicts = RemoveConflicts(balance);
+			List<OrderedBalanceChange> conflicts = balance.ReplacedTransactions;
 
 			if(unspentOnly)
 			{
@@ -815,56 +822,7 @@ namespace QBitNinja.Controllers
 			return unconfExpiration == null ? Expiration : TimeSpan.FromHours(unconfExpiration.Value);
 		}
 
-		private List<OrderedBalanceChange> RemoveConflicts(BalanceSheet balance)
-		{
-			var spentOutputs = new Dictionary<OutPoint, OrderedBalanceChange>();
-			var conflicts = new List<OrderedBalanceChange>();
-			var unconfirmedConflicts = new List<OrderedBalanceChange>();
-			foreach(var balanceChange in balance.All)
-			{
-				foreach(var spent in balanceChange.SpentCoins)
-				{
-					if(!spentOutputs.TryAdd(spent.Outpoint, balanceChange))
-					{
-						var balanceChange2 = spentOutputs[spent.Outpoint];
-						var score = GetScore(balanceChange);
-						var score2 = GetScore(balanceChange2);
-						var conflicted =
-							score == score2 ?
-									((balanceChange.SeenUtc < balanceChange2.SeenUtc) ? balanceChange : balanceChange2) :
-							score < score2 ? balanceChange : balanceChange2;
-						conflicts.Add(conflicted);
-
-						var nonConflicted = conflicted == balanceChange ? balanceChange2 : balanceChange;
-						if(nonConflicted.BlockId == null || !Chain.Contains(nonConflicted.BlockId))
-							unconfirmedConflicts.Add(conflicted);
-					}
-				}
-			}
-			foreach(var conflict in conflicts)
-			{
-				balance.All.Remove(conflict);
-				balance.Unconfirmed.Remove(conflict);
-			}
-
-			return unconfirmedConflicts;
-		}
-
-		private long GetScore(OrderedBalanceChange balance)
-		{
-			long score = 0;
-			if(balance.BlockId != null)
-			{
-				score += 10;
-				if(Chain.Contains(balance.BlockId))
-				{
-					score += 100;
-				}
-			}
-			return score;
-		}
-
-		private Exception InvalidParameters(string message)
+        private Exception InvalidParameters(string message)
 		{
 			return new HttpResponseException(new HttpResponseMessage()
 			{
@@ -952,8 +910,9 @@ namespace QBitNinja.Controllers
 
 		const ulong VERSIONBITS_TOP_BITS = 0x20000000UL;
 		const ulong VERSIONBITS_TOP_MASK = 0xE0000000UL;
+        private readonly ChainSynchronizeStatus status;
 
-		[HttpGet]
+        [HttpGet]
 		[Route("whatisit/{data}")]
 		public async Task<object> WhatIsIt(string data)
 		{

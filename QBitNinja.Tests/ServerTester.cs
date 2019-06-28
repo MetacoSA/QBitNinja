@@ -82,6 +82,11 @@ namespace QBitNinja.Tests
             ChainBuilder = new ChainBuilder(this);
             _resolver.Get<ConcurrentChain>(); //So ConcurrentChain load
             watch.Stop();
+            var status = _resolver.Get<ChainSynchronizeStatus>();
+            while(status.Synchronizing)
+            {
+                Thread.Sleep(100);
+            }
         }
 
         private bool ShouldSetup(string ns)
@@ -273,14 +278,14 @@ namespace QBitNinja.Tests
 
         public void UpdateServerChain(bool insist = false)
         {
-            if(!_resolver.UpdateChain())
+            if(!_resolver.UpdateChain().GetAwaiter().GetResult())
             {
                 if(insist)
                 {
                     for(int i = 0; i < 5; i++)
                     {
                         Thread.Sleep(100);
-                        if(_resolver.UpdateChain())
+                        if(_resolver.UpdateChain().GetAwaiter().GetResult())
                             return;
                     }
                 }

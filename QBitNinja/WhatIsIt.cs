@@ -49,7 +49,7 @@ namespace QBitNinja
                 if (b58 is WhatIsAddress)
                 {
                     var address = (WhatIsAddress)b58;
-                    TryFetchRedeemOrPubKey(address);
+                    await TryFetchRedeemOrPubKey(address);
                 }
                 return b58;
             }
@@ -72,12 +72,12 @@ namespace QBitNinja
             {
                 TxDestination dest = new KeyId(data);
                 var address = new WhatIsAddress(dest.GetAddress(Network));
-                if (TryFetchRedeemOrPubKey(address))
+                if (await TryFetchRedeemOrPubKey(address))
                     return address;
 
                 dest = new ScriptId(data);
                 address = new WhatIsAddress(dest.GetAddress(Network));
-                if (TryFetchRedeemOrPubKey(address))
+                if (await TryFetchRedeemOrPubKey(address))
                     return address;
             }
 
@@ -138,23 +138,23 @@ namespace QBitNinja
         }
 
 
-        private bool TryFetchRedeemOrPubKey(WhatIsAddress address)
+        private async Task<bool> TryFetchRedeemOrPubKey(WhatIsAddress address)
         {
             if (address.IsP2SH)
             {
-                address.RedeemScript = TryFetchRedeem(address);
+                address.RedeemScript = await TryFetchRedeem(address);
                 return address.RedeemScript != null;
             }
-            address.PublicKey = TryFetchPublicKey(address);
+            address.PublicKey = await TryFetchPublicKey(address);
             return address.PublicKey != null;
         }
 
 
-        private Script FindScriptSig(WhatIsAddress address)
+        private async Task<Script> FindScriptSig(WhatIsAddress address)
         {
             var indexer = Configuration.Indexer.CreateIndexerClient();
-            var scriptSig = indexer
-                            .GetOrderedBalance(address.ScriptPubKey.Raw)
+            var scriptSig = (await indexer
+                            .GetOrderedBalance(address.ScriptPubKey.Raw))
                             .Where(b => b.SpentCoins.Count != 0)
                             .Select(b => new
                             {
@@ -167,18 +167,18 @@ namespace QBitNinja
             return scriptSig;
         }
 
-        private WhatIsScript TryFetchRedeem(WhatIsAddress address)
+        private async Task<WhatIsScript> TryFetchRedeem(WhatIsAddress address)
         {
-            var scriptSig = FindScriptSig(address);
+            var scriptSig = await FindScriptSig(address);
             if (scriptSig == null)
                 return null;
             var result = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);
             return result == null ? null : new WhatIsScript(result.RedeemScript, Network);
         }
 
-        private WhatIsPublicKey TryFetchPublicKey(WhatIsAddress address)
+        private async Task<WhatIsPublicKey> TryFetchPublicKey(WhatIsAddress address)
         {
-            var scriptSig = FindScriptSig(address);
+            var scriptSig = await FindScriptSig(address);
             if (scriptSig == null)
                 return null;
             var result = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(scriptSig);

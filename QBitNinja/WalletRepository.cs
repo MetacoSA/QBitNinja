@@ -113,7 +113,7 @@ namespace QBitNinja
                 .Create(address.Address.ToString(), address, false);
         }
 
-        public List<WalletAddress> Scan(string walletName, KeySetData keysetData, int from, int lookahead)
+        public async Task<List<WalletAddress>> Scan(string walletName, KeySetData keysetData, int from, int lookahead)
         {
             List<WalletAddress> addedAddresses = new List<WalletAddress>();
             bool nextUnusedChanged = false;
@@ -129,19 +129,19 @@ namespace QBitNinja
                                           .ToArray();
                 nextToScan = from + lookahead;
                 HackToPreventOOM(addresses);
-                Parallel.ForEach(addresses, address =>
+                foreach (var address in addresses)
                 {
-                    bool empty;
-                    if(AddWalletAddress(address, true, out empty))
+                    var addWalletResult = await AddWalletAddress(address, true);
+                    if (addWalletResult.Empty)
                     {
                         var n = address.HDKey.Path.Indexes.Last();
-                        if(!empty)
+                        if(!addWalletResult.Empty)
                         {
                             lock(used)
                                 used.Add(n);
                         }
                     }
-                });
+                }
                 addedAddresses.AddRange(addresses);
                 if(used.Count == 0)
                     break;
@@ -223,18 +223,11 @@ namespace QBitNinja
         {
             return KeyDataTable.GetChild(walletName, keysetName).Read();
         }
-
-        public bool AddWalletAddress(WalletAddress address, bool mergePast)
+        public async Task<(bool Added, bool Empty)> AddWalletAddress(WalletAddress address, bool mergePast)
         {
-            bool merge = false;
-            return AddWalletAddress(address, mergePast, out merge);
-        }
-
-        public bool AddWalletAddress(WalletAddress address, bool mergePast, out bool empty)
-        {
-            empty = true;
+            var empty = true;
             if(!AddAddress(address))
-                return false;
+                return (false, empty);
 
             if(address.HDKeySet != null)
                 KeyDataTable.GetChild(address.WalletName, address.HDKeySet.Name).Create(Encode(address.ScriptPubKey), address.HDKey, false);
@@ -245,14 +238,14 @@ namespace QBitNinja
             {
                 CancellationTokenSource cancel = new CancellationTokenSource();
                 cancel.CancelAfter(10000);
-                empty = !Indexer.MergeIntoWallet(address.WalletName, address, entry.Rule, cancel.Token);
+                empty = !await Indexer.MergeIntoWallet(address.WalletName, address, entry.Rule, cancel.Token);
             }
             if(!empty)
             {
                 GetBalanceSummaryCacheTable(address.WalletName, true).Delete();
                 GetBalanceSummaryCacheTable(address.WalletName, false).Delete();
             }
-            return true;
+            return (true, empty);
         }
 
 

@@ -3,6 +3,7 @@ using NBitcoin.Indexer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace QBitNinja.Tests
 {
@@ -148,7 +149,7 @@ namespace QBitNinja.Tests
             Chain.SetTip(chainedBlock);
             if (!SkipIndexer)
             {
-                indexer.IndexChain(Chain);
+                indexer.IndexChain(Chain, default(CancellationToken)).GetAwaiter().GetResult();
                 UpdateCheckpoints();
             }
             _ongoingTransactions.Clear();
@@ -191,7 +192,7 @@ namespace QBitNinja.Tests
                 .AddKeys(from)
                 .AddCoins(tx.Outputs.Select(o => new Coin(tx, o)).ToArray())
                 .Send(to, amount)
-                .SetChange(from.GetAddress())
+                .SetChange(from.GetAddress(ScriptPubKeyType.Legacy))
                 .BuildTransaction(true);
             Broadcast(result);
             return result;

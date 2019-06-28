@@ -127,7 +127,7 @@ namespace QBitNinja.Notifications
             _Chain = chain;
             ListenerTrace.Info("Fetching headers from " + _Chain.Tip.Height + " (from azure)");
             var client = Configuration.Indexer.CreateIndexerClient();
-            client.SynchronizeChain(chain);
+            client.SynchronizeChain(chain, default(CancellationToken)).GetAwaiter().GetResult();
             ListenerTrace.Info("Headers fetched tip " + _Chain.Tip.Height);
 
             _Disposables.Add(_IndexerScheduler = new CustomThreadPoolTaskScheduler(50, 100, "Indexing Threads"));
@@ -457,7 +457,7 @@ namespace QBitNinja.Notifications
                             .AsEnumerable()
                             .ToList();
                     }
-                    UpdateHDState(balances);
+                    UpdateHDState(balances).GetAwaiter().GetResult();
 
                     _Indexer.IndexAsync(balances)
                         .ContinueWith(HandleException);
@@ -500,7 +500,7 @@ namespace QBitNinja.Notifications
                 {
                     balances = block.Transactions.SelectMany(tx => OrderedBalanceChange.ExtractWalletBalances(null, tx, null, null, 0, _Wallets)).ToList();
                 }
-                UpdateHDState(balances);
+                UpdateHDState(balances).GetAwaiter().GetResult();
             }
 
             if(message.Message.Payload is HeadersPayload)
@@ -510,7 +510,7 @@ namespace QBitNinja.Notifications
                     var header = _Chain.Tip.Header;
                     _LastChainTip = _Chain.Tip.HashBlock;
 
-                    Configuration.Indexer.CreateIndexer().IndexChain(_Chain);
+                    Configuration.Indexer.CreateIndexer().IndexChain(_Chain, default(CancellationToken)).GetAwaiter().GetResult();
 
                     Async(() =>
                     {
@@ -612,16 +612,16 @@ namespace QBitNinja.Notifications
             }
         }
 
-        private void UpdateHDState(List<OrderedBalanceChange> balances)
+        private async Task UpdateHDState(List<OrderedBalanceChange> balances)
         {
             foreach(var balance in balances)
             {
-                UpdateHDState(balance);
+                await UpdateHDState(balance);
             }
 
         }
 
-        private void UpdateHDState(OrderedBalanceChange entry)
+        private async Task UpdateHDState(OrderedBalanceChange entry)
         {
             var repo = Configuration.CreateWalletRepository();
             IDisposable walletLock = null;
@@ -638,7 +638,7 @@ namespace QBitNinja.Notifications
                     if(keyIndex < keySet.State.NextUnused)
                         return;
                     walletLock = walletLock ?? _WalletsSlimLock.LockWrite();
-                    foreach(var address in repo.Scan(matchedAddress.WalletName, keySet, keyIndex + 1, 20))
+                    foreach(var address in await repo.Scan(matchedAddress.WalletName, keySet, keyIndex + 1, 20))
                     {
                         ListenerTrace.Info("New wallet rule");
                         var walletEntry = address.CreateWalletRuleEntry();

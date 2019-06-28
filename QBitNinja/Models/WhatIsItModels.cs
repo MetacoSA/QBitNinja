@@ -67,7 +67,7 @@ namespace QBitNinja.Client.Models
 		public WhatIsPublicKey(PubKey pubkey, Network network)
 		{
 			Hex = pubkey.ToHex();
-			Address = new WhatIsAddress(pubkey.GetAddress(network));
+			Address = new WhatIsAddress(pubkey.GetAddress(ScriptPubKeyType.Legacy, network));
 			P2SHAddress = new WhatIsAddress(pubkey.ScriptPubKey.GetScriptAddress(network))
 			{
 				RedeemScript = new WhatIsScript(pubkey.ScriptPubKey, network)

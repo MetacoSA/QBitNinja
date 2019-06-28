@@ -9,6 +9,7 @@ using NBitcoin.Indexer;
 using System.IO;
 using System.Threading;
 using Microsoft.WindowsAzure.Storage.Table;
+using System.Threading.Tasks;
 
 namespace QBitNinja
 {
@@ -60,43 +61,56 @@ namespace QBitNinja
 		{
 			_defaultResolver = defaultResolver;
 			ContainerBuilder builder = new ContainerBuilder();
-			builder.Register(ctx => configuration).SingleInstance();
+            ChainSynchronizeStatus chainStatus = new ChainSynchronizeStatus();
+            builder.Register(ctx => chainStatus).SingleInstance();
+            builder.Register(ctx => configuration).SingleInstance();
 			builder.Register(ctx => configuration.Indexer.CreateIndexerClient());
 			builder.Register(ctx =>
 			{
 				var client = ctx.Resolve<IndexerClient>();
 				ConcurrentChain chain = new ConcurrentChain(configuration.Indexer.Network);
-				LoadCache(chain, configuration.LocalChain, configuration.Indexer.Network);
-				var changes = client.GetChainChangesUntilFork(chain.Tip, false);
-				try
-				{
-					changes.UpdateChain(chain);
-				}
-				catch(ArgumentException) //Happen when chain in table is corrupted
-				{
-					client.Configuration.GetChainTable().DeleteIfExists();
-					for(int i = 0; i < 20; i++)
-					{
-						try
-						{
-							if(client.Configuration.GetChainTable().CreateIfNotExists())
-								break;
-						}
-						catch
-						{
-						}
-						Thread.Sleep(10000);
-					}
-					client.Configuration.CreateIndexer().IndexChain(chain);
-				}
-				SaveChainCache(chain, configuration.LocalChain);
-				return chain;
+                _ = LoadChain(configuration, client, chain, chainStatus);
+                return chain;
 			}).SingleInstance();
 			builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 			_container = builder.Build();
 		}
 
-		private static void LoadCache(ConcurrentChain chain, string cacheLocation, Network network)
+        private async Task LoadChain(QBitNinjaConfiguration configuration, IndexerClient client, ConcurrentChain chain, ChainSynchronizeStatus status)
+        {
+            await Task.Delay(1).ConfigureAwait(false);
+            LoadCache(chain, configuration.LocalChain, configuration.Indexer.Network);
+            status.FileCachedHeight = chain.Height;
+            var changes = client.GetChainChangesUntilFork(chain.Tip, false);
+            try
+            {
+                await changes.UpdateChain(chain, _Cts.Token);
+            }
+            catch (ArgumentException) //Happen when chain in table is corrupted
+            {
+                client.Configuration.GetChainTable().DeleteIfExists();
+                for (int i = 0; i < 20; i++)
+                {
+                    try
+                    {
+                        if (client.Configuration.GetChainTable().CreateIfNotExists())
+                            break;
+                    }
+                    catch
+                    {
+                    }
+                    await Task.Delay(10000);
+                }
+                status.ReindexHeaders = true;
+                await client.Configuration.CreateIndexer().IndexChain(chain, _Cts.Token);
+            }
+            status.TableFetchedHeight = chain.Height;
+            SaveChainCache(chain, configuration.LocalChain);
+            status.Synchronizing = false;
+            Interlocked.Decrement(ref _UpdateChain);
+        }
+
+        private static void LoadCache(ConcurrentChain chain, string cacheLocation, Network network)
 		{
 			if(string.IsNullOrEmpty(cacheLocation))
 				return;
@@ -167,28 +181,38 @@ namespace QBitNinja
 			return service == null ? _defaultResolver.GetServices(serviceType) : new[] { service };
 		}
 
-		#endregion
+        #endregion
 
-		#region IDisposable Members
-
+        #region IDisposable Members
+        CancellationTokenSource _Cts = new CancellationTokenSource();
 		public void Dispose()
 		{
-			SaveChainCache(Get<ConcurrentChain>(), Get<QBitNinjaConfiguration>().LocalChain);
+            _Cts.Cancel();
+            SaveChainCache(Get<ConcurrentChain>(), Get<QBitNinjaConfiguration>().LocalChain);
 			_container.Dispose();
+        }
 
-		}
+        #endregion
 
-		#endregion
-
-		public bool UpdateChain()
+        int _UpdateChain = 1;
+		public async Task<bool> UpdateChain()
 		{
-			var client = Get<IndexerClient>();
-			var chain = Get<ConcurrentChain>();
-			var oldTip = chain.Tip.HashBlock;
-			var changes = client.GetChainChangesUntilFork(chain.Tip, false);
-			changes.UpdateChain(chain);
-			var newTip = chain.Tip.HashBlock;
-			return newTip != oldTip;
-		}
+            if (Interlocked.CompareExchange(ref _UpdateChain, 1, 0) != 0)
+                return false;
+            try
+            {
+                var client = Get<IndexerClient>();
+                var chain = Get<ConcurrentChain>();
+                var oldTip = chain.Tip.HashBlock;
+                var changes = client.GetChainChangesUntilFork(chain.Tip, false, _Cts.Token);
+                await changes.UpdateChain(chain, _Cts.Token);
+                var newTip = chain.Tip.HashBlock;
+                return newTip != oldTip;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _UpdateChain);
+            }
+        }
 	}
 }

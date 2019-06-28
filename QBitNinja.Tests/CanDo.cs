@@ -180,7 +180,7 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
-        public void CanInitialIndex()
+        public async Task CanInitialIndex()
         {
             using(var tester = ServerTester.Create())
             {
@@ -207,7 +207,7 @@ namespace QBitNinja.Tests
                 Assert.Equal(5 * 2, indexer.Run());
 
                 var client = tester.Configuration.Indexer.CreateIndexerClient();
-                Assert.Equal(3, client.GetOrderedBalance(bob).Count());
+                Assert.Equal(3, (await client.GetOrderedBalance(bob)).Count());
 
                 Assert.Equal(last.GetHash(), tester.Configuration.Indexer.CreateIndexer().GetCheckpoint(IndexerCheckpoints.Balances).BlockLocator.Blocks[0]);
 
@@ -216,7 +216,7 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
-        public void CanInitialIndexConcurrently()
+        public async Task CanInitialIndexConcurrently()
         {
             using(var tester = ServerTester.Create())
             {
@@ -252,7 +252,7 @@ namespace QBitNinja.Tests
                 Assert.Equal(5 * 2, processed);
 
                 var client = tester.Configuration.Indexer.CreateIndexerClient();
-                Assert.Equal(3, client.GetOrderedBalance(bob).Count());
+                Assert.Equal(3, (await client.GetOrderedBalance(bob)).Count());
             }
         }
 
@@ -416,7 +416,7 @@ namespace QBitNinja.Tests
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
                 wait.Wait();
 
-                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].BlockId == null);
@@ -433,7 +433,7 @@ namespace QBitNinja.Tests
                 Assert.NotNull(indexer.GetBlock(block.GetHash()));
                 tester.UpdateServerChain(true);
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 1);
                 Assert.True(balance.Operations[0].BlockId == block.GetHash());
@@ -680,7 +680,7 @@ namespace QBitNinja.Tests
                 var firstCoinbase = tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                var result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                var result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -705,7 +705,7 @@ namespace QBitNinja.Tests
                 tester.UpdateServerChain();
 
                 //2 conf for coinbase, nothing changed for alice
-                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -731,7 +731,7 @@ namespace QBitNinja.Tests
                 tester.UpdateServerChain();
 
                 //5 conf for coinbase, it is mature, and so the cache should not be hit.
-                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -759,7 +759,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -785,7 +785,7 @@ namespace QBitNinja.Tests
 
                 tester.ChainBuilder.SendMoney(alice, bob, tx, Money.Parse("0.04"));
 
-                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -827,7 +827,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
@@ -859,7 +859,7 @@ namespace QBitNinja.Tests
 
                 tester.ChainBuilder.EmitBlock();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + alice.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
@@ -901,7 +901,7 @@ namespace QBitNinja.Tests
                 var bob = new Key().GetBitcoinSecret(tester.Network);
                 tester.ChainBuilder.EmitMoney("0.01", bob, coinbase: false);
                 tester.ChainBuilder.EmitMoney("0.1", bob, coinbase: true);
-                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
@@ -921,7 +921,7 @@ namespace QBitNinja.Tests
                 }, result);
 
                 //The at should remove any unconfirmed info
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=0&debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=0&debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Immature = new BalanceSummaryDetails(),
@@ -933,7 +933,7 @@ namespace QBitNinja.Tests
                 tester.UpdateServerChain();
 
                 //Coinbase 1 confirmed
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
@@ -959,7 +959,7 @@ namespace QBitNinja.Tests
                 }, result);
 
                 //Same query with at
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=1&debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=1&debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = null,
@@ -987,7 +987,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitMoney("0.21", bob, coinbase: true);
                 tester.ChainBuilder.EmitMoney("0.3", bob);
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails()
@@ -1020,7 +1020,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
@@ -1049,7 +1049,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 Assert.True(result.Spendable.Amount == Money.Parse("0.31"));
 
                 tester.ChainBuilder.EmitBlock();
@@ -1058,7 +1058,7 @@ namespace QBitNinja.Tests
                 var firstMaturityHeight = tester.ChainBuilder.Chain.Height;
 
                 //First coinbase is now mature
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
@@ -1084,7 +1084,7 @@ namespace QBitNinja.Tests
                 }, result);
 
                 //Did not altered history
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + (tester.ChainBuilder.Chain.Height - 1));
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + (tester.ChainBuilder.Chain.Height - 1));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = null,
@@ -1114,7 +1114,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
@@ -1132,7 +1132,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     }
                 }, result);
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?debug=true&at=" + (2 + 4));
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true&at=" + (2 + 4));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = null,
@@ -1153,7 +1153,7 @@ namespace QBitNinja.Tests
                 }, result);
 
                 //Did not altered history when the first coinbase was confirmed
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + firstMaturityHeight);
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + firstMaturityHeight);
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = null,
@@ -1177,7 +1177,7 @@ namespace QBitNinja.Tests
                     }
                 }, result);
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + (firstMaturityHeight + 1));
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + (firstMaturityHeight + 1));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = null,
@@ -1220,7 +1220,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = alice1.GetBitcoinSecret(tester.Network).GetAddress()
+                    Address = alice1.GetBitcoinSecret(tester.Network).GetAddress(ScriptPubKeyType.Legacy)
                 });
 
                 var result = tester.SendGet<BalanceSummary>("wallets/Alice/summary?debug=true");
@@ -1232,7 +1232,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = alice2.GetBitcoinSecret(tester.Network).GetAddress()
+                    Address = alice2.GetBitcoinSecret(tester.Network).GetAddress(ScriptPubKeyType.Legacy)
                 });
 
                 //Alice2 recieved money in the past, so cache should be invalidated
@@ -1246,7 +1246,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = alice3.GetBitcoinSecret(Network.TestNet).GetAddress()
+                    Address = alice3.GetBitcoinSecret(Network.TestNet).GetAddress(ScriptPubKeyType.Legacy)
                 });
 
                 //Should not invalidate the cache, alice3 never received money
@@ -1256,7 +1256,7 @@ namespace QBitNinja.Tests
         }
 
         [Fact]
-        public void CanGetBalanceSummaryNoConcurrencyProblems()
+        public async Task CanGetBalanceSummaryNoConcurrencyProblems()
         {
             using(var tester = ServerTester.Create())
             {
@@ -1272,12 +1272,12 @@ namespace QBitNinja.Tests
 
                 //Index the headers
                 var indexer = tester.Configuration.Indexer.CreateIndexer();
-                indexer.IndexChain(tester.ChainBuilder.Chain);
+                await indexer.IndexChain(tester.ChainBuilder.Chain, default(CancellationToken));
                 tester.UpdateServerChain();
                 //
 
                 //No balances indexed, should be zero
-                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     UnConfirmed = new BalanceSummaryDetails(),
@@ -1290,7 +1290,7 @@ namespace QBitNinja.Tests
                 var chk = indexer.GetCheckpoint(IndexerCheckpoints.Balances);
                 chk.SaveProgress(tester.ChainBuilder.Chain.Tip);
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 //Should now be indexed
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
@@ -1321,7 +1321,7 @@ namespace QBitNinja.Tests
                 AssertEx.HttpError(400, () => tester.SendGet<BalanceSummary>("balances/3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH")); //Do not accept mainnet
                 tester.SendGet<BalanceSummary>("balances/" + BitcoinAddress.Create("3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH", Network.Main).ToNetwork(tester.Network));
                 tester.CreateClient().GetBalanceSummary(BitcoinAddress.Create("3FceQQyXMdiYoj5vLtu29VPgvDkxsEfxYH", Network.Main).ToNetwork(tester.Network)).GetAwaiter().GetResult();
-                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails(),
@@ -1332,7 +1332,7 @@ namespace QBitNinja.Tests
 
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
 
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
@@ -1354,7 +1354,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1373,7 +1373,7 @@ namespace QBitNinja.Tests
                     }
                 }, result);
                 //Should now take the cache
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1396,7 +1396,7 @@ namespace QBitNinja.Tests
 
                 tx = tester.ChainBuilder.EmitMoney("1.5", bob);
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1423,7 +1423,7 @@ namespace QBitNinja.Tests
                 var forkPoint = tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1444,7 +1444,7 @@ namespace QBitNinja.Tests
 
                 tester.ChainBuilder.SendMoney(bob, alice, tx, Money.Parse("0.11"));
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1471,7 +1471,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1495,7 +1495,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1520,7 +1520,7 @@ namespace QBitNinja.Tests
                 }, result);
 
                 //Can ask old balance
-                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?at=" + beforeAliceHeight);
+                result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + beforeAliceHeight);
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
                     Confirmed = new BalanceSummaryDetails()
@@ -1549,12 +1549,12 @@ namespace QBitNinja.Tests
             {
                 var bob = new Key().GetBitcoinSecret(Network.TestNet);
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), bob);
-                var prev = tester.ChainBuilder.EmitMoney(Money.Coins(1.5m), bob.ScriptPubKey + OpcodeType.OP_NOP);
+                var prev = tester.ChainBuilder.EmitMoney(Money.Coins(1.5m), bob.GetAddress(ScriptPubKeyType.Legacy).ScriptPubKey + OpcodeType.OP_NOP);
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
                 var bobCoin = prev.Outputs.AsCoins().First();
-                bobCoin.ScriptPubKey = bob.ScriptPubKey;
+                bobCoin.ScriptPubKey = bob.GetAddress(ScriptPubKeyType.Legacy).ScriptPubKey;
 
                 var tx = tester.Network.Consensus.ConsensusFactory.CreateTransaction();
                 tx.Inputs.AddRange(new[]{ new TxIn()
@@ -1568,7 +1568,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary");
+                var result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 Assert.Equal(1, result.Confirmed.TransactionCount);
             }
         }
@@ -1597,19 +1597,19 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
-                    Address = alice1.GetAddress()
+                    Address = alice1.GetAddress(ScriptPubKeyType.Legacy)
                 });
 
                 AssertEx.HttpError(409, () => tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
-                    Address = alice1.GetAddress()
+                    Address = alice1.GetAddress(ScriptPubKeyType.Legacy)
                 }));
 
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = false,
-                    Address = alice2.GetAddress()
+                    Address = alice2.GetAddress(ScriptPubKeyType.Legacy)
                 });
 
                 var balance = tester.SendGet<BalanceModel>("wallets/Alice/balance");
@@ -1630,7 +1630,7 @@ namespace QBitNinja.Tests
                 tester.Send<WalletAddress>(HttpMethod.Post, "wallets/Alice/addresses", new InsertWalletAddress()
                 {
                     MergePast = true,
-                    Address = alice3.GetAddress(),
+                    Address = alice3.GetAddress(ScriptPubKeyType.Legacy),
                     UserData = new JValue("hello")
                 });
 
@@ -1696,11 +1696,11 @@ namespace QBitNinja.Tests
                 var listener = tester.CreateListenerTester();
                 tester.ChainBuilder.SkipIndexer = true;
 
-                var alice1 = pubkeyAlice.ExtPubKey.Derive(1).PubKey.GetAddress(tester.Network);
+                var alice1 = pubkeyAlice.ExtPubKey.Derive(1).PubKey.GetAddress(ScriptPubKeyType.Legacy, tester.Network);
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.0m), alice1);
-                var alice20 = pubkeyAlice.ExtPubKey.Derive(20).PubKey.GetAddress(tester.Network);
+                var alice20 = pubkeyAlice.ExtPubKey.Derive(20).PubKey.GetAddress(ScriptPubKeyType.Legacy, tester.Network);
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.1m), alice20); //Should be found because alice1 "extend" the scan
-                var alice41 = pubkeyAlice.ExtPubKey.Derive(41).PubKey.GetAddress(tester.Network);
+                var alice41 = pubkeyAlice.ExtPubKey.Derive(41).PubKey.GetAddress(ScriptPubKeyType.Legacy, tester.Network);
                 var waiter = listener.WaitMessageAsync(tester.Configuration.Topics.NewTransactions);
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.2m), alice41); //But 41 is "outside" the gap limit
                 Assert.True(waiter.Wait(10000));
@@ -1727,7 +1727,7 @@ namespace QBitNinja.Tests
                 var keyset = tester.Send<KeySetData>(HttpMethod.Get, "wallets/" + aliceName + "/keysets/SingleNoP2SH");
                 Assert.Equal(21, keyset.State.NextUnused);
 
-                var alice21 = pubkeyAlice.ExtPubKey.Derive(21).PubKey.GetAddress(tester.Network);
+                var alice21 = pubkeyAlice.ExtPubKey.Derive(21).PubKey.GetAddress(ScriptPubKeyType.Legacy, tester.Network);
                 tester.ChainBuilder.EmitMoney(Money.Coins(1.3m), alice21); //Receiving on alice21 should fire a scan of 41
 
                 var waiter2 = listener.WaitMessageAsync(tester.Configuration.Topics.NewBlocks);
@@ -1764,9 +1764,9 @@ namespace QBitNinja.Tests
                     P2SH = false
                 });
                 var result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/0");
-                Assert.Equal(pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(tester.Network), result.Address);
+                Assert.Equal(pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/0")).PubKey.GetAddress(ScriptPubKeyType.Legacy, tester.Network), result.Address);
                 result = tester.Send<HDKeyData>(HttpMethod.Get, "wallets/alice/keysets/SingleNoP2SH/unused/1");
-                Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(tester.Network));
+                Assert.Equal(result.Address, pubkeyAlice.ExtPubKey.Derive(KeyPath.Parse("1/2/3/1")).PubKey.GetAddress(ScriptPubKeyType.Legacy, tester.Network));
                 Assert.Equal(result.Path, KeyPath.Parse("1/2/3/1"));
                 Assert.Null(result.RedeemScript);
 
@@ -1836,9 +1836,9 @@ namespace QBitNinja.Tests
                 var bob = new Key().GetBitcoinSecret(tester.Network);
                 var alice = new Key().GetBitcoinSecret(tester.Network);
 
-                tester.AssertTotal(bob.GetAddress(), Money.Zero);
-                tester.AssertTotal(bob.GetAddress(), new AssetMoney(gold, 0));
-                tester.AssertTotal(bob.GetAddress(), new AssetMoney(silver, 0));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Zero);
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), new AssetMoney(gold, 0));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), new AssetMoney(silver, 0));
 
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(100), goldGuy);
                 var goldIssuance = new IssuanceCoin(tx.Outputs.AsCoins().First());
@@ -1847,9 +1847,9 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitMoney(Money.Coins(90), bob);
                 tester.ChainBuilder.EmitMoney(Money.Coins(50), alice);
 
-                tester.AssertTotal(bob.GetAddress(), Money.Coins(90));
-                tester.AssertTotal(bob.GetAddress(), new AssetMoney(gold, 0));
-                tester.AssertTotal(bob.GetAddress(), new AssetMoney(silver, 0));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Coins(90));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), new AssetMoney(gold, 0));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), new AssetMoney(silver, 0));
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1931,7 +1931,7 @@ namespace QBitNinja.Tests
                     tester.AssertTotal(bob, new AssetMoney(gold, 990));
                     tester.AssertTotal(bob, new AssetMoney(silver, 9));
                 }
-                var summary = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress() + "/summary?colored=true");
+                var summary = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?colored=true");
                 Assert.NotNull(summary.Confirmed.Assets);
             }
         }
@@ -1964,7 +1964,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.Broadcast(tx1);
                 tester.ChainBuilder.Broadcast(tx2);
 
-                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.Equal(2, balance.Operations.Count);
                 Assert.True(balance.Operations[0].TransactionId == tx2.GetHash());
                 Assert.Single(balance.ConflictedOperations);
@@ -1974,7 +1974,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.Equal(2, balance.Operations.Count);
                 Assert.Contains(balance.Operations, op => op.TransactionId == tx1.GetHash());
                 Assert.Empty(balance.ConflictedOperations);
@@ -1987,25 +1987,25 @@ namespace QBitNinja.Tests
             using(var tester = ServerTester.Create())
             {
                 var bob = new Key().GetBitcoinSecret(tester.Network);
-                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
-                tester.AssertTotal(bob.GetAddress(), Money.Zero);
+                var balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Zero);
                 Assert.True(balance.Operations.Count == 0);
 
                 var tx = tester.ChainBuilder.EmitMoney(Money.Coins(1.00m), bob);
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
-                tester.AssertTotal(bob.GetAddress(), Money.Coins(1.0m));
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Coins(1.0m));
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].BlockId == null);
 
                 var b = tester.ChainBuilder.EmitBlock(); //1
                 tester.UpdateServerChain();
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.True(balance.Operations[0].Confirmations == 1);
                 Assert.True(balance.Operations[0].BlockId == b.GetHash());
 
                 //Trying with Script
-                balance = tester.SendGet<BalanceModel>("balances/0x" + Encoders.Hex.EncodeData(bob.ScriptPubKey.ToBytes()));
+                balance = tester.SendGet<BalanceModel>("balances/0x" + Encoders.Hex.EncodeData(bob.GetAddress(ScriptPubKeyType.Legacy).ScriptPubKey.ToBytes()));
                 Assert.True(balance.Operations[0].Confirmations == 1);
                 Assert.True(balance.Operations[0].BlockId == b.GetHash());
 
@@ -2017,45 +2017,45 @@ namespace QBitNinja.Tests
                       .BuildTransaction(true);
                 tester.ChainBuilder.Broadcast(tx);
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.True(balance.Operations.Count == 2);
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?unspentOnly=true");
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "?unspentOnly=true");
                 Assert.True(balance.Operations.Count == 1);
                 Assert.True(balance.Operations[0].Confirmations == 0);
                 Assert.True(balance.Operations[0].TransactionId == tx.GetHash());
-                tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Coins(0.95m));
 
                 tester.ChainBuilder.EmitBlock(); //2
                 tester.UpdateServerChain();
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.True(balance.Operations.Count == 2);
                 Assert.True(balance.Operations[0].Confirmations == 1);
-                tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Coins(0.95m));
 
                 tester.ChainBuilder.EmitMoney(Money.Parse("0.02"), bob, coinbase: true);
                 tester.ChainBuilder.EmitBlock(); //3
                 tester.UpdateServerChain();
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress());
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy));
                 Assert.True(balance.Operations.Count == 2); //Immature should not appear
-                tester.AssertTotal(bob.GetAddress(), Money.Coins(0.95m));
+                tester.AssertTotal(bob.GetAddress(ScriptPubKeyType.Legacy), Money.Coins(0.95m));
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?includeimmature=true");
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "?includeimmature=true");
                 Assert.True(balance.Operations.Count == 3); //Except if asked for
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=1");
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "?from=1");
                 Assert.True(balance.Operations.Count == 1); //Should only have the operation at 1
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=1&includeimmature=true");
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "?from=1&includeimmature=true");
                 Assert.True(balance.Operations.Count == 1); //Should only have the operation at 1
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?until=2&includeimmature=true");
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "?until=2&includeimmature=true");
                 Assert.True(balance.Operations.Count == 2); //Should only have the operation at 2 and the immature
 
-                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress() + "?from=2&until=1&includeimmature=true");
+                balance = tester.SendGet<BalanceModel>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "?from=2&until=1&includeimmature=true");
                 Assert.True(balance.Operations.Count == 2); //Should only have the 2 operations
 
                 AssertEx.HttpError(400, () => tester.SendGet<GetTransactionResponse>("balances/000lol"));    // todo: there's a risk that Dispose() will be called for tester when the lambda executes
@@ -2088,7 +2088,7 @@ namespace QBitNinja.Tests
                 bob = bob.PrivateKey.GetBitcoinSecret(Network.TestNet);
                 AssertWhatIsIt(
                     tester,
-                    bob.GetAddress().ToString(),
+                    bob.GetAddress(ScriptPubKeyType.Legacy).ToString(),
                     "{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": null,  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
                     );
 
@@ -2154,7 +2154,7 @@ namespace QBitNinja.Tests
                 tester.ChainBuilder.Broadcast(tx);
                 AssertWhatIsIt(
                     tester,
-                    bob.GetAddress().ToString(),
+                    bob.GetAddress(ScriptPubKeyType.Legacy).ToString(),
                     "{  \"isP2SH\": false,  \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",  \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",  \"scriptPubKey\": {    \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",    \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",    \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",    \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",    \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"  },  \"redeemScript\": null,  \"publicKey\": {    \"hex\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b\",    \"isCompressed\": true,    \"address\": {      \"isP2SH\": false,      \"hash\": \"4fa965c94a53aaa0d87d1d05a826d77906ff5219\",      \"coloredAddress\": \"bWxk3rL5BEJLukaRBLn6yUUmSiusjigXNuU\",      \"scriptPubKey\": {        \"hash160\": \"26c1fdf631d1a846f2bf75a1c9c64c9dbf3922bc\",        \"hash256\": \"2832bbecde384ac895b63744b9c09a7b6be647352b38fdac544b6da01b8abfae\",        \"address\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",        \"raw\": \"76a9144fa965c94a53aaa0d87d1d05a826d77906ff521988ac\",        \"asm\": \"OP_DUP OP_HASH160 4fa965c94a53aaa0d87d1d05a826d77906ff5219 OP_EQUALVERIFY OP_CHECKSIG\"      },      \"redeemScript\": null,      \"publicKey\": null,      \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",      \"type\": \"PUBKEY_ADDRESS\",      \"network\": \"TestNet\"    },    \"p2shAddress\": {      \"isP2SH\": true,      \"hash\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"coloredAddress\": \"c7QUaGwyfuwuRTnjjjkm2H84yCrCYrQFUQZ\",      \"scriptPubKey\": {        \"hash160\": \"390950ca1e399f208c56d04cd23b5ad4ecefe0b8\",        \"hash256\": \"e08a70b09ed1604f91e85208594531a53099cf1b63e3c7bcc9386399dedda970\",        \"address\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",        \"raw\": \"a914e947748c6687299740a448d524dc7aef830023a787\",        \"asm\": \"OP_HASH160 e947748c6687299740a448d524dc7aef830023a7 OP_EQUAL\"      },      \"redeemScript\": {        \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",        \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",        \"address\": null,        \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",        \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"      },      \"publicKey\": null,      \"base58\": \"2NEWh2nALSU1jbYaNh8eqdGAPsF2NrKtL3b\",      \"type\": \"SCRIPT_ADDRESS\",      \"network\": \"TestNet\"    },    \"scriptPubKey\": {      \"hash160\": \"e947748c6687299740a448d524dc7aef830023a7\",      \"hash256\": \"dd4fd0f0036155064b97c45fd07d3b3a525672d4fb5f7c198c6afc84c571943e\",      \"address\": null,      \"raw\": \"21025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4bac\",      \"asm\": \"025300d86198673257a4d76c6b6e9012b0f3799fdbd7751065aa543b1615859e4b OP_CHECKSIG\"    }  },  \"base58\": \"mnnAcAFqkpTDtLFpJ9znpcrsPJhZfFUFQ5\",  \"type\": \"PUBKEY_ADDRESS\",  \"network\": \"TestNet\"}"
                     );
                 //Should also find with the pub key hash

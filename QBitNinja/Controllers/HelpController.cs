@@ -1,19 +1,53 @@
-﻿using QBitNinja.Models;
+﻿using NBitcoin;
+using QBitNinja.Models;
 using System.IO;
+using System.Net.Http;
 using System.Text;
-using System.Web.Mvc;
+using System.Web.Http;
+
 
 namespace QBitNinja.Controllers
 {
-    public class HelpController : Controller
+    public class HelpController : ApiController
     {
-        public ActionResult Index()
+        private readonly ChainSynchronizeStatus status;
+        private readonly ConcurrentChain chain;
+
+        public HelpController(ChainSynchronizeStatus status, ConcurrentChain chain)
+        {
+            this.status = status;
+            this.chain = chain;
+        }
+
+        [HttpGet]
+        [Route("")]
+        public HttpResponseMessage Index()
         {
             var sb = new StringBuilder();
-            var model = new HelpModel
+            if (status.Synchronizing is true)
             {
-                Routes = new[] 
-                { 
+                sb.AppendLine("<!DOCTYPE html>");
+                sb.AppendLine("<html><head></head><body>");
+                sb.AppendLine("More documentation on <a href=\"http://docs.qbitninja.apiary.io/\">http://docs.qbitninja.apiary.io/</a>.");
+                sb.AppendLine("<h2>QBit Ninja is starting...</h2><ul>");
+                sb.AppendLine($"<li>Reindexed Headers: {status.ReindexHeaders}</li>");
+                if (status.FileCachedHeight.HasValue)
+                {
+                    sb.AppendLine($"<li>File fetched headers: {status.FileCachedHeight} blocks</li>");
+                }
+                if (status.TableFetchedHeight.HasValue)
+                {
+                    sb.AppendLine($"<li>Table fetched headers: {status.TableFetchedHeight} blocks</li>");
+                }
+                sb.AppendLine($"<li>Current header chain: {chain.Height} blocks</li>");
+                sb.AppendLine("</ul></body></html>");
+            }
+            else
+            {
+                var model = new HelpModel
+                {
+                    Routes = new[]
+                    {
                     new RouteModel
                     {
                         Template = "blocks/[blockId|height|tip]?format=[json|raw]&headeronly=[false|true]",
@@ -27,10 +61,10 @@ namespace QBitNinja.Controllers
                             "blocks/tip?format=json&headeronly=true",
                             "blocks/tip?format=raw",
                             "blocks/tip?format=raw&headeronly=true",
-							"blocks/tip?format=raw&headeronly=true&extended=true",
-						}
+                            "blocks/tip?format=raw&headeronly=true&extended=true",
+                        }
                     },
-					new RouteModel
+                    new RouteModel
                     {
                         Template = "blocks/[blockFeature]/header",
                         Samples = new RouteSample[]
@@ -97,10 +131,10 @@ namespace QBitNinja.Controllers
                         {
                             new RouteSample("whatisit/15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", "P2PKH Address"),
                             new RouteSample("whatisit/02012edcbdf6f8b7d4d315338423196ce1c4251ede5a8c9c1dfff645f67a008935", "Public key"),
-                            new RouteSample("whatisit/356facdac5f5bcae995d13e667bb5864fd1e7d59", "Hash pub key"), 
-                            new RouteSample("whatisit/OP_DUP OP_HASH160 356facdac5f5bcae995d13e667bb5864fd1e7d59 OP_EQUALVERIFY OP_CHECKSIG","Script"), 
-                            new RouteSample("whatisit/76a914356facdac5f5bcae995d13e667bb5864fd1e7d5988ac","Script bytes"), 
-                            
+                            new RouteSample("whatisit/356facdac5f5bcae995d13e667bb5864fd1e7d59", "Hash pub key"),
+                            new RouteSample("whatisit/OP_DUP OP_HASH160 356facdac5f5bcae995d13e667bb5864fd1e7d59 OP_EQUALVERIFY OP_CHECKSIG","Script"),
+                            new RouteSample("whatisit/76a914356facdac5f5bcae995d13e667bb5864fd1e7d5988ac","Script bytes"),
+
                             new RouteSample("whatisit/3P2sV4w1ZSk5gr6eePd6U2V56Mx5fT3RkD","P2SH Address"),
                             new RouteSample("whatisit/ea1bea7de1b975b962adbd57a9e0533449962a80", "Script Hash"),
                             new RouteSample("whatisit/2103f670154f21dd26f558a5718776b3905d19ee83b01592255ea7b472d52d09d8baac", "Script bytes"),
@@ -114,37 +148,41 @@ namespace QBitNinja.Controllers
                              new RouteSample("whatisit/what is my future","Astrology")
                         }
                     },
-					new RouteModel
-					{
-						Template = "Miscellaneous",
-						Samples = new RouteSample[]
-						{
-							"versionstats",
-							"bip9"
-						}
-					},
-				}
-            };
-
-            sb.AppendLine("<!DOCTYPE html>");
-            sb.AppendLine("<html><head></head><body>");
-            sb.AppendLine("More documentation on <a href=\"http://docs.qbitninja.apiary.io/\">http://docs.qbitninja.apiary.io/</a>.");
-            sb.AppendLine("<h2>Methods</h2><ul>");
-            foreach (var route in model.Routes)
-            {
-                sb.AppendLine($"<li>{route.Template}");
-                sb.AppendLine($"<ul>");
-                foreach (var sample in route.Samples)
-                {
-                    sb.AppendLine($"<li>{sample.Comment ?? ""}");
-                    sb.AppendLine($"<a href=\"{sample.Url}\">{sample.Url}</a></li>");
+                    new RouteModel
+                    {
+                        Template = "Miscellaneous",
+                        Samples = new RouteSample[]
+                        {
+                            "versionstats",
+                            "bip9"
+                        }
+                    },
                 }
-                sb.AppendLine($"</ul></li>");
-            }
-            sb.AppendLine("</ul>");
-            sb.AppendLine("</ul></body></html>");
+                };
 
-            return this.Content(sb.ToString(), "text/html");
+                sb.AppendLine("<!DOCTYPE html>");
+                sb.AppendLine("<html><head></head><body>");
+                sb.AppendLine("More documentation on <a href=\"http://docs.qbitninja.apiary.io/\">http://docs.qbitninja.apiary.io/</a>.");
+                sb.AppendLine("<h2>Methods</h2><ul>");
+                foreach (var route in model.Routes)
+                {
+                    sb.AppendLine($"<li>{route.Template}");
+                    sb.AppendLine($"<ul>");
+                    foreach (var sample in route.Samples)
+                    {
+                        sb.AppendLine($"<li>{sample.Comment ?? ""}");
+                        sb.AppendLine($"<a href=\"{sample.Url}\">{sample.Url}</a></li>");
+                    }
+                    sb.AppendLine($"</ul></li>");
+                }
+                sb.AppendLine("</ul>");
+                sb.AppendLine("</ul></body></html>");
+            }
+
+            var response = new HttpResponseMessage();
+            response.Content = new StringContent(sb.ToString());
+            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/html");
+            return response;
         }
     }
 }

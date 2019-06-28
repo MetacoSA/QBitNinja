@@ -27,12 +27,14 @@ namespace QBitNinja
             get;
             set;
         }
-
         public void Listen(HttpConfiguration config)
         {
             Resolver = (QBitNinjaDependencyResolver)config.DependencyResolver;
 
-            Timer = new Timer(_ => Resolver.UpdateChain());
+            Timer = new Timer(_ =>
+            {
+                _ = Resolver.UpdateChain();
+            });
             Timer.Change(0, (int)TimeSpan.FromSeconds(30).TotalMilliseconds);
 
             var conf = Resolver.Get<QBitNinjaConfiguration>();
@@ -43,7 +45,7 @@ namespace QBitNinja
                 .EnsureSubscriptionExists()
                 .OnMessage(b =>
                 {
-                    Resolver.UpdateChain();
+                    _ = Resolver.UpdateChain();
                 });
         }
 
