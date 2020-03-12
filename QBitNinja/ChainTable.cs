@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using NBitcoin;
 using NBitcoin.Indexer;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +14,17 @@ namespace QBitNinja
     /// </summary>
     public class ChainTable<T>
     {
+        private readonly JsonSerializerSettings serializerSettings;
         readonly CloudTable _cloudTable;
-        public ChainTable(CloudTable cloudTable)
+        public ChainTable(CloudTable cloudTable, Network network)
         {
             if(cloudTable == null)
                 throw new ArgumentNullException("cloudTable");
+            if (network == null)
+                throw new ArgumentNullException(nameof(network));
+            JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
+            QBitNinja.Serializer.RegisterFrontConverters(serializerSettings, network);
+            this.serializerSettings = serializerSettings;
             _cloudTable = cloudTable;
         }
 
@@ -37,7 +44,7 @@ namespace QBitNinja
 
         public void Create(ConfirmedBalanceLocator locator, T item)
         {
-            var str = Serializer.ToString(item);
+            var str = JsonConvert.SerializeObject(item, serializerSettings);
             var entity = new DynamicTableEntity(Escape(Scope), Escape(locator));
             PutData(entity, str);
             Table.Execute(TableOperation.InsertOrReplace(entity));
@@ -71,7 +78,7 @@ namespace QBitNinja
             var tableQuery = query.CreateTableQuery(Escape(Scope), "");
             return ExecuteBalanceQuery(Table, tableQuery, query.PageSizes)
                    .Where(_ => chain.Contains(((ConfirmedBalanceLocator)UnEscapeLocator(_.RowKey)).BlockHash))
-                   .Select(_ => Serializer.ToObject<T>(ParseData(_)));
+                   .Select(_ => JsonConvert.DeserializeObject<T>(ParseData(_), serializerSettings));
         }
 
         private string ParseData(DynamicTableEntity entity)

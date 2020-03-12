@@ -1,6 +1,8 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
+using NBitcoin;
 using NBitcoin.Indexer;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,14 +14,17 @@ namespace QBitNinja
 {
     public class CrudTableFactory
     {
-        public CrudTableFactory(Func<CloudTable> createTable, Scope scope = null)
+        public CrudTableFactory(JsonSerializerSettings serializerSettings, Func<CloudTable> createTable, Scope scope = null)
         {
+            if (serializerSettings == null)
+                throw new ArgumentNullException(nameof(serializerSettings));
             if (createTable == null)
                 throw new ArgumentNullException("createTable");
             if (scope == null)
                 scope = new Scope();
             _createTable = createTable;
             Scope = scope;
+            this.serializerSettings = serializerSettings;
         }
 
         readonly Func<CloudTable> _createTable;
@@ -29,10 +34,12 @@ namespace QBitNinja
             private set;
         }
 
+        private JsonSerializerSettings serializerSettings;
+
         public CrudTable<T> GetTable<T>(string tableName)
         {
             var table = _createTable();
-            return new CrudTable<T>(table)
+            return new CrudTable<T>(table, serializerSettings)
             {
                 Scope = Scope.GetChild(tableName)
             };
@@ -40,12 +47,15 @@ namespace QBitNinja
     }
     public class CrudTable<T>
     {
-        public CrudTable(CloudTable table)
+        public CrudTable(CloudTable table, JsonSerializerSettings serializerSettings)
         {
             if (table == null)
                 throw new ArgumentNullException("table");
+            if (serializerSettings == null)
+                throw new ArgumentNullException(nameof(serializerSettings));
             _table = table;
             Scope = new Scope();
+            this.serializerSettings = serializerSettings;
         }
 
         public Scope Scope
@@ -53,6 +63,8 @@ namespace QBitNinja
             get;
             set;
         }
+
+        private JsonSerializerSettings serializerSettings;
         private readonly CloudTable _table;
         public CloudTable Table
         {
@@ -66,7 +78,7 @@ namespace QBitNinja
         {
             try
             {
-                var callbackStr = Serializer.ToString(item);
+                var callbackStr = JsonConvert.SerializeObject(item, serializerSettings);
                 var entity = new DynamicTableEntity(Escape(Scope), Escape(itemId))
                 {
                     Properties =
@@ -158,7 +170,7 @@ namespace QBitNinja
             {
                 FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
             })
-            .Select(e => Serializer.ToObject<T>(e.Properties["data"].StringValue))
+            .Select(e => JsonConvert.DeserializeObject<T>(e.Properties["data"].StringValue, serializerSettings))
             .ToArray();
         }
 
@@ -180,7 +192,7 @@ namespace QBitNinja
             var e = (await Table.ExecuteAsync(TableOperation.Retrieve(Escape(Scope), Escape(item))).ConfigureAwait(false)).Result as DynamicTableEntity;
             if (e == null)
                 return default(T);
-            return Serializer.ToObject<T>(e.Properties["data"].StringValue);
+            return JsonConvert.DeserializeObject<T>(e.Properties["data"].StringValue, serializerSettings);
         }
 
 
@@ -200,7 +212,7 @@ namespace QBitNinja
 
         public CrudTable<T> GetChild(params string[] children)
         {
-            return new CrudTable<T>(Table)
+            return new CrudTable<T>(Table, serializerSettings)
             {
                 Scope = Scope.GetChild(children)
             };

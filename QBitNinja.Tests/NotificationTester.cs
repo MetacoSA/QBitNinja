@@ -12,6 +12,7 @@ using System.Threading;
 using Xunit;
 using System.IO;
 using System.Collections.Concurrent;
+using NBitcoin;
 
 namespace QBitNinja.Tests
 {
@@ -29,18 +30,18 @@ namespace QBitNinja.Tests
             Task = _Complete.Task;
         }
 
-        public NotificationRequest AssertReceived<T>(T obj)
+        public NotificationRequest AssertReceived<T>(T obj, Network network)
         {
-            var obj2 = GetBody<T>();
-            Assert.Equal(Serializer.ToString(obj), Serializer.ToString(obj2));
+            var obj2 = GetBody<T>(network);
+            Assert.Equal(Serializer.ToString(obj, network), Serializer.ToString(obj2, network));
             return this;
         }
 
-        public T GetBody<T>()
+        public T GetBody<T>(Network network)
         {
             _Body.Position = 0;
             var str = new StreamReader(_Body).ReadToEnd();
-            var obj2 = Serializer.ToObject<T>(str);
+            var obj2 = Serializer.ToObject<T>(str, network);
             return obj2;
         }
 

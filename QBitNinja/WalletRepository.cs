@@ -128,7 +128,7 @@ namespace QBitNinja
                                           .Select(key => WalletAddress.ToWalletAddress(walletName, keysetData, key))
                                           .ToArray();
                 nextToScan = from + lookahead;
-                HackToPreventOOM(addresses);
+                HackToPreventOOM(addresses, Network);
                 foreach (var address in addresses)
                 {
                     var addWalletResult = await AddWalletAddress(address, true);
@@ -153,17 +153,17 @@ namespace QBitNinja
                 SetKeySet(walletName, keysetData);
             return addedAddresses;
         }
-        private static void HackToPreventOOM(WalletAddress[] addresses)
+        private static void HackToPreventOOM(WalletAddress[] addresses, Network network)
         {
             var addr = addresses.FirstOrDefault();
             if(addr != null)
-                addr.CreateWalletRuleEntry().CreateTableEntity();
+                addr.CreateWalletRuleEntry(network).CreateTableEntity();
         }
 
 
-        private static string Hash(WalletAddress address)
+        private static string Hash(WalletAddress address, Network network)
         {
-            return Hashes.Hash256(Encoding.UTF8.GetBytes(Serializer.ToString(address))).ToString();
+            return Hashes.Hash256(Encoding.UTF8.GetBytes(Serializer.ToString(address, network))).ToString();
         }
 
         public WalletAddress[] GetAddresses(string walletName)
@@ -232,7 +232,7 @@ namespace QBitNinja
             if(address.HDKeySet != null)
                 KeyDataTable.GetChild(address.WalletName, address.HDKeySet.Name).Create(Encode(address.ScriptPubKey), address.HDKey, false);
 
-            var entry = address.CreateWalletRuleEntry();
+            var entry = address.CreateWalletRuleEntry(Network);
             Indexer.AddWalletRule(entry.WalletId, entry.Rule);
             if(mergePast)
             {

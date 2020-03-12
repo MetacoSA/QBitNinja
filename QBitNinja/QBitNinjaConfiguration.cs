@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using System.IO;
 using NBitcoin.RPC;
+using Newtonsoft.Json;
 
 namespace QBitNinja
 {
@@ -22,7 +23,8 @@ namespace QBitNinja
 	{
 		public QBitTopics(QBitNinjaConfiguration configuration)
 		{
-			_BroadcastedTransactions = new QBitNinjaTopic<BroadcastedTransaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("broadcastedtransactions").Name)
+			var n = configuration.Indexer.Network;
+			_BroadcastedTransactions = new QBitNinjaTopic<BroadcastedTransaction>(n, configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("broadcastedtransactions").Name)
 			{
 				EnableExpress = true
 			}, new SubscriptionCreation()
@@ -30,7 +32,7 @@ namespace QBitNinja
 				AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
 			});
 
-			_AddedAddresses = new QBitNinjaTopic<WalletAddress[]>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
+			_AddedAddresses = new QBitNinjaTopic<WalletAddress[]>(n, configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("walletrules").Name)
 			{
 				EnableExpress = true,
 				DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0)
@@ -39,7 +41,7 @@ namespace QBitNinja
 				AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
 			});
 
-			_NewBlocks = new QBitNinjaTopic<BlockHeader>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newblocks").Name)
+			_NewBlocks = new QBitNinjaTopic<BlockHeader>(n, configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newblocks").Name)
 			{
 				DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
 				EnableExpress = true
@@ -48,7 +50,7 @@ namespace QBitNinja
 				AutoDeleteOnIdle = TimeSpan.FromHours(24.0)
 			});
 
-			_NewTransactions = new QBitNinjaTopic<Transaction>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newtransactions").Name)
+			_NewTransactions = new QBitNinjaTopic<Transaction>(n, configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("newtransactions").Name)
 			{
 				DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
 			}, new SubscriptionCreation()
@@ -56,28 +58,28 @@ namespace QBitNinja
 				AutoDeleteOnIdle = TimeSpan.FromHours(24.0),
 			});
 
-			_SubscriptionChanges = new QBitNinjaTopic<SubscriptionChange>(configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("subscriptionchanges").Name)
+			_SubscriptionChanges = new QBitNinjaTopic<SubscriptionChange>(n, configuration.ServiceBus, new TopicCreation(configuration.Indexer.GetTable("subscriptionchanges").Name)
 			{
 				DefaultMessageTimeToLive = TimeSpan.FromMinutes(5.0),
 				EnableExpress = true
 			});
 
-			_SendNotifications = new QBitNinjaQueue<Notify>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("sendnotifications").Name)
+			_SendNotifications = new QBitNinjaQueue<Notify>(n, configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("sendnotifications").Name)
 			{
 				RequiresDuplicateDetection = true,
 				DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
 			});
-			_SendNotifications.GetMessageId = (n) => Hashes.Hash256(Encoding.UTF32.GetBytes(n.Notification.ToString())).ToString();
+			_SendNotifications.GetMessageId = (nn) => Hashes.Hash256(Encoding.UTF32.GetBytes(nn.Notification.ToString())).ToString();
 
 
-			_InitialIndexing = new QBitNinjaQueue<BlockRange>(configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("intitialindexing").Name)
+			_InitialIndexing = new QBitNinjaQueue<BlockRange>(n, configuration.ServiceBus, new QueueCreation(configuration.Indexer.GetTable("intitialindexing").Name)
 			{
 				RequiresDuplicateDetection = true,
 				DuplicateDetectionHistoryTimeWindow = TimeSpan.FromMinutes(10.0),
 				MaxDeliveryCount = int.MaxValue,
 				LockDuration = TimeSpan.FromMinutes(5.0)
 			});
-			_InitialIndexing.GetMessageId = (n) => n.ToString();
+			_InitialIndexing.GetMessageId = (nn) => nn.ToString();
 		}
 
 
@@ -272,7 +274,9 @@ namespace QBitNinja
 
 		public CrudTableFactory GetCrudTableFactory(Scope scope = null)
 		{
-			return new CrudTableFactory(GetCrudTable, scope);
+			JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
+			QBitNinja.Serializer.RegisterFrontConverters(serializerSettings, Indexer.Network);
+			return new CrudTableFactory(serializerSettings, GetCrudTable, scope);
 		}
 
 		public WalletRepository CreateWalletRepository(Scope scope = null)
@@ -285,7 +289,7 @@ namespace QBitNinja
 
 		public ChainTable<T> GetChainCacheTable<T>(Scope scope)
 		{
-			return new ChainTable<T>(GetChainCacheCloudTable())
+			return new ChainTable<T>(GetChainCacheCloudTable(), Indexer.Network)
 			{
 				Scope = scope
 			};

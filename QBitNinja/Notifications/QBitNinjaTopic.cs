@@ -64,8 +64,8 @@ namespace QBitNinja.Notifications
         class QBitNinjaTopicSubscription : QBitNinjaQueueBase<T, SubscriptionCreation, SubscriptionDescription>
         {
             private TopicCreation _Topic;
-            public QBitNinjaTopicSubscription(string connectionString, TopicCreation topic, SubscriptionCreation subscription)
-                : base(connectionString, subscription)
+            public QBitNinjaTopicSubscription(Network network, string connectionString, TopicCreation topic, SubscriptionCreation subscription)
+                : base(network, connectionString, subscription)
             {
                 _Topic = topic;
             }
@@ -144,16 +144,16 @@ namespace QBitNinja.Notifications
             }
         }
 
-        public QBitNinjaTopic(string connectionString, string topic)
-            : this(connectionString, new TopicCreation()
+        public QBitNinjaTopic(Network network, string connectionString, string topic)
+            : this(network, connectionString, new TopicCreation()
             {
                 Path = topic
             })
         {
 
         }
-        public QBitNinjaTopic(string connectionString, TopicCreation topic, SubscriptionCreation defaultSubscription = null)
-            : base(connectionString, topic)
+        public QBitNinjaTopic(Network network, string connectionString, TopicCreation topic, SubscriptionCreation defaultSubscription = null)
+            : base(network, connectionString, topic)
         {
             _Subscription = defaultSubscription;
             if(_Subscription == null)
@@ -193,7 +193,7 @@ namespace QBitNinja.Notifications
                 subscriptionDescription.Name = GetMac();
             subscriptionDescription.TopicPath = Creation.Path;
             subscriptionDescription.Merge(Subscription);
-            return new QBitNinjaTopic<T>(ConnectionString, Creation, subscriptionDescription);
+            return new QBitNinjaTopic<T>(network, ConnectionString, Creation, subscriptionDescription);
         }
 
         private string GetMac()
@@ -234,7 +234,7 @@ namespace QBitNinja.Notifications
 
         QBitNinjaTopicSubscription CreateSubscriptionClient()
         {
-            return new QBitNinjaTopicSubscription(ConnectionString, Creation, Subscription);
+            return new QBitNinjaTopicSubscription(network, ConnectionString, Creation, Subscription);
         }
 
         protected override IDisposable OnMessageAsyncCore(Func<BrokeredMessage, Task> act, OnMessageOptions options)

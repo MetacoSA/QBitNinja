@@ -34,11 +34,11 @@ namespace QBitNinja.Client.Tests
 
             
             client = new QBitNinjaClient(Network.Main);
-            var balance = client.GetBalance(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
+            var balance = client.GetBalance(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", Network.Main)).Result;
             Assert.NotNull(balance);
             Assert.Contains(balance.Operations, o => o.Amount == Money.Coins(0.02m));
 
-            var balanceSummary = client.GetBalanceSummary(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
+            var balanceSummary = client.GetBalanceSummary(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", Network.Main)).Result;
             Assert.True(balanceSummary.Confirmed.TransactionCount > 60);
 
 
@@ -77,7 +77,7 @@ namespace QBitNinja.Client.Tests
             try
             {
                 var client = new QBitNinjaClient(Network.TestNet);
-                var balance = client.GetBalance(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe")).Result;
+                var balance = client.GetBalance(new BitcoinPubKeyAddress("15sYbVpRh6dyWycZMwPdxJWD4xbfxReeHe", Network.Main)).Result;
                 Assert.False(true, "Should have thrown");
             }
             catch (AggregateException ex)

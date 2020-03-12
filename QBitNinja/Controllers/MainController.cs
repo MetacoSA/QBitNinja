@@ -625,6 +625,7 @@ namespace QBitNinja.Controllers
 			}
 
 			summary.PrepareForSend(at, debug);
+			var aa = JsonConvert.SerializeObject(summary, base.Configuration.Formatters.JsonFormatter.SerializerSettings);
 			return summary;
 		}
 

@@ -270,7 +270,7 @@ namespace QBitNinja.Notifications
                    {
                        foreach(var address in evt)
                        {
-                           _Wallets.Add(address.CreateWalletRuleEntry());
+                           _Wallets.Add(address.CreateWalletRuleEntry(Network));
                        }
                    }
                }));
@@ -333,7 +333,7 @@ namespace QBitNinja.Notifications
             HttpClient http = new HttpClient();
             var message = new HttpRequestMessage(HttpMethod.Post, n.Subscription.Url);
             n.Tried++;
-            var content = new StringContent(n.ToString(), Encoding.UTF8, "application/json");
+            var content = new StringContent(n.ToString(this.Configuration.Indexer.Network), Encoding.UTF8, "application/json");
             message.Content = content;
             CancellationTokenSource tcs = new CancellationTokenSource();
             tcs.CancelAfter(10000);
@@ -620,14 +620,14 @@ namespace QBitNinja.Notifications
             }
 
         }
-
+        Network Network => Configuration.Indexer.Network;
         private async Task UpdateHDState(OrderedBalanceChange entry)
         {
             var repo = Configuration.CreateWalletRepository();
             IDisposable walletLock = null;
             try
             {
-                foreach(var matchedAddress in entry.MatchedRules.Select(m => WalletAddress.TryParse(m.Rule.CustomData)).Where(m => m != null))
+                foreach(var matchedAddress in entry.MatchedRules.Select(m => WalletAddress.TryParse(m.Rule.CustomData, Network)).Where(m => m != null))
                 {
                     if(matchedAddress.HDKeySet == null)
                         return;
@@ -641,7 +641,7 @@ namespace QBitNinja.Notifications
                     foreach(var address in await repo.Scan(matchedAddress.WalletName, keySet, keyIndex + 1, 20))
                     {
                         ListenerTrace.Info("New wallet rule");
-                        var walletEntry = address.CreateWalletRuleEntry();
+                        var walletEntry = address.CreateWalletRuleEntry(Network);
                         _Wallets.Add(walletEntry);
                     }
                 }

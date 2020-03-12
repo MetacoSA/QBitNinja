@@ -232,23 +232,9 @@ namespace QBitNinja.Client.Models
 					SigHash = "All";
 					break;
 			}
-
-			R = signature.Signature.R.ToString(16);
-			S = signature.Signature.S.ToString(16);
 		}
 
 		public string Raw
-		{
-			get;
-			set;
-		}
-		public string R
-		{
-			get;
-			set;
-		}
-
-		public string S
 		{
 			get;
 			set;

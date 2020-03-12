@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NBitcoin;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
@@ -10,9 +11,9 @@ namespace QBitNinja.Tests
     public class AssertEx
     {
         //[DebuggerHidden]
-        public static void AssertJsonEqual(object expected, object actual)
+        public static void AssertJsonEqual(object expected, object actual, Network network)
         {
-            Assert.Equal(Serializer.ToString(expected), Serializer.ToString(actual));
+            Assert.Equal(Serializer.ToString(expected, network), Serializer.ToString(actual, network));
         }
         //[DebuggerHidden]
         public static void HttpError(int code, Action act)

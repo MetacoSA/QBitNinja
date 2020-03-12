@@ -50,6 +50,7 @@ namespace QBitNinja.Tests
 
         public ServerTester(string ns)
         {
+            Formatter = Serializer.JsonMediaTypeFormatter(Network.RegTest);
             CleanTable = true;
             Address = "http://localhost:" + FindFreePort() + "/";
             Configuration = QBitNinjaConfiguration.FromConfiguration(new ConfigurationManagerConfiguration());
@@ -83,7 +84,7 @@ namespace QBitNinja.Tests
             _resolver.Get<ConcurrentChain>(); //So ConcurrentChain load
             watch.Stop();
             var status = _resolver.Get<ChainSynchronizeStatus>();
-            while(status.Synchronizing)
+            while (status.Synchronizing)
             {
                 Thread.Sleep(100);
             }
@@ -140,6 +141,8 @@ namespace QBitNinja.Tests
                 }
             }
         }
+
+        public MediaTypeFormatter Formatter { get; private set; }
         public bool CleanTable
         {
             get;
@@ -186,13 +189,13 @@ namespace QBitNinja.Tests
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
             if(typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
-            return response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
+            return response.Content.ReadAsAsync<TResponse>(new[] { Formatter }).Result;
         }
 
         //[DebuggerHidden]
         public TResponse Send<TResponse>(HttpMethod method, string relativeAddress, object body = null)
         {
-            var seria = ((JsonMediaTypeFormatter)Serializer.JsonMediaTypeFormatter).SerializerSettings;
+            var seria = ((JsonMediaTypeFormatter)Formatter).SerializerSettings;
             seria.Formatting = Formatting.Indented;
             if(body != null)
             {
@@ -201,14 +204,14 @@ namespace QBitNinja.Tests
             HttpClient client = new HttpClient();
             var response = client.SendAsync(new HttpRequestMessage(method, Address + relativeAddress)
             {
-                Content = body == null ? null : new ObjectContent(body.GetType(), body, Serializer.JsonMediaTypeFormatter)
+                Content = body == null ? null : new ObjectContent(body.GetType(), body, Formatter)
             }).Result;
             response.EnsureSuccessStatusCode();
             if(typeof(TResponse) == typeof(byte[]))
                 return (TResponse)(object)response.Content.ReadAsByteArrayAsync().Result;
             if(typeof(string) == typeof(TResponse))
                 return (TResponse)(object)response.Content.ReadAsStringAsync().Result;
-            var result = response.Content.ReadAsAsync<TResponse>(new[] { Serializer.JsonMediaTypeFormatter }).Result;
+            var result = response.Content.ReadAsAsync<TResponse>(new[] { Formatter }).Result;
             if(result != null)
             {
                 var s = JsonConvert.SerializeObject(result, seria);

@@ -60,13 +60,13 @@ namespace QBitNinja.Client.Models
     public class WalletAddress : IDestination
     {
 #if !CLIENT
-        public static WalletAddress TryParse(string str)
+        public static WalletAddress TryParse(string str, Network network)
         {
             if(string.IsNullOrEmpty(str))
                 return null;
             try
             {
-                return Serializer.ToObject<WalletAddress>(str);
+                return Serializer.ToObject<WalletAddress>(str, network);
             }
             catch
             {

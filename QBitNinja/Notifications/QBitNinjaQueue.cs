@@ -13,16 +13,16 @@ namespace QBitNinja.Notifications
 {
     public class QBitNinjaQueue<T> : QBitNinjaQueueBase<T, QueueCreation, QueueDescription>
     {
-        public QBitNinjaQueue(string connectionString, string topic)
-            : this(connectionString, new QueueCreation()
+        public QBitNinjaQueue(Network network, string connectionString, string topic)
+            : this(network, connectionString, new QueueCreation()
             {
                 Path = topic
             })
         {
 
         }
-        public QBitNinjaQueue(string connectionString, QueueCreation queue)
-            : base(connectionString, queue)
+        public QBitNinjaQueue(Network network, string connectionString, QueueCreation queue)
+            : base(network, connectionString, queue)
         {
         }
 

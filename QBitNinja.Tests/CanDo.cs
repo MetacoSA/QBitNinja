@@ -98,7 +98,7 @@ namespace QBitNinja.Tests
                 Assert.True(response.Block.BlockHeader.GetHash() == block.Header.GetHash());
                 Assert.True(response.Block.Confirmations == 2);
                 Assert.True(response.Block.Height == 1);
-                var json = Serializer.ToString(response); //Can serialize without blowing up
+                var json = Serializer.ToString(response, tester.Network); //Can serialize without blowing up
                 Assert.Contains(txId.ToString(), json); //Just ensure no big endian problem for id
                                                              ////
 
@@ -340,7 +340,7 @@ namespace QBitNinja.Tests
 
                 var request = notifications.WaitRequest();
                 request.Complete(true);
-                var data = (NewTransactionNotificationData)request.GetBody<Notification>().Data;
+                var data = (NewTransactionNotificationData)request.GetBody<Notification>(tester.Network).Data;
                 Assert.True(data.TransactionId == tx.GetHash());
             }
         }
@@ -355,13 +355,13 @@ namespace QBitNinja.Tests
                     Id = "toto",
                     Url = notifications.Address
                 });
-
+                var network = tester.Network;
                 var listener = tester.CreateListenerTester();
                 var b = tester.ChainBuilder.EmitBlock();
                 var request = notifications.WaitRequest();
                 request.Complete(true);
 
-                var notification = request.GetBody<Notification>();
+                var notification = request.GetBody<Notification>(network);
                 var data = (NewBlockNotificationData)notification.Data;
 
                 if(data.Height == 0) //Due to timing problem, sometimes the first block is not received
@@ -373,7 +373,7 @@ namespace QBitNinja.Tests
 
                     request = notifications.WaitRequest();
                     request.Complete(true);
-                    notification = request.GetBody<Notification>();
+                    notification = request.GetBody<Notification>(network);
                     data = (NewBlockNotificationData)notification.Data;
                 }
 
@@ -387,14 +387,14 @@ namespace QBitNinja.Tests
                 b = tester.ChainBuilder.EmitBlock();
                 request = notifications.WaitRequest();
                 request.Complete(false);
-                notification = request.GetBody<Notification>();
+                notification = request.GetBody<Notification>(network);
                 data = (NewBlockNotificationData)notification.Data;
                 Assert.True(data.Header.GetHash() == b.Header.GetHash());
 
                 //Check has retried
                 request = notifications.WaitRequest();
                 request.Complete(true);
-                notification = request.GetBody<Notification>();
+                notification = request.GetBody<Notification>(network);
                 data = (NewBlockNotificationData)notification.Data;
                 Assert.True(data.Header.GetHash() == b.Header.GetHash());
                 Assert.True(notification.Tried == 2);
@@ -470,7 +470,7 @@ namespace QBitNinja.Tests
         {
             using(var tester = ServerTester.Create())
             {
-                var queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, "toto");
+                var queue = new QBitNinjaTopic<Transaction>(tester.Network, tester.Configuration.ServiceBus, "toto");
                 queue.EnsureExistsAsync().Wait();
                 queue.CreateConsumer(new SubscriptionCreation()).EnsureSubscriptionExists();
                 queue.CreateConsumer(new SubscriptionCreation()
@@ -478,7 +478,7 @@ namespace QBitNinja.Tests
                     UserMetadata = "hello"
                 }).EnsureSubscriptionExists();
 
-                queue = new QBitNinjaTopic<Transaction>(tester.Configuration.ServiceBus, new TopicCreation("toto")
+                queue = new QBitNinjaTopic<Transaction>(tester.Network, tester.Configuration.ServiceBus, new TopicCreation("toto")
                 {
                     EnableExpress = true
                 });
@@ -517,9 +517,9 @@ namespace QBitNinja.Tests
 
                 //Can get Block by height and special
                 var response3 = tester.SendGet<GetBlockResponse>("blocks/1");
-                Assert.Equal(Serializer.ToString(response2), Serializer.ToString(response3));
+                Assert.Equal(Serializer.ToString(response2, tester.Network), Serializer.ToString(response3, tester.Network));
                 response3 = tester.SendGet<GetBlockResponse>("blocks/last");
-                Assert.Equal(Serializer.ToString(response2), Serializer.ToString(response3));
+                Assert.Equal(Serializer.ToString(response2, tester.Network), Serializer.ToString(response3, tester.Network));
                 ////
 
                 //Can get header only
@@ -698,7 +698,7 @@ namespace QBitNinja.Tests
                     },
                     Spendable = new BalanceSummaryDetails(),
                     CacheHit = CacheHit.NoCache
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitMoney(Money.Parse("0.8"), alice, coinbase: true);
                 tester.ChainBuilder.EmitBlock();
@@ -723,7 +723,7 @@ namespace QBitNinja.Tests
                     },
                     Spendable = new BalanceSummaryDetails(),
                     CacheHit = CacheHit.PartialCache
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.ChainBuilder.EmitBlock();
@@ -754,7 +754,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.9")
                     },
                     CacheHit = CacheHit.NoCache //The previous cache have expired immature, so it miss
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -777,7 +777,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("1.7")
                     },
                     CacheHit = CacheHit.NoCache //The previous cache have expired immature, so it miss
-                }, result);
+                }, result, tester.Network);
 
                 var tx = tester.ChainBuilder.EmitMoney(Money.Parse("0.1"), alice, coinbase: true);
                 tester.ChainBuilder.EmitBlock();
@@ -813,7 +813,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("1.66")
                     },
                     CacheHit = CacheHit.PartialCache //The previous cache have not expired immature, so it should not miss
-                }, result);
+                }, result, tester.Network);
 
                 //Fork happen, making loose the second coinbase of Alice, and the remaining unconfirmed will not be in this new chain
                 tester.ChainBuilder.ClearMempool();
@@ -855,7 +855,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("0.9")
                     },
                     CacheHit = CacheHit.NoCache //The previous cache have not expired because coinbase 1 matured
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
 
@@ -887,7 +887,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("0.9")
                     },
                     CacheHit = CacheHit.PartialCache //The previous cache have not expired (where there is coinbase 2)
-                }, result);
+                }, result, tester.Network);
 
             }
         }
@@ -918,7 +918,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.01")
                     },
                     CacheHit = CacheHit.NoCache
-                }, result);
+                }, result, tester.Network);
 
                 //The at should remove any unconfirmed info
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=0&debug=true");
@@ -927,7 +927,7 @@ namespace QBitNinja.Tests
                     Immature = new BalanceSummaryDetails(),
                     Spendable = new BalanceSummaryDetails(),
                     CacheHit = CacheHit.FullCache
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -956,7 +956,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.01")
                     },
                     CacheHit = CacheHit.PartialCache
-                }, result);
+                }, result, tester.Network);
 
                 //Same query with at
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=1&debug=true");
@@ -982,7 +982,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.01")
                     },
                     CacheHit = CacheHit.FullCache
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitMoney("0.21", bob, coinbase: true);
                 tester.ChainBuilder.EmitMoney("0.3", bob);
@@ -1015,7 +1015,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.01") + Money.Parse("0.3")
                     },
                     CacheHit = CacheHit.PartialCache
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1043,7 +1043,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.01") + Money.Parse("0.3"),
                     },
                     CacheHit = CacheHit.PartialCache
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.ChainBuilder.EmitBlock();
@@ -1081,7 +1081,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
                     },
                     CacheHit = CacheHit.PartialCache
-                }, result);
+                }, result, tester.Network);
 
                 //Did not altered history
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + (tester.ChainBuilder.Chain.Height - 1));
@@ -1106,7 +1106,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("0.01") + Money.Parse("0.3"),
                         Amount = Money.Parse("0.01") + Money.Parse("0.3"),
                     }
-                }, result);
+                }, result, tester.Network);
 
                 //Second coin base
                 tester.ChainBuilder.EmitBlock();
@@ -1131,7 +1131,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                         Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     }
-                }, result);
+                }, result, tester.Network);
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?debug=true&at=" + (2 + 4));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
                 {
@@ -1150,7 +1150,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     },
                     CacheHit = CacheHit.PartialCache
-                }, result);
+                }, result, tester.Network);
 
                 //Did not altered history when the first coinbase was confirmed
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + firstMaturityHeight);
@@ -1175,7 +1175,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
                         Amount = Money.Parse("0.01") + Money.Parse("0.3") + Money.Parse("0.1"),
                     }
-                }, result);
+                }, result, tester.Network);
 
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + (firstMaturityHeight + 1));
                 AssertEx.AssertJsonEqual(new BalanceSummary()
@@ -1194,7 +1194,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                         Amount = Money.Parse("0.11") + Money.Parse("0.3") + Money.Parse("0.21"),
                     }
-                }, result);
+                }, result, tester.Network);
             }
         }
 
@@ -1283,7 +1283,7 @@ namespace QBitNinja.Tests
                     UnConfirmed = new BalanceSummaryDetails(),
                     Immature = new BalanceSummaryDetails(),
                     Spendable = new BalanceSummaryDetails()
-                }, result);
+                }, result, tester.Network);
 
                 //Index balances
                 indexer.IndexOrderedBalance(tester.ChainBuilder.Chain.Height, block);
@@ -1308,7 +1308,7 @@ namespace QBitNinja.Tests
                         Received = Money.Coins(1.0m),
                         TransactionCount = 1,
                     }
-                }, result);
+                }, result, tester.Network);
             }
         }
         [Fact]
@@ -1328,7 +1328,7 @@ namespace QBitNinja.Tests
                     UnConfirmed = new BalanceSummaryDetails(),
                     Immature = new BalanceSummaryDetails(),
                     Spendable = new BalanceSummaryDetails()
-                }, result);
+                }, result, tester.Network);
 
                 var tx = tester.ChainBuilder.EmitMoney("1.0", bob);
 
@@ -1349,7 +1349,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     }
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1371,7 +1371,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     }
-                }, result);
+                }, result, tester.Network);
                 //Should now take the cache
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary");
                 AssertEx.AssertJsonEqual(new BalanceSummary()
@@ -1390,7 +1390,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     }
-                }, result);
+                }, result, tester.Network);
 
                 var beforeAliceHeight = tester.ChainBuilder.Chain.Height;
 
@@ -1418,7 +1418,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("2.5")
                     },
                     Immature = new BalanceSummaryDetails()
-                }, result);
+                }, result, tester.Network);
 
                 var forkPoint = tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1440,7 +1440,7 @@ namespace QBitNinja.Tests
                         Amount = Money.Parse("2.5")
                     },
                     Immature = new BalanceSummaryDetails()
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.SendMoney(bob, alice, tx, Money.Parse("0.11"));
 
@@ -1466,7 +1466,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.39")
                     }
-                }, result);
+                }, result, tester.Network);
 
                 tester.ChainBuilder.EmitBlock();
                 tester.UpdateServerChain();
@@ -1488,7 +1488,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.39")
                     }
-                }, result);
+                }, result, tester.Network);
 
                 //Fork, the previous should be in pending now
                 tester.ChainBuilder.SetTip(forkPoint.Header);
@@ -1517,7 +1517,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("2.5"),
                         Amount = Money.Parse("2.39")
                     }
-                }, result);
+                }, result, tester.Network);
 
                 //Can ask old balance
                 result = tester.SendGet<BalanceSummary>("balances/" + bob.GetAddress(ScriptPubKeyType.Legacy) + "/summary?at=" + beforeAliceHeight);
@@ -1537,7 +1537,7 @@ namespace QBitNinja.Tests
                         Received = Money.Parse("1.0"),
                         Amount = Money.Parse("1.0")
                     }
-                }, result);
+                }, result, tester.Network);
             }
         }
 

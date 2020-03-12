@@ -4,7 +4,7 @@
 		<TargetFrameworks>netstandard1.1;net452;net461;net472</TargetFrameworks>
 		<PackageId>QBitNinja.Client</PackageId>
 		<Company>Metaco SA</Company>
-		<Version>1.0.3.50</Version>
+		<Version>1.0.3.51</Version>
 		<Copyright>Copyright © Metaco SA 2017</Copyright>
 		<Description>Client library for QBitNinja server</Description>
 		<PackageTags>bitcoin</PackageTags>
@@ -26,7 +26,7 @@
 		<Reference Include="System.Net.Http" Condition="'$(TargetFramework)' == 'net472'"></Reference>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="NBitcoin" Version="4.1.2.36" />
+		<PackageReference Include="NBitcoin" Version="5.0.20" />
 		<PackageReference Include="System.Net.Http">
 		  <Version>4.3.3</Version>
 		  <ExcludeAssets Condition=" '$(TargetFramework)' == 'net472' ">All</ExcludeAssets>

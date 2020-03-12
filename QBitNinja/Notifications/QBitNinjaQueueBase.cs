@@ -35,8 +35,9 @@ namespace QBitNinja.Notifications
     }
     public abstract class QBitNinjaQueueBase<T, TCreation, TDescription> : IQBitNinjaQueue where TCreation : ICreation
     {
-        public QBitNinjaQueueBase(string connectionString, TCreation creation)
+        public QBitNinjaQueueBase(Network network, string connectionString, TCreation creation)
         {
+            this.network = network;
             _Creation = creation;
             _ConnectionString = connectionString;
         }
@@ -65,7 +66,7 @@ namespace QBitNinja.Notifications
         }
         public async Task<bool> AddAsync(T entity)
         {
-            var str = Serializer.ToString<T>(entity);
+            var str = Serializer.ToString<T>(entity, network);
             BrokeredMessage brokered = new BrokeredMessage(str);
             if(Creation.RequiresDuplicateDetection.HasValue &&
                 Creation.RequiresDuplicateDetection.Value)
@@ -139,13 +140,13 @@ namespace QBitNinja.Notifications
             {
                 var control = new MessageControl();
                 control.Options = options;
-                var obj = ToObject(bm);
+                var obj = ToObject(bm, network);
                 if(obj == null)
                     return;
                 await evt(obj, control).ConfigureAwait(false);
                 if(control._Scheduled != null)
                 {
-                    BrokeredMessage message = new BrokeredMessage(Serializer.ToString(obj));
+                    BrokeredMessage message = new BrokeredMessage(Serializer.ToString(obj, network));
                     message.MessageId = Encoders.Hex.EncodeData(RandomUtils.GetBytes(32));
                     message.ScheduledEnqueueTimeUtc = control._Scheduled.Value;
                     await SendAsync(message).ConfigureAwait(false);
@@ -189,7 +190,7 @@ namespace QBitNinja.Notifications
                 message.Message.Dispose();
             }
         }
-
+        protected Network network;
         public async Task<QBitNinjaMessage<T>> ReceiveAsync(TimeSpan? timeout = null)
         {
             if(timeout == null)
@@ -199,20 +200,19 @@ namespace QBitNinja.Notifications
                 return null;
             return new QBitNinjaMessage<T>()
             {
-                Body = ToObject(message),
+                Body = ToObject(message, network),
                 Message = message
             };
         }
 
-
-
-
-        private static T ToObject(BrokeredMessage bm)
+        private static T ToObject(BrokeredMessage bm, Network network)
         {
+            if (network == null)
+                throw new ArgumentNullException(nameof(network));
             if(bm == null)
                 return default(T);
             var result = bm.GetBody<string>();
-            var obj = Serializer.ToObject<T>(result);
+            var obj = Serializer.ToObject<T>(result, network);
             return obj;
         }
 

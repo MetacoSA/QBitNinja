@@ -21,9 +21,9 @@ namespace QBitNinja.Notifications
             set;
         }
 
-        public override string ToString()
+        public string ToString(NBitcoin.Network network)
         {
-            return Serializer.ToString(this);
+            return Serializer.ToString(this, network);
         }
 
         public int Tried
