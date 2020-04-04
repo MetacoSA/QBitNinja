@@ -12,7 +12,7 @@
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
 
 	  <PackageReference Include="NBitcoin">
-		  <Version>5.0.20</Version>
+		  <Version>5.0.27</Version>
 	  </PackageReference>
 	  <PackageReference Include="System.Net.Http">
 		  <Version>4.3.3</Version>
