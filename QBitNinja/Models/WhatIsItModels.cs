@@ -266,12 +266,14 @@ namespace QBitNinja.Client.Models
 
 		public string PubKey
 		{
-			get; set;
+			get; 
+			set;
 		}
 
 		public bool Hardened
 		{
-			get; set;
+			get;
+			set;
 		}
 		public string ChainCode
 		{
@@ -305,11 +307,13 @@ namespace QBitNinja.Client.Models
 
 		public string ExtPubKey
 		{
-			get; set;
+			get;
+			set;
 		}
 		public string PrivateKey
 		{
-			get; set;
+			get;
+			set;
 		}
 	}
 
@@ -362,6 +366,7 @@ namespace QBitNinja.Client.Models
 			get;
 			set;
 		}
+
 		public string ColoredAddress
 		{
 			get;
@@ -373,11 +378,13 @@ namespace QBitNinja.Client.Models
 			get;
 			set;
 		}
+
 		public WhatIsScript RedeemScript
 		{
 			get;
 			set;
 		}
+
 		public WhatIsPublicKey PublicKey
 		{
 			get;
@@ -390,6 +397,7 @@ namespace QBitNinja.Client.Models
 		{
 
 		}
+
 		public WhatIsBase58(IBitcoinString data)
 		{
 			Data = data.ToString();
@@ -418,15 +426,19 @@ namespace QBitNinja.Client.Models
 			get;
 			set;
 		}
+
 		public string Type
 		{
 			get;
 			set;
 		}
+
 		public string StringType
 		{
-			get; set;
+			get;
+			set;
 		}
+
 		public Network Network
 		{
 			get;
