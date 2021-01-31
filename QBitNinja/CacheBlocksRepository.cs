@@ -11,33 +11,35 @@ namespace QBitNinja
 {
     public class CacheBlocksRepository : IBlocksRepository
     {
-        private IBlocksRepository _Repo;
+        private readonly IBlocksRepository _Repo;
 
         public CacheBlocksRepository(IBlocksRepository repo)
         {
-            if(repo == null)
-                throw new ArgumentNullException("repo");
-            this._Repo = repo;
+            this._Repo = repo ?? throw new ArgumentNullException("repo");
         }
 
-        List<Tuple<uint256, Block>> _LastAsked = new List<Tuple<uint256, Block>>();
+        List<Tuple<uint256, Block>> _LastAsked = new List<Tuple<uint256, Block>>();  // A cache of blocks.
 
 
 		#region IBlocksRepository Members
 
-		int MaxBlocks = 70;
+		static readonly int MaxBlocks = 70;  // The maximum number of blocks that may be cached.
 
-        public IEnumerable<NBitcoin.Block> GetBlocks(IEnumerable<NBitcoin.uint256> hashes, CancellationToken cancellation)
+        public IEnumerable<NBitcoin.Block> GetBlocks(IEnumerable<NBitcoin.uint256> hashes, CancellationToken cancellationToken)
         {
             var asked = hashes.ToList();
-			if(asked.Count > MaxBlocks)
-				return _Repo.GetBlocks(hashes, cancellation);
+
+			if (asked.Count > MaxBlocks)  // Asked for more than fit in the cache size, no point in checking cache.
+				return _Repo.GetBlocks(hashes, cancellationToken);  // Fetch from repo instead.
+
             var lastAsked = _LastAsked;
 
-            if(lastAsked != null && asked.SequenceEqual(lastAsked.Select(a => a.Item1)))
+            if (lastAsked != null && asked.SequenceEqual(lastAsked.Select(a => a.Item1)))
                 return lastAsked.Select(l=>l.Item2);
-            var blocks = _Repo.GetBlocks(hashes, cancellation).ToList();
-            if(blocks.Count < 5)
+
+            var blocks = _Repo.GetBlocks(hashes, cancellationToken).ToList();
+
+            if (blocks.Count < 5)  // Shouldn't this number match 'MaxBlocks = 70' ?
             {
                 _LastAsked = blocks.Select(b => Tuple.Create(b.GetHash(), b)).ToList();
             }
@@ -45,9 +47,9 @@ namespace QBitNinja
             {
                 _LastAsked = null;
             }
+
             return blocks;
         }
-
         #endregion
     }
 }

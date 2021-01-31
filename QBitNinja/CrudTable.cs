@@ -28,13 +28,14 @@ namespace QBitNinja
         }
 
         readonly Func<CloudTable> _createTable;
+
         public Scope Scope
         {
             get;
             private set;
         }
 
-        private JsonSerializerSettings serializerSettings;
+        private readonly JsonSerializerSettings serializerSettings;
 
         public CrudTable<T> GetTable<T>(string tableName)
         {
@@ -45,6 +46,12 @@ namespace QBitNinja
             };
         }
     }
+    
+    /// <summary>
+    /// Wraps an Azure CloudTable, offering CRUD operations for objects of a specific type, automatically
+    /// serializing to and from JSON when querying the CloudTable.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class CrudTable<T>
     {
         public CrudTable(CloudTable table, JsonSerializerSettings serializerSettings)
@@ -53,7 +60,7 @@ namespace QBitNinja
                 throw new ArgumentNullException("table");
             if (serializerSettings == null)
                 throw new ArgumentNullException(nameof(serializerSettings));
-            _table = table;
+            Table = table;
             Scope = new Scope();
             this.serializerSettings = serializerSettings;
         }
@@ -64,14 +71,12 @@ namespace QBitNinja
             set;
         }
 
-        private JsonSerializerSettings serializerSettings;
-        private readonly CloudTable _table;
+        private readonly JsonSerializerSettings serializerSettings;
+        
         public CloudTable Table
         {
-            get
-            {
-                return _table;
-            }
+            get;
+            private set;
         }
 
         public async Task<bool> CreateAsync(string itemId, T item, bool orReplace = true)
@@ -82,9 +87,9 @@ namespace QBitNinja
                 var entity = new DynamicTableEntity(Escape(Scope), Escape(itemId))
                 {
                     Properties =
-                {
-                    new KeyValuePair<string,EntityProperty>("data",new EntityProperty(callbackStr))
-                }
+                    {
+                        new KeyValuePair<string, EntityProperty>("data", new EntityProperty(callbackStr))
+                    }
                 };
                 await Table.ExecuteAsync(orReplace ? TableOperation.InsertOrReplace(entity) : TableOperation.Insert(entity)).ConfigureAwait(false);
             }
@@ -118,7 +123,7 @@ namespace QBitNinja
             }
         }
 
-        void Ignore(int errorCode, Action act)
+        private void Ignore(int errorCode, Action act)
         {
             try
             {
@@ -130,6 +135,7 @@ namespace QBitNinja
                     throw;
             }
         }
+
         public bool Delete(string itemId, bool includeChildren = false)
         {
             try
@@ -140,8 +146,8 @@ namespace QBitNinja
                 }));
                 if (includeChildren)
                 {
-                    var children = Scope.GetChild(itemId);
-                    foreach (var child in Table.ExecuteQuery(AllInScope(children)))
+                    var childScope = Scope.GetChild(itemId);  // 'itemId' can be a  path.
+                    foreach (var child in Table.ExecuteQuery(AllInScope(childScope)))
                     {
                         Ignore(404, () => Table.Execute(TableOperation.Delete(child)));
                     }
@@ -156,11 +162,11 @@ namespace QBitNinja
             return true;
         }
 
-        private static TableQuery AllInScope(QBitNinja.Scope children)
+        private static TableQuery AllInScope(QBitNinja.Scope scope)
         {
             return new TableQuery()
             {
-                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(children))
+                FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(scope))
             };
         }
 
@@ -185,8 +191,6 @@ namespace QBitNinja
             return result;
         }
 
-
-
         public async Task<T> ReadOneAsync(string item)
         {
             var e = (await Table.ExecuteAsync(TableOperation.Retrieve(Escape(Scope), Escape(item))).ConfigureAwait(false)).Result as DynamicTableEntity;
@@ -195,12 +199,10 @@ namespace QBitNinja
             return JsonConvert.DeserializeObject<T>(e.Properties["data"].StringValue, serializerSettings);
         }
 
-
         public T ReadOne(string item)
         {
             try
             {
-
                 return ReadOneAsync(item).Result;
             }
             catch (AggregateException aex)
@@ -210,6 +212,9 @@ namespace QBitNinja
             }
         }
 
+        /// <summary>
+        /// Get a CrudTable that is scoped to some nested path.
+        /// </summary>
         public CrudTable<T> GetChild(params string[] children)
         {
             return new CrudTable<T>(Table, serializerSettings)

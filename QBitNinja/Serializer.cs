@@ -18,7 +18,10 @@ namespace QBitNinja
 namespace QBitNinja.Client
 #endif
 {
-	public class Serializer
+	/// <summary>
+	/// A JSON serializer that also has NBitcoin's front converters registered.
+	/// </summary>
+	public static class Serializer
 	{
 #if !NOJSONNET
 		public
@@ -37,6 +40,7 @@ namespace QBitNinja.Client
 #endif
 			settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 		}
+		
 		public static T ToObject<T>(string data, Network network)
 		{
 			JsonSerializerSettings settings = new JsonSerializerSettings
@@ -57,6 +61,7 @@ namespace QBitNinja.Client
 			return JsonConvert.SerializeObject(response, settings);
 		}
 #if !CLIENT
+
 		public static MediaTypeFormatter JsonMediaTypeFormatter(Network network)
 		{
 			if (network == null)

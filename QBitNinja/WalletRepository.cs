@@ -25,6 +25,7 @@ namespace QBitNinja
                 throw new ArgumentNullException("tableFactory");
             if(getBalancesCacheTable == null)
                 throw new ArgumentNullException("getBalancesCacheTable");
+
             GetBalancesCacheTable = getBalancesCacheTable;
             _walletAddressesTable = tableFactory.GetTable<WalletAddress>("wa");
             _walletTable = tableFactory.GetTable<WalletModel>("wm");
@@ -34,9 +35,8 @@ namespace QBitNinja
             _indexer = indexer;
         }
 
-        Func<Scope, ChainTable<Models.BalanceSummary>> GetBalancesCacheTable;
+        readonly Func<Scope, ChainTable<Models.BalanceSummary>> GetBalancesCacheTable;
         
-
         public Scope Scope
         {
             get;
@@ -44,49 +44,19 @@ namespace QBitNinja
         }
 
         private readonly CrudTable<WalletAddress> _walletAddressesTable;
-        public CrudTable<WalletAddress> WalletAddressesTable
-        {
-            get
-            {
-                return _walletAddressesTable;
-            }
-        }
+        public CrudTable<WalletAddress> WalletAddressesTable =>_walletAddressesTable;
 
         private readonly CrudTable<HDKeyData> _keyDataTable;
-        public CrudTable<HDKeyData> KeyDataTable
-        {
-            get
-            {
-                return _keyDataTable;
-            }
-        }
+        public CrudTable<HDKeyData> KeyDataTable =>_keyDataTable;
 
         private readonly CrudTable<KeySetData> _keySetTable;
-        public CrudTable<KeySetData> KeySetTable
-        {
-            get
-            {
-                return _keySetTable;
-            }
-        }
+        public CrudTable<KeySetData> KeySetTable => _keySetTable;
 
         private readonly CrudTable<WalletModel> _walletTable;
-        public CrudTable<WalletModel> WalletTable
-        {
-            get
-            {
-                return _walletTable;
-            }
-        }
+        public CrudTable<WalletModel> WalletTable =>_walletTable;
 
         private readonly IndexerClient _indexer;
-        public IndexerClient Indexer
-        {
-            get
-            {
-                return _indexer;
-            }
-        }
+        public IndexerClient Indexer => _indexer;
 
         public bool Create(WalletModel wallet)
         {
@@ -153,6 +123,7 @@ namespace QBitNinja
                 SetKeySet(walletName, keysetData);
             return addedAddresses;
         }
+
         private static void HackToPreventOOM(WalletAddress[] addresses, Network network)
         {
             var addr = addresses.FirstOrDefault();
@@ -175,6 +146,7 @@ namespace QBitNinja
         {
             return KeySetTable.GetChild(walletName).Create(keysetData.KeySet.Name, keysetData, false);
         }
+
         public bool SetKeySet(string walletName, KeySetData keysetData)
         {
             return KeySetTable.GetChild(walletName).Create(keysetData.KeySet.Name, keysetData, true);
@@ -199,13 +171,7 @@ namespace QBitNinja
             return Encoders.Hex.EncodeData(script.ToBytes(true));
         }
 
-        public Network Network
-        {
-            get
-            {
-                return Indexer.Configuration.Network;
-            }
-        }
+        public Network Network => Indexer.Configuration.Network;
 
         private static KeyPath Inc(KeyPath keyPath)
         {
@@ -223,6 +189,7 @@ namespace QBitNinja
         {
             return KeyDataTable.GetChild(walletName, keysetName).Read();
         }
+
         public async Task<(bool Added, bool Empty)> AddWalletAddress(WalletAddress address, bool mergePast)
         {
             var empty = true;
@@ -247,7 +214,6 @@ namespace QBitNinja
             }
             return (true, empty);
         }
-
 
         public ChainTable<Models.BalanceSummary> GetBalanceSummaryCacheTable(string walletName, bool colored)
         {
