@@ -26,10 +26,15 @@ namespace QBitNinja
             });
 
         }
+
+        /// <summary>
+        /// Get an instance of QBitNinjaConfiguration as provided by the HttpConfiguration's dependency resolver.
+        /// </summary>
         public static QBitNinjaConfiguration GetConfiguration(this HttpRequestContext ctx)
         {
             return ((QBitNinjaDependencyResolver)ctx.Configuration.DependencyResolver).Get<QBitNinjaConfiguration>();
         }
+
         public static T MinElement<T>(this IEnumerable<T> input, Func<T, int> predicate)
         {
             int min = int.MaxValue;
