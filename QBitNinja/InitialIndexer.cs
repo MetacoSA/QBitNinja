@@ -43,7 +43,6 @@ namespace QBitNinja
         }
     }
 
-
     public class InitialIndexer
     {
 
