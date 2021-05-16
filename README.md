@@ -1,4 +1,6 @@
-﻿# QBit Ninja
+> :warning: This project is not maintained anymore. While https://api.qbit.ninja/ and https://tapi.qbit.ninja/ you can't expect those to work reliably. If all you want is to broadcast a transaction, use https://blockstream.info/tx/push . If you want to build on Bitcoin, please use https://github.com/dgarage/NBXplorer/ instead. This is lightweight, works on linux and do not require indexing the whole blockchain.
+
+# QBit Ninja
 
 ## An Open Source and powerful blockchain API
 Showcase
