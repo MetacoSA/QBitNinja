@@ -16,6 +16,7 @@ namespace QBitNinja.Client.Models
 		{
 
 		}
+#if !LIB_ONLY
 		public WhatIsScript(Script script, Network network)
 		{
 			Raw = script;
@@ -26,6 +27,7 @@ namespace QBitNinja.Client.Models
 			if(address != null)
 				Address = address.ToString();
 		}
+#endif
 
 		public uint160 Hash160
 		{
@@ -64,6 +66,7 @@ namespace QBitNinja.Client.Models
 		{
 
 		}
+#if !LIB_ONLY
 		public WhatIsPublicKey(PubKey pubkey, Network network)
 		{
 			Hex = pubkey.ToHex();
@@ -75,7 +78,7 @@ namespace QBitNinja.Client.Models
 			ScriptPubKey = new WhatIsScript(pubkey.ScriptPubKey, network);
 			IsCompressed = pubkey.IsCompressed;
 		}
-
+#endif
 		public string Hex
 		{
 			get;
@@ -133,12 +136,13 @@ namespace QBitNinja.Client.Models
 		{
 
 		}
+#if !LIB_ONLY
 		public WhatIsPrivateKey(BitcoinSecret secret)
 			: base(secret)
 		{
 			PublicKey = new WhatIsPublicKey(secret.PrivateKey.PubKey, secret.Network);
 		}
-
+#endif
 		public WhatIsPublicKey PublicKey
 		{
 			get;
@@ -320,6 +324,7 @@ namespace QBitNinja.Client.Models
 		{
 
 		}
+#if !LIB_ONLY
 		public WhatIsAddress(BitcoinAddress address)
 			: base(address)
 		{
@@ -330,7 +335,7 @@ namespace QBitNinja.Client.Models
 			if(address is IBase58Data)
 				ColoredAddress = address.ToColoredAddress().ToString();
 		}
-
+#endif
 		private string GetHash(BitcoinAddress address)
 		{
 			BitcoinPubKeyAddress pubkey = address as BitcoinPubKeyAddress;
@@ -432,7 +437,7 @@ namespace QBitNinja.Client.Models
 			get;
 			set;
 		}
-
+#if !LIB_ONLY
 		public static WhatIsBase58 GetFromBitcoinString(string data)
 		{
 			try
@@ -479,5 +484,6 @@ namespace QBitNinja.Client.Models
 			catch(FormatException) { }
 			throw new FormatException("Not a base58 or bech32");
 		}
+#endif
 	}
 }
