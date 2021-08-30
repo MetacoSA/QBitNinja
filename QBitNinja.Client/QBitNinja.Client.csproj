@@ -33,7 +33,7 @@
 		<PackageReference Include="NBitcoin" Version="5.0.27"  Condition="'$(LIB_ONLY)' == 'false'" />
     <PackageReference Include="NBitcoin" Version="6.0.8"  Condition="'$(LIB_ONLY)' == 'true'" />
 		<PackageReference Include="System.Net.Http">
-		  <Version>4.3.3</Version>
+		  <Version>4.3.4</Version>
 		  <ExcludeAssets Condition=" '$(TargetFramework)' == 'net472' ">All</ExcludeAssets>
 	  </PackageReference>
 	</ItemGroup>
