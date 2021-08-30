@@ -4,7 +4,7 @@
 		<TargetFrameworks>netstandard1.1;netstandard2.1;net452;net461;net472</TargetFrameworks>
 		<PackageId>QBitNinja.Client</PackageId>
 		<Company>Metaco SA</Company>
-		<Version>1.0.3.52</Version>
+		<Version>1.0.4.0</Version>
 		<Copyright>Copyright © Metaco SA 2017</Copyright>
 		<Description>Client library for QBitNinja server</Description>
 		<PackageTags>bitcoin</PackageTags>
