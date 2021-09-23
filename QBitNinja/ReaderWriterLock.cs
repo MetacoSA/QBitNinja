@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace QBitNinja
 {
+    /// <summary>
+    /// Wrapper around ReaderWriterLockSlim, offering a scoped-behavior pattern where the lock
+    /// is exited at the end of a using statement block.
+    /// </summary>
     internal class ReaderWriterLock
     {
         ReaderWriterLockSlim @lock = new ReaderWriterLockSlim();

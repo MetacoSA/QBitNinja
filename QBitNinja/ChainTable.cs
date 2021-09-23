@@ -10,31 +10,27 @@ using System.Text;
 namespace QBitNinja
 {
     /// <summary>
-    /// Such table can store data keyed by Height/BlockId/TransactionId, and range query them 
+    /// Wraps an Azure table that may store data keyed by Height/BlockId/TransactionId, and allows for range queries against it.
     /// </summary>
     public class ChainTable<T>
     {
         private readonly JsonSerializerSettings serializerSettings;
-        readonly CloudTable _cloudTable;
+        readonly CloudTable _cloudTable;  // An Azure table
+
         public ChainTable(CloudTable cloudTable, Network network)
         {
             if(cloudTable == null)
                 throw new ArgumentNullException("cloudTable");
             if (network == null)
                 throw new ArgumentNullException(nameof(network));
-            JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
+
+            var serializerSettings = new JsonSerializerSettings();
             QBitNinja.Serializer.RegisterFrontConverters(serializerSettings, network);
             this.serializerSettings = serializerSettings;
             _cloudTable = cloudTable;
         }
 
-        public CloudTable Table
-        {
-            get
-            {
-                return _cloudTable;
-            }
-        }
+        public CloudTable Table => _cloudTable;
 
         public Scope Scope
         {
@@ -50,8 +46,6 @@ namespace QBitNinja
             Table.Execute(TableOperation.InsertOrReplace(entity));
         }
 
-
-
         public void Delete(ConfirmedBalanceLocator locator)
         {
             var entity = new DynamicTableEntity(Escape(Scope), Escape(locator))
@@ -60,15 +54,16 @@ namespace QBitNinja
             };
             Table.Execute(TableOperation.Delete(entity));
         }
+
         public void Delete()
         {
-            foreach(var entity in Table.ExecuteQuery(new TableQuery()
+            var tableQuery = new TableQuery()
             {
                 FilterString = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Escape(Scope))
-            }))
-            {
+            };
+
+            foreach (var entity in Table.ExecuteQuery(tableQuery))
                 Table.Execute(TableOperation.Delete(entity));
-            }
         }
 
         public IEnumerable<T> Query(ChainBase chain, BalanceQuery query = null)
@@ -95,6 +90,7 @@ namespace QBitNinja
             }
             return builder.ToString();
         }
+
         private void PutData(DynamicTableEntity entity, string str)
         {
             int i = 0;

@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace QBitNinja
 {
+    /// <summary>
+    /// Utility class to aid in recognizing a few kinds of objects from some string representations.
+    /// </summary>
     public class WhatIsIt
     {
         public WhatIsIt(MainController controller)
@@ -18,42 +21,39 @@ namespace QBitNinja
         public MainController Controller
         {
             get;
-            set;
+            set; 
         }
 
-        public Network Network
-        {
-            get
-            {
-                return Controller.Network;
-            }
-        }
+        public Network Network => Controller.Network;
 
         public ConsensusFactory ConsensusFactory => Network.Consensus.ConsensusFactory;
 
-        public QBitNinjaConfiguration Configuration
-        {
-            get
-            {
-                return Controller.Configuration;
-            }
-        }
+        public QBitNinjaConfiguration Configuration => Controller.Configuration;
 
-
+        /// <summary>
+        /// Try to interpret the given string in a few ways in order to detect what object it's supposed to represent.
+        /// </summary>
+        /// <returns>The object represented by the input string. This may be a Bitcoin address, a script, a signature, a public key, etc.</returns>
         public async Task<object> Find(string data)
         {
             data = data.Trim();
+
+
+            // Is it a Bitcoin address?
             var b58 = NoException(() => WhatIsBase58.GetFromBitcoinString(data));
+
             if (b58 != null)
             {
-                if (b58 is WhatIsAddress)
+                if (b58 is WhatIsAddress address)
                 {
-                    var address = (WhatIsAddress)b58;
-                    await TryFetchRedeemOrPubKey(address);
+                    await TryFetchRedeemOrPubKey(address);  // Shouldn't the return value here be checked?
                 }
+
                 return b58;
             }
 
+
+            // Is it a transaction ID?
             if (data.Length == 0x40)
             {
                 try
@@ -62,45 +62,68 @@ namespace QBitNinja
                 }
                 catch
                 {
+                    // Well, apparently it's not a transaction ID.
                 }
             }
+
+
+            // Is it a block feature?
             var b = NoException(() => Controller.JsonBlock(BlockFeature.Parse(data), true, false));
+
             if (b != null)
                 return b;
 
-            if (data.Length == 0x28) //Hash of pubkey or script
+
+            // Is it the hash of a public key (modeled as KeyId in NBitcoin), or is it the hash of a script ID?
+            if (data.Length == 0x28) // Hash of pubkey or script
             {
                 TxDestination dest = new KeyId(data);
+
                 var address = new WhatIsAddress(dest.GetAddress(Network));
+
                 if (await TryFetchRedeemOrPubKey(address))
                     return address;
 
                 dest = new ScriptId(data);
                 address = new WhatIsAddress(dest.GetAddress(Network));
+
                 if (await TryFetchRedeemOrPubKey(address))
                     return address;
             }
 
 
+            // Is it a script?
             var script = NoException(() => GetScriptFromBytes(data));
-            if (script != null)
-                return new WhatIsScript(script, Network);
-            script = NoException(() => GetScriptFromText(data));
+
             if (script != null)
                 return new WhatIsScript(script, Network);
 
+            script = NoException(() => GetScriptFromText(data));
+
+            if (script != null)
+                return new WhatIsScript(script, Network);
+
+
+            // Is it a transaction signature?
             var sig = NoException(() => new TransactionSignature(Encoders.Hex.DecodeData(data)));
+
             if (sig != null)
                 return new WhatIsTransactionSignature(sig);
 
+
+            // Is it a hexstring representing the bytes of a public key?
             var pubkeyBytes = NoException(() => Encoders.Hex.DecodeData(data));
+
             if (pubkeyBytes != null && PubKey.Check(pubkeyBytes, true))
             {
                 var pubKey = NoException(() => new PubKey(data));
+
                 if (pubKey != null)
                     return new WhatIsPublicKey(pubKey, Network);
             }
 
+
+            // Is it a blockheader?
             if (data.Length == 80 * 2)
             {
                 var blockHeader = NoException(() =>
@@ -109,9 +132,13 @@ namespace QBitNinja
                     h.ReadWrite(Encoders.Hex.DecodeData(data), ConsensusFactory);
                     return h;
                 });
+
                 if (blockHeader != null)
                     return new WhatIsBlockHeader(blockHeader);
             }
+
+
+            // No idea what this is.
             return null;
         }
 
@@ -137,7 +164,6 @@ namespace QBitNinja
             return !hasOps ? null : script;
         }
 
-
         private async Task<bool> TryFetchRedeemOrPubKey(WhatIsAddress address)
         {
             if (address.IsP2SH)
@@ -145,10 +171,12 @@ namespace QBitNinja
                 address.RedeemScript = await TryFetchRedeem(address);
                 return address.RedeemScript != null;
             }
-            address.PublicKey = await TryFetchPublicKey(address);
-            return address.PublicKey != null;
+            else
+            {
+                address.PublicKey = await TryFetchPublicKey(address);
+                return address.PublicKey != null;
+            }
         }
-
 
         private async Task<Script> FindScriptSig(WhatIsAddress address)
         {
@@ -185,7 +213,7 @@ namespace QBitNinja
             return result == null ? null : new WhatIsPublicKey(result.PublicKey, Network);
         }
 
-        public T NoException<T>(Func<T> act) where T : class
+        private T NoException<T>(Func<T> act) where T : class
         {
             try
             {
